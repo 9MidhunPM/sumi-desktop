@@ -42,9 +42,17 @@ def parser() -> argparse.ArgumentParser:
     restore = commands.add_parser("restore", help="Recover from TTY or restore original configuration")
     restore.add_argument("snapshot", choices=("original", "pending"))
     _json_flag(restore)
-    _json_flag(commands.add_parser("doctor", help="Verify backup, dependencies, services, and shell readiness"))
+    doctor = commands.add_parser("doctor", help="Check dependencies, backups, and session health")
+    doctor.add_argument("--check", action="store_true", help="Exit nonzero when a required check fails")
+    _json_flag(doctor)
+    for name in ("uninstall", "rollback"):
+        lifecycle = commands.add_parser(name, help="Safely " + name + " the installed desktop")
+        lifecycle.add_argument("--dry-run", action="store_true")
+        _json_flag(lifecycle)
     install = commands.add_parser("install", help="Back up configuration and install CLI/service units")
-    install.add_argument("--activate", action="store_true", help="Activate Sumi after installation")
+    install.add_argument("--dry-run", action="store_true")
+    install.add_argument("--update", action="store_true")
+    install.add_argument("--no-packages", action="store_true")
     _json_flag(install)
     start = commands.add_parser("start", help="Start the selected profile")
     start.add_argument("--foreground", action="store_true", help=argparse.SUPPRESS)
@@ -94,7 +102,7 @@ def main(argv: list[str] | None = None) -> int:
                        or (args.command == "action" and args.args[:1] == ["wallpaper"])
                        or (args.command == "profile" and args.profile_command in {"use", "toggle"})
                        or (args.command == "action" and args.args[:1] == ["profile"])
-                       or (args.command == "install" and args.activate))
+                       or args.command in {"uninstall", "rollback"})
         if stops_shell and profiles.in_shell_cgroup():
             print(json.dumps(profiles.delegate_controller(raw_args, home=home, state_dir=state_dir)))
             return 0
@@ -167,9 +175,16 @@ def main(argv: list[str] | None = None) -> int:
             restore = profiles.restore_original if args.snapshot == "original" else profiles.restore_pending
             result = restore(home=home, state_dir=state_dir)
         elif args.command == "doctor":
-            result = profiles.doctor(home=home, state_dir=state_dir)
+            from . import installer
+            result = installer.diagnostics(home=home)
+            print(json.dumps(result, indent=2, default=str))
+            return 1 if args.check and not result["ok"] else 0
+        elif args.command in {"uninstall", "rollback"}:
+            from . import installer
+            result = getattr(installer, args.command)(home=home, dry_run=args.dry_run)
         elif args.command == "install":
-            result = profiles.install(home=home, state_dir=state_dir, activate=args.activate)
+            from . import installer
+            return installer.main([flag for flag, enabled in (("--dry-run", args.dry_run), ("--update", args.update), ("--no-packages", args.no_packages)) if enabled])
         elif args.command == "start":
             result = profiles.start(home=home, state_dir=state_dir, foreground=args.foreground)
         elif args.command == "restart":

@@ -33,7 +33,6 @@ def registry() -> dict:
               "label": label, "category": category} for chord, label, argv, _, category in _ACTIONS]
     items.extend([
         {"id": "bar-peek", "keys": "Hold Right Shift", "label": "Peek at the bar in hidden mode", "category": "Shell"},
-        {"id": "profile-toggle", "keys": "Super + Ctrl + Alt + S", "label": "Switch Classic / Sumi", "category": "System"},
         {"id": "workspaces", "keys": "Super + 1–9 / 0", "label": "Workspace 1–10", "category": "Workspaces"},
         {"id": "move-workspace", "keys": "Super + Shift + 1–9 / 0", "label": "Move window to workspace", "category": "Workspaces"},
         {"id": "focus", "keys": "Super + Arrow", "label": "Focus a window", "category": "Workspaces"},

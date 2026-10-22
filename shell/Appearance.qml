@@ -17,6 +17,7 @@ C.Surface {
     property string message: ""
     property bool success: true
     property bool changing: false
+    property bool recoveryAvailable: false
     property var importScreen: null
     readonly property bool compact: width < 720
     readonly property bool shortLayout: height < 520
@@ -27,7 +28,7 @@ C.Surface {
     height: Math.min(760, Math.max(1, app.activeScreen ? app.activeScreen.height - 48 : 760))
 
     function focusDefault() { gallery.forceActiveFocus(Qt.OtherFocusReason); }
-    function activatePanel() { catalog.running = true; }
+    function activatePanel() { catalog.running = true; recoveryStatus.running = true; }
     function addWallpaper() {
         importScreen = root.app.activeScreen;
         // Keep the dialog's layer-shell parent mapped, but hand all input and
@@ -65,7 +66,7 @@ C.Surface {
             if (ok) catalog.running = true;
         });
     }
-    Component.onCompleted: catalog.running = true
+    Component.onCompleted: { catalog.running = true; recoveryStatus.running = true; }
     Shortcut { sequence: "Ctrl+O"; enabled: root.visible && !root.app.nativeDialogOpen; context: Qt.WindowShortcut; onActivated: root.addWallpaper() }
     Process {
         id: catalog
@@ -79,6 +80,17 @@ C.Surface {
                     root.selected = root.themes[gallery.currentIndex] || null;
                 } catch (error) { root.message = "Could not read wallpaper library"; root.success = false; }
             }
+        }
+    }
+    Process {
+        id: recoveryStatus
+        command: [S.Desktop.controller, "profile", "status", "--json"]
+        stdout: StdioCollector { id: recoveryOutput }
+        onExited: (code, status) => {
+            root.recoveryAvailable = false;
+            if (code !== 0) return;
+            try { root.recoveryAvailable = JSON.parse(recoveryOutput.text).recovery_available === true; }
+            catch (error) { console.warn("Sumi: previous desktop recovery is unavailable"); }
         }
     }
     FileDialog {
@@ -227,7 +239,7 @@ C.Surface {
                                 background: C.Surface { border.width: accent.activeFocus ? 2 : Theme.borderWidth; border.color: accent.activeFocus ? Theme.accentBlue : Theme.borderSoft }
                             }
                             C.ActionButton { id: applyAccent; KeyNavigation.tab: applyTheme; KeyNavigation.backtab: accent; objectName: "appearanceApplyAccent"; text: "Apply accent"; Layout.fillWidth: true; enabled: root.selected !== null && !root.changing && /^#[0-9a-fA-F]{6}$/.test(accent.text); onActiveFocusChanged: if (activeFocus) root.revealControl(applyAccent); onClicked: root.command(["theme", "accent", root.selected.id, accent.text]) }
-                            C.ActionButton { id: applyTheme; KeyNavigation.tab: classic; KeyNavigation.backtab: applyAccent; objectName: "appearanceApplyTheme"; text: "Apply theme  →"; selected: true; Layout.fillWidth: true; enabled: root.selected !== null && !root.changing; onActiveFocusChanged: if (activeFocus) root.revealControl(applyTheme); onClicked: root.command(["theme", "use", root.selected.id]) }
+                            C.ActionButton { id: applyTheme; KeyNavigation.tab: root.recoveryAvailable ? classic : barMode; KeyNavigation.backtab: applyAccent; objectName: "appearanceApplyTheme"; text: "Apply theme  →"; selected: true; Layout.fillWidth: true; enabled: root.selected !== null && !root.changing; onActiveFocusChanged: if (activeFocus) root.revealControl(applyTheme); onClicked: root.command(["theme", "use", root.selected.id]) }
                         }
                     }
                 }
@@ -237,8 +249,8 @@ C.Surface {
                     Layout.fillWidth: true
                     spacing: 8
                     C.Label { text: "Desktop · Sumi"; color: Theme.textSoft; height: 36 }
-                    C.ActionButton { id: classic; KeyNavigation.tab: barMode; KeyNavigation.backtab: applyTheme; objectName: "appearanceClassic"; text: "Switch to Classic"; enabled: !root.changing; onActiveFocusChanged: if (activeFocus) root.revealControl(classic); onClicked: root.command(["profile", "use", "classic"]) }
-                    C.ActionButton { id: barMode; KeyNavigation.tab: motionMode; KeyNavigation.backtab: classic; objectName: "appearanceBarMode"; text: Settings.barHiddenMode ? "Bar: hold Shift" : "Bar: visible"; quiet: true; onActiveFocusChanged: if (activeFocus) root.revealControl(barMode); onClicked: Settings.toggle("barHiddenMode") }
+                    C.ActionButton { id: classic; KeyNavigation.tab: barMode; KeyNavigation.backtab: applyTheme; objectName: "appearanceClassic"; text: "Restore previous desktop"; tooltip: "Restore the original desktop configuration, replacing later edits after saving a recovery snapshot. Log out afterward"; visible: root.recoveryAvailable; enabled: !root.changing; onActiveFocusChanged: if (activeFocus) root.revealControl(classic); onClicked: root.command(["restore", "original"]) }
+                    C.ActionButton { id: barMode; KeyNavigation.tab: motionMode; KeyNavigation.backtab: root.recoveryAvailable ? classic : applyTheme; objectName: "appearanceBarMode"; text: Settings.barHiddenMode ? "Bar: hold Shift" : "Bar: visible"; quiet: true; onActiveFocusChanged: if (activeFocus) root.revealControl(barMode); onClicked: Settings.toggle("barHiddenMode") }
                     C.ActionButton { id: motionMode; KeyNavigation.tab: editWidgets; KeyNavigation.backtab: barMode; objectName: "appearanceMotion"; text: Settings.reducedMotion ? "Motion: reduced" : Settings.fullMotion ? "Motion: expressive" : "Motion: adaptive"; tooltip: "Cycle motion: adaptive, expressive, reduced"; quiet: true; onActiveFocusChanged: if (activeFocus) root.revealControl(motionMode); onClicked: Settings.cycleMotion() }
                 }
                 Flow {

@@ -371,6 +371,16 @@ def profile_status(*, home: Path | None = None, state_dir: Path | None = None) -
     state_dir = state_dir or state_path(home)
     value = _load(state_dir / "profile.json", {"profile": "classic", "installed": False})
     value["original_backup"] = str((state_dir / "original").resolve()) if (state_dir / "original/manifest.json").exists() else None
+    value["recovery_available"] = False
+    if value.get("standalone"):
+        from .installer import recovery_available
+        value["recovery_available"] = recovery_available(home=home)
+    elif value["original_backup"]:
+        try:
+            original = verify_snapshot(Path(value["original_backup"]))
+            value["recovery_available"] = any(item.get("exists") for key, item in original["paths"].items() if key.startswith(".config/hypr/"))
+        except (OSError, ValueError, RuntimeError):
+            pass
     pending = _load(state_dir / "transaction.json")
     if pending:
         value["pending_recovery"] = pending
@@ -1183,6 +1193,11 @@ def use_profile(profile: str, *, home: Path | None = None, state_dir: Path | Non
     _assert_unlocked(dry_run=dry_run)
     with _operation_lock(state_dir):
         current = profile_status(home=home, state_dir=state_dir)
+        if current.get("standalone"):
+            if profile == "sumi":
+                _start_sumi(home, state_dir, dry_run=dry_run)
+                return current
+            raise ProfileError("Use desktopctl restore original to recover a verified previous desktop")
         if profile == "toggle":
             profile = "classic" if current["profile"] == "sumi" else "sumi"
         if current.get("pending_recovery"):
@@ -1276,6 +1291,9 @@ def use_profile(profile: str, *, home: Path | None = None, state_dir: Path | Non
 
 def restore_pending(*, home: Path | None = None, state_dir: Path | None = None, dry_run: bool = False) -> dict:
     home, state_dir = home or home_path(), state_dir or state_path(home)
+    if (state_dir / "installer/pending.json").exists():
+        from .installer import recover_pending
+        return recover_pending(home=home, dry_run=dry_run)
     _assert_unlocked(dry_run=dry_run)
     with _operation_lock(state_dir):
         journal = _load(state_dir / "transaction.json")
@@ -1319,6 +1337,9 @@ def restore_pending(*, home: Path | None = None, state_dir: Path | None = None, 
 
 def restore_original(*, home: Path | None = None, state_dir: Path | None = None, dry_run: bool = False) -> dict:
     home, state_dir = home or home_path(), state_dir or state_path(home)
+    if profile_status(home=home, state_dir=state_dir).get("standalone"):
+        from .installer import restore_previous
+        return restore_previous(home=home, dry_run=dry_run)
     _assert_unlocked(dry_run=dry_run)
     with _operation_lock(state_dir):
         original = state_dir / "original"
