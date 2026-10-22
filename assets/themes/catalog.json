@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "default": "sunset-shrine",
+  "default": "sumi-ember",
   "themes": [
     {
-      "id": "sunset-shrine",
-      "name": "Sunset Shrine",
-      "wallpaper": "",
-      "thumbnail": "",
+      "id": "sumi-ember",
+      "name": "Ember",
+      "wallpaper": "assets/wallpapers/ember.png",
+      "thumbnail": "assets/thumbnails/ember.jpg",
       "colors": {
         "bgPanel": "#e6111420",
         "bgPanelStrong": "#f21b1d2b",
@@ -35,29 +35,240 @@
         "anchors": {
           "clock": [
             0.055,
-            0.12
+            0.13
           ],
           "spotify": [
             0.055,
-            0.48
+            0.41
           ],
           "priorities": [
             0.055,
-            0.67
+            0.62
           ],
           "deadline": [
             0.055,
-            0.86
+            0.83
           ]
         },
         "clockTone": "light"
-      }
+      },
+      "sha256": "dcb8690f9243ee7dcf8f3de1757bcfde6ef97aa8c368f89c7576d29bd8ffe64d",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "assetLicense": "MIT"
+    },
+    {
+      "id": "sumi-tide",
+      "name": "Tide",
+      "wallpaper": "assets/wallpapers/tide.png",
+      "thumbnail": "assets/thumbnails/tide.jpg",
+      "colors": {
+        "bgPanel": "#e6111420",
+        "bgPanelStrong": "#f21b1d2b",
+        "bgPlaying": "#292b40",
+        "desktopBackground": "#0b0e18",
+        "borderSoft": "#335e6381",
+        "borderStrong": "#806f7d9f",
+        "borderAccent1": "#c5aac8",
+        "borderAccent2": "#8ba8d8",
+        "textMain": "#f2ede4",
+        "textSoft": "#bbb7c5",
+        "accentBlue": "#a7bce8",
+        "accentCyan": "#a8ccd5",
+        "accentPink": "#e4a0a1",
+        "accentWarn": "#e6c490"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "curated": true,
+      "desktopLayout": {
+        "mode": "left",
+        "compact": false,
+        "anchors": {
+          "clock": [
+            0.06,
+            0.15
+          ],
+          "spotify": [
+            0.06,
+            0.43
+          ],
+          "priorities": [
+            0.06,
+            0.64
+          ],
+          "deadline": [
+            0.06,
+            0.85
+          ]
+        },
+        "clockTone": "light"
+      },
+      "sha256": "60af3f96238bb9bfd0057553709e03051e1fa9f5f241fc52d7fa42ef2a2b8d72",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "assetLicense": "MIT"
+    },
+    {
+      "id": "sumi-ink",
+      "name": "Ink",
+      "wallpaper": "assets/wallpapers/ink.png",
+      "thumbnail": "assets/thumbnails/ink.jpg",
+      "colors": {
+        "bgPanel": "#a30e1318",
+        "bgPanelStrong": "#c7121820",
+        "bgPlaying": "#d1182230",
+        "borderSoft": "#3364b4be",
+        "borderStrong": "#8050a0aa",
+        "textMain": "#7cbebe",
+        "textSoft": "#69a1a1",
+        "accentBlue": "#7cbebe",
+        "accentCyan": "#94e4af",
+        "accentPink": "#a8c8d8",
+        "accentWarn": "#9b9bed",
+        "borderAccent1": "#ee7cbebe",
+        "borderAccent2": "#ee5ea0a0",
+        "desktopBackground": "#0e1318"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#0d1218",
+        "foreground": "#94d8e8",
+        "selection_bg": "#4a9aaa",
+        "selection_fg": "#d8f0f8",
+        "url": "#6ab8c8",
+        "cursor": "#7cbebe",
+        "cursor_text": "#0d1218",
+        "visual_bell": "#5aa8b8",
+        "active_border": "#7cbebe",
+        "inactive_border": "#1a3540",
+        "bell_border": "#94e4af",
+        "active_tab_bg": "#2a5070",
+        "active_tab_fg": "#d8f0f8",
+        "inactive_tab_bg": "#1a3050",
+        "inactive_tab_fg": "#7ab8c8",
+        "tab_bg": "#0a0e18",
+        "color0": "#0f1520",
+        "color8": "#4a7a8a",
+        "color1": "#ff8a9a",
+        "color9": "#ffaaaa",
+        "color2": "#4ecfc5",
+        "color10": "#7addd5",
+        "color3": "#6ac8cc",
+        "color11": "#94e4af",
+        "color4": "#7cbebe",
+        "color12": "#94d8e8",
+        "color5": "#6ab0c8",
+        "color13": "#7cb8d0",
+        "color6": "#4ad8e8",
+        "color14": "#7ae8f0",
+        "color7": "#94d8e8",
+        "color15": "#d8f0f8"
+      },
+      "desktopLayout": {
+        "mode": "split",
+        "compact": false,
+        "anchors": {
+          "clock": [
+            0.055,
+            0.13
+          ],
+          "spotify": [
+            0.055,
+            0.49
+          ],
+          "priorities": [
+            0.72,
+            0.66
+          ],
+          "deadline": [
+            0.72,
+            0.85
+          ]
+        },
+        "clockTone": "light"
+      },
+      "sha256": "320283b72c34b203bc92b2bf44a5498a20a5e5a2f507f00322d3330ab6b7312d",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
+    },
+    {
+      "id": "sunset-shrine",
+      "name": "Sunset Shrine",
+      "wallpaper": "assets/wallpapers/ember.png",
+      "thumbnail": "assets/thumbnails/ember.jpg",
+      "colors": {
+        "bgPanel": "#e6111420",
+        "bgPanelStrong": "#f21b1d2b",
+        "bgPlaying": "#292b40",
+        "desktopBackground": "#0b0e18",
+        "borderSoft": "#335e6381",
+        "borderStrong": "#806f7d9f",
+        "borderAccent1": "#c5aac8",
+        "borderAccent2": "#8ba8d8",
+        "textMain": "#f2ede4",
+        "textSoft": "#bbb7c5",
+        "accentBlue": "#a7bce8",
+        "accentCyan": "#a8ccd5",
+        "accentPink": "#e4a0a1",
+        "accentWarn": "#e6c490"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "curated": true,
+      "desktopLayout": {
+        "mode": "left",
+        "compact": false,
+        "anchors": {
+          "clock": [
+            0.055,
+            0.13
+          ],
+          "spotify": [
+            0.055,
+            0.41
+          ],
+          "priorities": [
+            0.055,
+            0.62
+          ],
+          "deadline": [
+            0.055,
+            0.83
+          ]
+        },
+        "clockTone": "light"
+      },
+      "sha256": "dcb8690f9243ee7dcf8f3de1757bcfde6ef97aa8c368f89c7576d29bd8ffe64d",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "assetLicense": "MIT"
     },
     {
       "id": "moonlit-fuji",
       "name": "Moonlit Fuji",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/tide.png",
+      "thumbnail": "assets/thumbnails/tide.jpg",
       "colors": {
         "bgPanel": "#e60f1b25",
         "bgPanelStrong": "#f2172732",
@@ -81,34 +292,40 @@
       "borderWidth": 1,
       "curated": true,
       "desktopLayout": {
-        "mode": "split",
+        "mode": "left",
         "compact": false,
         "anchors": {
           "clock": [
-            0.055,
-            0.2
+            0.06,
+            0.15
           ],
           "spotify": [
-            0.72,
-            0.65
+            0.06,
+            0.43
           ],
           "priorities": [
-            0.055,
-            0.66
+            0.06,
+            0.64
           ],
           "deadline": [
-            0.76,
+            0.06,
             0.85
           ]
         },
         "clockTone": "light"
-      }
+      },
+      "sha256": "60af3f96238bb9bfd0057553709e03051e1fa9f5f241fc52d7fa42ef2a2b8d72",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "assetLicense": "MIT"
     },
     {
       "id": "rainy-kyoto",
       "name": "Rainy Kyoto",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/ink.png",
+      "thumbnail": "assets/thumbnails/ink.jpg",
       "colors": {
         "bgPanel": "#e60e191b",
         "bgPanelStrong": "#f218282a",
@@ -133,33 +350,39 @@
       "curated": true,
       "desktopLayout": {
         "mode": "split",
-        "compact": true,
+        "compact": false,
         "anchors": {
           "clock": [
-            0.04,
-            0.16
+            0.055,
+            0.13
           ],
           "spotify": [
-            0.04,
-            0.69
+            0.055,
+            0.49
           ],
           "priorities": [
-            0.78,
-            0.12
+            0.72,
+            0.66
           ],
           "deadline": [
-            0.78,
-            0.84
+            0.72,
+            0.85
           ]
         },
         "clockTone": "light"
-      }
+      },
+      "sha256": "320283b72c34b203bc92b2bf44a5498a20a5e5a2f507f00322d3330ab6b7312d",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "assetLicense": "MIT"
     },
     {
       "id": "torii-dawn",
       "name": "Torii Dawn",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/ember.png",
+      "thumbnail": "assets/thumbnails/ember.jpg",
       "colors": {
         "bgPanel": "#e6151c29",
         "bgPanelStrong": "#f21d2a38",
@@ -188,7 +411,7 @@
         "anchors": {
           "clock": [
             0.055,
-            0.22
+            0.13
           ],
           "spotify": [
             0.055,
@@ -196,21 +419,27 @@
           ],
           "priorities": [
             0.055,
-            0.6
+            0.62
           ],
           "deadline": [
             0.055,
-            0.79
+            0.83
           ]
         },
-        "clockTone": "dark"
-      }
+        "clockTone": "light"
+      },
+      "sha256": "dcb8690f9243ee7dcf8f3de1757bcfde6ef97aa8c368f89c7576d29bd8ffe64d",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "assetLicense": "MIT"
     },
     {
       "id": "1-alpine-mountains",
       "name": "Alpine Mountains",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/tide.png",
+      "thumbnail": "assets/thumbnails/tide.jpg",
       "colors": {
         "bgPanel": "#a80e161e",
         "bgPanelStrong": "#d1141c26",
@@ -267,34 +496,41 @@
         "color15": "#f4f8fb"
       },
       "desktopLayout": {
-        "mode": "split",
+        "mode": "left",
         "compact": false,
         "anchors": {
           "clock": [
-            0.055,
-            0.13
+            0.06,
+            0.15
           ],
           "spotify": [
-            0.055,
-            0.75
+            0.06,
+            0.43
           ],
           "priorities": [
-            0.77,
-            0.65
+            0.06,
+            0.64
           ],
           "deadline": [
-            0.77,
-            0.84
+            0.06,
+            0.85
           ]
         },
-        "clockTone": "dark"
-      }
+        "clockTone": "light"
+      },
+      "sha256": "60af3f96238bb9bfd0057553709e03051e1fa9f5f241fc52d7fa42ef2a2b8d72",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     },
     {
       "id": "2-azure-anime-street",
       "name": "Azure Anime Street",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/ink.png",
+      "thumbnail": "assets/thumbnails/ink.jpg",
       "colors": {
         "bgPanel": "#a3091024",
         "bgPanelStrong": "#c70a1228",
@@ -352,33 +588,40 @@
       },
       "desktopLayout": {
         "mode": "split",
-        "compact": true,
+        "compact": false,
         "anchors": {
           "clock": [
-            0.25,
-            0.09
+            0.055,
+            0.13
           ],
           "spotify": [
             0.055,
-            0.76
+            0.49
           ],
           "priorities": [
-            0.78,
-            0.09
+            0.72,
+            0.66
           ],
           "deadline": [
-            0.78,
-            0.82
+            0.72,
+            0.85
           ]
         },
         "clockTone": "light"
-      }
+      },
+      "sha256": "320283b72c34b203bc92b2bf44a5498a20a5e5a2f507f00322d3330ab6b7312d",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     },
     {
       "id": "3-nebula-space",
       "name": "Nebula Space",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/ember.png",
+      "thumbnail": "assets/thumbnails/ember.jpg",
       "colors": {
         "bgPanel": "#a3120a2a",
         "bgPanelStrong": "#cc1a0e3a",
@@ -435,34 +678,41 @@
         "color15": "#f6f2ff"
       },
       "desktopLayout": {
-        "mode": "right",
+        "mode": "left",
         "compact": false,
         "anchors": {
           "clock": [
-            0.73,
-            0.16
+            0.055,
+            0.13
           ],
           "spotify": [
-            0.73,
-            0.37
+            0.055,
+            0.41
           ],
           "priorities": [
-            0.77,
-            0.59
+            0.055,
+            0.62
           ],
           "deadline": [
-            0.77,
-            0.79
+            0.055,
+            0.83
           ]
         },
         "clockTone": "light"
-      }
+      },
+      "sha256": "dcb8690f9243ee7dcf8f3de1757bcfde6ef97aa8c368f89c7576d29bd8ffe64d",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     },
     {
       "id": "4-sakura-cityline",
       "name": "Sakura Cityline",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/tide.png",
+      "thumbnail": "assets/thumbnails/tide.jpg",
       "colors": {
         "bgPanel": "#a822122a",
         "bgPanelStrong": "#d130183a",
@@ -519,34 +769,41 @@
         "color15": "#fff4fa"
       },
       "desktopLayout": {
-        "mode": "split",
-        "compact": true,
+        "mode": "left",
+        "compact": false,
         "anchors": {
           "clock": [
-            0.055,
-            0.075
+            0.06,
+            0.15
           ],
           "spotify": [
-            0.055,
-            0.7
+            0.06,
+            0.43
           ],
           "priorities": [
-            0.76,
-            0.67
+            0.06,
+            0.64
           ],
           "deadline": [
-            0.76,
+            0.06,
             0.85
           ]
         },
-        "clockTone": "dark"
-      }
+        "clockTone": "light"
+      },
+      "sha256": "60af3f96238bb9bfd0057553709e03051e1fa9f5f241fc52d7fa42ef2a2b8d72",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     },
     {
       "id": "5-darknight-maroon",
       "name": "Darknight Maroon",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/ink.png",
+      "thumbnail": "assets/thumbnails/ink.jpg",
       "colors": {
         "bgPanel": "#a310080b",
         "bgPanelStrong": "#c7140a0f",
@@ -603,34 +860,41 @@
         "color15": "#ffd5df"
       },
       "desktopLayout": {
-        "mode": "left",
+        "mode": "split",
         "compact": false,
         "anchors": {
           "clock": [
             0.055,
-            0.17
+            0.13
           ],
           "spotify": [
             0.055,
-            0.37
+            0.49
           ],
           "priorities": [
-            0.055,
-            0.58
+            0.72,
+            0.66
           ],
           "deadline": [
-            0.055,
-            0.79
+            0.72,
+            0.85
           ]
         },
         "clockTone": "light"
-      }
+      },
+      "sha256": "320283b72c34b203bc92b2bf44a5498a20a5e5a2f507f00322d3330ab6b7312d",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     },
     {
       "id": "6-deepnight-cyan",
       "name": "Deepnight Cyan",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/ember.png",
+      "thumbnail": "assets/thumbnails/ember.jpg",
       "colors": {
         "bgPanel": "#a30e1318",
         "bgPanelStrong": "#c7121820",
@@ -688,33 +952,40 @@
       },
       "desktopLayout": {
         "mode": "left",
-        "compact": true,
+        "compact": false,
         "anchors": {
           "clock": [
             0.055,
-            0.12
+            0.13
           ],
           "spotify": [
             0.055,
-            0.56
+            0.41
           ],
           "priorities": [
             0.055,
-            0.72
+            0.62
           ],
           "deadline": [
             0.055,
-            0.89
+            0.83
           ]
         },
-        "clockTone": "dark"
-      }
+        "clockTone": "light"
+      },
+      "sha256": "dcb8690f9243ee7dcf8f3de1757bcfde6ef97aa8c368f89c7576d29bd8ffe64d",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     },
     {
       "id": "7-obsidian-night",
       "name": "Obsidian Night",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/tide.png",
+      "thumbnail": "assets/thumbnails/tide.jpg",
       "colors": {
         "bgPanel": "#a32b2c2a",
         "bgPanelStrong": "#c7323230",
@@ -771,34 +1042,41 @@
         "color15": "#e8e0d8"
       },
       "desktopLayout": {
-        "mode": "split",
-        "compact": true,
+        "mode": "left",
+        "compact": false,
         "anchors": {
           "clock": [
-            0.055,
-            0.12
-          ],
-          "spotify": [
-            0.055,
-            0.75
-          ],
-          "priorities": [
-            0.78,
+            0.06,
             0.15
           ],
+          "spotify": [
+            0.06,
+            0.43
+          ],
+          "priorities": [
+            0.06,
+            0.64
+          ],
           "deadline": [
-            0.78,
-            0.83
+            0.06,
+            0.85
           ]
         },
         "clockTone": "light"
-      }
+      },
+      "sha256": "60af3f96238bb9bfd0057553709e03051e1fa9f5f241fc52d7fa42ef2a2b8d72",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     },
     {
       "id": "8-carbon-steel",
       "name": "Carbon Steel",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/ink.png",
+      "thumbnail": "assets/thumbnails/ink.jpg",
       "colors": {
         "bgPanel": "#a30d0d0d",
         "bgPanelStrong": "#c7121212",
@@ -856,33 +1134,40 @@
       },
       "desktopLayout": {
         "mode": "split",
-        "compact": true,
+        "compact": false,
         "anchors": {
           "clock": [
-            0.39,
-            0.16
+            0.055,
+            0.13
           ],
           "spotify": [
             0.055,
-            0.74
+            0.49
           ],
           "priorities": [
-            0.76,
-            0.64
+            0.72,
+            0.66
           ],
           "deadline": [
-            0.76,
-            0.84
+            0.72,
+            0.85
           ]
         },
         "clockTone": "light"
-      }
+      },
+      "sha256": "320283b72c34b203bc92b2bf44a5498a20a5e5a2f507f00322d3330ab6b7312d",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     },
     {
       "id": "9-void-minimal",
       "name": "Void Minimal",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/ember.png",
+      "thumbnail": "assets/thumbnails/ember.jpg",
       "colors": {
         "bgPanel": "#a3131313",
         "bgPanelStrong": "#c7181818",
@@ -939,34 +1224,41 @@
         "color15": "#d8d8d8"
       },
       "desktopLayout": {
-        "mode": "split",
-        "compact": true,
+        "mode": "left",
+        "compact": false,
         "anchors": {
           "clock": [
             0.055,
-            0.65
+            0.13
           ],
           "spotify": [
             0.055,
-            0.83
+            0.41
           ],
           "priorities": [
-            0.76,
-            0.67
+            0.055,
+            0.62
           ],
           "deadline": [
-            0.76,
-            0.86
+            0.055,
+            0.83
           ]
         },
         "clockTone": "light"
-      }
+      },
+      "sha256": "dcb8690f9243ee7dcf8f3de1757bcfde6ef97aa8c368f89c7576d29bd8ffe64d",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     },
     {
       "id": "10-twilight-shadow",
       "name": "Twilight Shadow",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/tide.png",
+      "thumbnail": "assets/thumbnails/tide.jpg",
       "colors": {
         "bgPanel": "#a30d0e0b",
         "bgPanelStrong": "#c712130f",
@@ -1027,30 +1319,37 @@
         "compact": false,
         "anchors": {
           "clock": [
-            0.055,
-            0.18
+            0.06,
+            0.15
           ],
           "spotify": [
-            0.055,
-            0.38
+            0.06,
+            0.43
           ],
           "priorities": [
-            0.055,
-            0.59
+            0.06,
+            0.64
           ],
           "deadline": [
-            0.055,
-            0.8
+            0.06,
+            0.85
           ]
         },
         "clockTone": "light"
-      }
+      },
+      "sha256": "60af3f96238bb9bfd0057553709e03051e1fa9f5f241fc52d7fa42ef2a2b8d72",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     },
     {
       "id": "11-golden-dunes",
       "name": "Golden Dunes",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/ink.png",
+      "thumbnail": "assets/thumbnails/ink.jpg",
       "colors": {
         "bgPanel": "#a3211b15",
         "bgPanelStrong": "#c7282019",
@@ -1112,29 +1411,36 @@
         "anchors": {
           "clock": [
             0.055,
-            0.2
+            0.13
           ],
           "spotify": [
             0.055,
-            0.7
+            0.49
           ],
           "priorities": [
-            0.77,
-            0.6
+            0.72,
+            0.66
           ],
           "deadline": [
-            0.77,
-            0.8
+            0.72,
+            0.85
           ]
         },
         "clockTone": "light"
-      }
+      },
+      "sha256": "320283b72c34b203bc92b2bf44a5498a20a5e5a2f507f00322d3330ab6b7312d",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     },
     {
       "id": "12-ashfall-monochrome",
       "name": "Ashfall Monochrome",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/ember.png",
+      "thumbnail": "assets/thumbnails/ember.jpg",
       "colors": {
         "bgPanel": "#a3151415",
         "bgPanelStrong": "#c71c1a1c",
@@ -1191,34 +1497,41 @@
         "color15": "#f0c0c8"
       },
       "desktopLayout": {
-        "mode": "split",
-        "compact": true,
+        "mode": "left",
+        "compact": false,
         "anchors": {
           "clock": [
-            0.65,
-            0.09
+            0.055,
+            0.13
           ],
           "spotify": [
             0.055,
-            0.77
+            0.41
           ],
           "priorities": [
-            0.77,
-            0.6
+            0.055,
+            0.62
           ],
           "deadline": [
-            0.77,
-            0.8
+            0.055,
+            0.83
           ]
         },
-        "clockTone": "dark"
-      }
+        "clockTone": "light"
+      },
+      "sha256": "dcb8690f9243ee7dcf8f3de1757bcfde6ef97aa8c368f89c7576d29bd8ffe64d",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     },
     {
       "id": "13-charcoal-slate",
       "name": "Charcoal Slate",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/tide.png",
+      "thumbnail": "assets/thumbnails/tide.jpg",
       "colors": {
         "bgPanel": "#a3070707",
         "bgPanelStrong": "#c70a0a0a",
@@ -1275,34 +1588,41 @@
         "color15": "#e0e0e0"
       },
       "desktopLayout": {
-        "mode": "split",
+        "mode": "left",
         "compact": false,
         "anchors": {
           "clock": [
-            0.19,
-            0.12
+            0.06,
+            0.15
           ],
           "spotify": [
-            0.19,
-            0.73
+            0.06,
+            0.43
           ],
           "priorities": [
-            0.7,
+            0.06,
             0.64
           ],
           "deadline": [
-            0.7,
-            0.84
+            0.06,
+            0.85
           ]
         },
         "clockTone": "light"
-      }
+      },
+      "sha256": "60af3f96238bb9bfd0057553709e03051e1fa9f5f241fc52d7fa42ef2a2b8d72",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     },
     {
       "id": "14-frosted-mint",
       "name": "Frosted Mint",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/ink.png",
+      "thumbnail": "assets/thumbnails/ink.jpg",
       "colors": {
         "bgPanel": "#a3181919",
         "bgPanelStrong": "#c7212323",
@@ -1359,34 +1679,41 @@
         "color15": "#e0e0e0"
       },
       "desktopLayout": {
-        "mode": "left",
+        "mode": "split",
         "compact": false,
         "anchors": {
           "clock": [
             0.055,
-            0.24
+            0.13
           ],
           "spotify": [
             0.055,
-            0.44
+            0.49
           ],
           "priorities": [
-            0.055,
-            0.64
+            0.72,
+            0.66
           ],
           "deadline": [
-            0.055,
-            0.84
+            0.72,
+            0.85
           ]
         },
         "clockTone": "light"
-      }
+      },
+      "sha256": "320283b72c34b203bc92b2bf44a5498a20a5e5a2f507f00322d3330ab6b7312d",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     },
     {
       "id": "15-cyan-breeze",
       "name": "Cyan Breeze",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/ember.png",
+      "thumbnail": "assets/thumbnails/ember.jpg",
       "colors": {
         "bgPanel": "#a3091c21",
         "bgPanelStrong": "#c70c282e",
@@ -1443,34 +1770,41 @@
         "color15": "#e0e0e0"
       },
       "desktopLayout": {
-        "mode": "split",
-        "compact": true,
+        "mode": "left",
+        "compact": false,
         "anchors": {
           "clock": [
             0.055,
-            0.1
+            0.13
           ],
           "spotify": [
             0.055,
-            0.75
+            0.41
           ],
           "priorities": [
-            0.77,
-            0.63
+            0.055,
+            0.62
           ],
           "deadline": [
-            0.77,
+            0.055,
             0.83
           ]
         },
-        "clockTone": "dark"
-      }
+        "clockTone": "light"
+      },
+      "sha256": "dcb8690f9243ee7dcf8f3de1757bcfde6ef97aa8c368f89c7576d29bd8ffe64d",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     },
     {
       "id": "16-abyssal-navy",
       "name": "Abyssal Navy",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/tide.png",
+      "thumbnail": "assets/thumbnails/tide.jpg",
       "colors": {
         "bgPanel": "#a3000103",
         "bgPanelStrong": "#c7010204",
@@ -1527,34 +1861,41 @@
         "color15": "#e0e0e0"
       },
       "desktopLayout": {
-        "mode": "right",
+        "mode": "left",
         "compact": false,
         "anchors": {
           "clock": [
-            0.73,
-            0.14
+            0.06,
+            0.15
           ],
           "spotify": [
-            0.73,
-            0.39
+            0.06,
+            0.43
           ],
           "priorities": [
-            0.77,
-            0.61
+            0.06,
+            0.64
           ],
           "deadline": [
-            0.77,
-            0.82
+            0.06,
+            0.85
           ]
         },
         "clockTone": "light"
-      }
+      },
+      "sha256": "60af3f96238bb9bfd0057553709e03051e1fa9f5f241fc52d7fa42ef2a2b8d72",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     },
     {
       "id": "17-sage-olive",
       "name": "Sage Olive",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/ink.png",
+      "thumbnail": "assets/thumbnails/ink.jpg",
       "colors": {
         "bgPanel": "#a3171912",
         "bgPanelStrong": "#c7212419",
@@ -1612,33 +1953,40 @@
       },
       "desktopLayout": {
         "mode": "split",
-        "compact": true,
+        "compact": false,
         "anchors": {
           "clock": [
             0.055,
-            0.2
+            0.13
           ],
           "spotify": [
             0.055,
-            0.71
+            0.49
           ],
           "priorities": [
-            0.77,
-            0.63
+            0.72,
+            0.66
           ],
           "deadline": [
-            0.77,
-            0.83
+            0.72,
+            0.85
           ]
         },
-        "clockTone": "dark"
-      }
+        "clockTone": "light"
+      },
+      "sha256": "320283b72c34b203bc92b2bf44a5498a20a5e5a2f507f00322d3330ab6b7312d",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     },
     {
       "id": "18-sandy-dunes",
       "name": "Sandy Dunes",
-      "wallpaper": "",
-      "thumbnail": "",
+      "wallpaper": "assets/wallpapers/ember.png",
+      "thumbnail": "assets/thumbnails/ember.jpg",
       "colors": {
         "bgPanel": "#a31b1814",
         "bgPanelStrong": "#c725221c",
@@ -1695,28 +2043,35 @@
         "color15": "#e0e0e0"
       },
       "desktopLayout": {
-        "mode": "right",
+        "mode": "left",
         "compact": false,
         "anchors": {
           "clock": [
-            0.73,
-            0.32
+            0.055,
+            0.13
           ],
           "spotify": [
-            0.73,
-            0.5
+            0.055,
+            0.41
           ],
           "priorities": [
-            0.77,
-            0.68
+            0.055,
+            0.62
           ],
           "deadline": [
-            0.77,
-            0.86
+            0.055,
+            0.83
           ]
         },
-        "clockTone": "dark"
-      }
+        "clockTone": "light"
+      },
+      "sha256": "dcb8690f9243ee7dcf8f3de1757bcfde6ef97aa8c368f89c7576d29bd8ffe64d",
+      "sourceSize": [
+        2560,
+        1600
+      ],
+      "curated": true,
+      "assetLicense": "MIT"
     }
   ]
 }

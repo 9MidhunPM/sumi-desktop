@@ -25,7 +25,7 @@ from .statefiles import data_path, file_lock, state_path
 
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / "assets/themes/catalog.json"
-DEFAULT_THEME_ID = "sunset-shrine"
+DEFAULT_THEME_ID = "sumi-ember"
 COLOR_KEYS = (
     "bgPanel", "bgPanelStrong", "bgPlaying", "desktopBackground", "borderSoft",
     "borderStrong", "borderAccent1", "borderAccent2", "textMain", "textSoft",

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2560" height="1600" viewBox="0 0 2560 1600">
+<!-- Original Sumi landscape. Copyright 2026 Midhun P M. MIT License. -->
+<defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#101d2b"/><stop offset="1" stop-color="#285c70"/></linearGradient><radialGradient id="halo"><stop stop-color="#c7ded8" stop-opacity=".15"/><stop offset="1" stop-color="#c7ded8" stop-opacity="0"/></radialGradient><linearGradient id="veil"><stop stop-color="#101d2b" stop-opacity=".6"/><stop offset=".55" stop-color="#101d2b" stop-opacity="0"/></linearGradient></defs>
+<path fill="url(#sky)" d="M0 0h2560v1600H0z"/>
+<circle cx="1840" cy="540" r="620" fill="url(#halo)"/>
+<circle cx="1840" cy="540" r="126" fill="#c7ded8"/>
+<path fill="#649caa" d="M0 1220C330 1120 540 1160 800 1070S1280 920 1460 735Q1550 650 1620 820L1760 1030Q1870 1120 2130 930T2560 940V1600H0Z"/>
+<path fill="#365b78" d="M0 1370Q360 1130 700 1260T1280 1240Q1620 920 1940 1130T2560 1060V1600H0Z"/>
+<path fill="#202f49" d="M0 1480Q420 1260 760 1420T1460 1370Q1760 1180 2110 1340T2560 1260V1600H0Z"/>
+<path fill="url(#veil)" d="M0 0h2560v1600H0z"/>
+<path fill="none" stroke="#c7ded8" stroke-opacity=".13" stroke-width="2" d="M1470 735Q1550 650 1620 820L1760 1030"/>
+</svg>

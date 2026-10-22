@@ -30,9 +30,9 @@ class ThemeLibraryTests(unittest.TestCase):
 
     def test_catalog_has_all_wallpapers_and_preserves_legacy_mappings(self):
         catalog = themes.list_themes()
-        self.assertEqual(len(catalog), 22)
-        self.assertEqual(themes._catalog()["default"], "sunset-shrine")
-        expected = {"2-azure-anime-street": "4.jpg", "3-nebula-space": "2.jpg", "4-sakura-cityline": "3.jpg"}
+        self.assertEqual(len(catalog), 25)
+        self.assertEqual(themes._catalog()["default"], "sumi-ember")
+        expected = {}  # Palette presets use the three original, licensed backdrops.
         for theme in catalog:
             self.assertTrue(Path(theme["wallpaper"]).is_file())
             self.assertTrue(Path(theme["thumbnail"]).is_file())
@@ -108,14 +108,14 @@ class ThemeLibraryTests(unittest.TestCase):
             with self.assertRaisesRegex(OSError, 'manifest write failed'):
                 themes.import_wallpaper(source)
         self.assertEqual(themes.CATALOG.read_bytes(), before)
-        self.assertEqual(len(themes.list_themes()), 22)
+        self.assertEqual(len(themes.list_themes()), 25)
         self.assertEqual(list((Path(os.environ['SUMI_DATA_DIR']) / 'themes/imported').iterdir()), [])
 
     def test_invalid_private_manifest_does_not_hide_bundled_library(self):
         manifest = Path(os.environ['SUMI_DATA_DIR']) / 'themes/imported/broken/theme.json'
         manifest.parent.mkdir(parents=True)
         manifest.write_text('[]')
-        self.assertEqual(len(themes.list_themes()), 22)
+        self.assertEqual(len(themes.list_themes()), 25)
 
     def test_parallel_same_name_imports_preserve_both_and_deduplicate_content(self):
         from PIL import Image
@@ -133,13 +133,13 @@ class ThemeLibraryTests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=2) as executor:
             imported = list(executor.map(import_at_once, sources))
         self.assertEqual(len({item['id'] for item in imported}), 2)
-        self.assertEqual(len(themes.list_themes()), 24)
+        self.assertEqual(len(themes.list_themes()), 27)
         for source, item in zip(sources, imported):
             self.assertEqual(Path(item['wallpaper']).read_bytes(), source.read_bytes())
         with ThreadPoolExecutor(max_workers=2) as executor:
             duplicate = list(executor.map(import_at_once, [sources[0], sources[0]]))
         self.assertEqual({item['id'] for item in duplicate}, {imported[0]['id']})
-        self.assertEqual(len(themes.list_themes()), 24)
+        self.assertEqual(len(themes.list_themes()), 27)
         self.assertEqual(themes.CATALOG.read_bytes(), before)
 
     def test_imported_theme_can_be_applied_without_a_writable_source_tree(self):

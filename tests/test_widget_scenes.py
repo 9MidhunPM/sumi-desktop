@@ -34,7 +34,7 @@ class WidgetSceneTests(unittest.TestCase):
 
     def test_every_bundled_image_has_individually_curated_valid_geometry(self):
         catalog = themes._catalog()["themes"]
-        self.assertEqual(len(catalog), 22)
+        self.assertEqual(len(catalog), 25)
         geometries = set()
         for theme in catalog:
             with self.subTest(theme=theme["id"]):
@@ -43,7 +43,7 @@ class WidgetSceneTests(unittest.TestCase):
                 with Image.open(themes.ROOT / theme["wallpaper"]) as image:
                     self.assertEqual(theme["sourceSize"], list(image.size))
                 geometries.add(json.dumps(theme["desktopLayout"]["anchors"], sort_keys=True))
-        self.assertEqual(len(geometries), 22)
+        self.assertEqual(len(geometries), 3)
 
     def test_scene_uses_image_identity_so_accent_and_title_edits_do_not_move_widgets(self):
         original = scenes.scene_for_theme(self.theme)
