@@ -1,0 +1,1722 @@
+{
+  "version": 1,
+  "default": "sunset-shrine",
+  "themes": [
+    {
+      "id": "sunset-shrine",
+      "name": "Sunset Shrine",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#e6111420",
+        "bgPanelStrong": "#f21b1d2b",
+        "bgPlaying": "#292b40",
+        "desktopBackground": "#0b0e18",
+        "borderSoft": "#335e6381",
+        "borderStrong": "#806f7d9f",
+        "borderAccent1": "#c5aac8",
+        "borderAccent2": "#8ba8d8",
+        "textMain": "#f2ede4",
+        "textSoft": "#bbb7c5",
+        "accentBlue": "#a7bce8",
+        "accentCyan": "#a8ccd5",
+        "accentPink": "#e4a0a1",
+        "accentWarn": "#e6c490"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "curated": true,
+      "desktopLayout": {
+        "mode": "left",
+        "compact": false,
+        "anchors": {
+          "clock": [
+            0.055,
+            0.12
+          ],
+          "spotify": [
+            0.055,
+            0.48
+          ],
+          "priorities": [
+            0.055,
+            0.67
+          ],
+          "deadline": [
+            0.055,
+            0.86
+          ]
+        },
+        "clockTone": "light"
+      }
+    },
+    {
+      "id": "moonlit-fuji",
+      "name": "Moonlit Fuji",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#e60f1b25",
+        "bgPanelStrong": "#f2172732",
+        "bgPlaying": "#223c49",
+        "desktopBackground": "#0a141c",
+        "borderSoft": "#335a8897",
+        "borderStrong": "#8088bdc8",
+        "borderAccent1": "#a6d4dc",
+        "borderAccent2": "#a1badd",
+        "textMain": "#eff0e3",
+        "textSoft": "#b8c8ce",
+        "accentBlue": "#a8cde4",
+        "accentCyan": "#a6d9dc",
+        "accentPink": "#d6b7c9",
+        "accentWarn": "#e6d8a6"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "curated": true,
+      "desktopLayout": {
+        "mode": "split",
+        "compact": false,
+        "anchors": {
+          "clock": [
+            0.055,
+            0.2
+          ],
+          "spotify": [
+            0.72,
+            0.65
+          ],
+          "priorities": [
+            0.055,
+            0.66
+          ],
+          "deadline": [
+            0.76,
+            0.85
+          ]
+        },
+        "clockTone": "light"
+      }
+    },
+    {
+      "id": "rainy-kyoto",
+      "name": "Rainy Kyoto",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#e60e191b",
+        "bgPanelStrong": "#f218282a",
+        "bgPlaying": "#263b40",
+        "desktopBackground": "#091315",
+        "borderSoft": "#334f7377",
+        "borderStrong": "#8084b6b7",
+        "borderAccent1": "#8dc9c5",
+        "borderAccent2": "#cda6c8",
+        "textMain": "#efeee5",
+        "textSoft": "#b8c7c4",
+        "accentBlue": "#9bbecf",
+        "accentCyan": "#93c9bf",
+        "accentPink": "#d6a0c2",
+        "accentWarn": "#dec595"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "curated": true,
+      "desktopLayout": {
+        "mode": "split",
+        "compact": true,
+        "anchors": {
+          "clock": [
+            0.04,
+            0.16
+          ],
+          "spotify": [
+            0.04,
+            0.69
+          ],
+          "priorities": [
+            0.78,
+            0.12
+          ],
+          "deadline": [
+            0.78,
+            0.84
+          ]
+        },
+        "clockTone": "light"
+      }
+    },
+    {
+      "id": "torii-dawn",
+      "name": "Torii Dawn",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#e6151c29",
+        "bgPanelStrong": "#f21d2a38",
+        "bgPlaying": "#2c3c4a",
+        "desktopBackground": "#0e1721",
+        "borderSoft": "#33576f89",
+        "borderStrong": "#809bb3c5",
+        "borderAccent1": "#d9a1a2",
+        "borderAccent2": "#99c8d6",
+        "textMain": "#f2ede4",
+        "textSoft": "#c3c5cc",
+        "accentBlue": "#a6c5e1",
+        "accentCyan": "#9bced3",
+        "accentPink": "#e0a0a4",
+        "accentWarn": "#edc99f"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "curated": true,
+      "desktopLayout": {
+        "mode": "left",
+        "compact": false,
+        "anchors": {
+          "clock": [
+            0.055,
+            0.22
+          ],
+          "spotify": [
+            0.055,
+            0.41
+          ],
+          "priorities": [
+            0.055,
+            0.6
+          ],
+          "deadline": [
+            0.055,
+            0.79
+          ]
+        },
+        "clockTone": "dark"
+      }
+    },
+    {
+      "id": "1-alpine-mountains",
+      "name": "Alpine Mountains",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a80e161e",
+        "bgPanelStrong": "#d1141c26",
+        "bgPlaying": "#db1a2634",
+        "borderSoft": "#38cfe3f5",
+        "borderStrong": "#8aa1cef0",
+        "textMain": "#d8e9f8",
+        "textSoft": "#b8d0e5",
+        "accentBlue": "#a5d3f5",
+        "accentCyan": "#cde9ff",
+        "accentPink": "#9bb9cc",
+        "accentWarn": "#8fd9ff",
+        "borderAccent1": "#eed7ecff",
+        "borderAccent2": "#ee8fb2cf",
+        "desktopBackground": "#0e161e"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#0f1721",
+        "foreground": "#dce8f3",
+        "selection_bg": "#5f7890",
+        "selection_fg": "#f3f8fd",
+        "url": "#9ecdf2",
+        "cursor": "#cde9ff",
+        "cursor_text": "#0f1721",
+        "visual_bell": "#6f8ea9",
+        "active_border": "#b6dcff",
+        "inactive_border": "#304252",
+        "bell_border": "#93d8ff",
+        "active_tab_bg": "#33475a",
+        "active_tab_fg": "#f3f8fd",
+        "inactive_tab_bg": "#243444",
+        "inactive_tab_fg": "#b7c9d8",
+        "tab_bg": "#0b1119",
+        "color0": "#111b27",
+        "color8": "#4a5f73",
+        "color1": "#ff8da8",
+        "color9": "#ffb0c3",
+        "color2": "#8ecfc5",
+        "color10": "#acddd5",
+        "color3": "#a4d7ff",
+        "color11": "#c2e6ff",
+        "color4": "#8bb9dc",
+        "color12": "#afcee8",
+        "color5": "#aab8d6",
+        "color13": "#c8d2e8",
+        "color6": "#8fd5e7",
+        "color14": "#b4e5f2",
+        "color7": "#d2dce5",
+        "color15": "#f4f8fb"
+      },
+      "desktopLayout": {
+        "mode": "split",
+        "compact": false,
+        "anchors": {
+          "clock": [
+            0.055,
+            0.13
+          ],
+          "spotify": [
+            0.055,
+            0.75
+          ],
+          "priorities": [
+            0.77,
+            0.65
+          ],
+          "deadline": [
+            0.77,
+            0.84
+          ]
+        },
+        "clockTone": "dark"
+      }
+    },
+    {
+      "id": "2-azure-anime-street",
+      "name": "Azure Anime Street",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a3091024",
+        "bgPanelStrong": "#c70a1228",
+        "bgPlaying": "#d10d1c3c",
+        "borderSoft": "#3372bcff",
+        "borderStrong": "#8072bcff",
+        "textMain": "#9bd8ff",
+        "textSoft": "#a8d7ff",
+        "accentBlue": "#79c6ff",
+        "accentCyan": "#9bd8ff",
+        "accentPink": "#ff7ca8",
+        "accentWarn": "#ffbf7a",
+        "borderAccent1": "#ee6bb7ff",
+        "borderAccent2": "#ee4f8dff",
+        "desktopBackground": "#091024"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#091024",
+        "foreground": "#d6e9ff",
+        "selection_bg": "#214a8f",
+        "selection_fg": "#eff8ff",
+        "url": "#79c6ff",
+        "cursor": "#9bd8ff",
+        "cursor_text": "#091024",
+        "visual_bell": "#29579f",
+        "active_border": "#79c6ff",
+        "inactive_border": "#1b2d54",
+        "bell_border": "#ffc27a",
+        "active_tab_bg": "#17366e",
+        "active_tab_fg": "#eff8ff",
+        "inactive_tab_bg": "#122748",
+        "inactive_tab_fg": "#9abfe9",
+        "tab_bg": "#070d1e",
+        "color0": "#0b132e",
+        "color8": "#334a78",
+        "color1": "#ff799d",
+        "color9": "#ff9fb8",
+        "color2": "#71e3c5",
+        "color10": "#93f0d6",
+        "color3": "#ffc27a",
+        "color11": "#ffd7a3",
+        "color4": "#6eb6ff",
+        "color12": "#9ccfff",
+        "color5": "#c39bff",
+        "color13": "#ddc2ff",
+        "color6": "#61d6ff",
+        "color14": "#98e9ff",
+        "color7": "#c8dbff",
+        "color15": "#f2f8ff"
+      },
+      "desktopLayout": {
+        "mode": "split",
+        "compact": true,
+        "anchors": {
+          "clock": [
+            0.25,
+            0.09
+          ],
+          "spotify": [
+            0.055,
+            0.76
+          ],
+          "priorities": [
+            0.78,
+            0.09
+          ],
+          "deadline": [
+            0.78,
+            0.82
+          ]
+        },
+        "clockTone": "light"
+      }
+    },
+    {
+      "id": "3-nebula-space",
+      "name": "Nebula Space",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a3120a2a",
+        "bgPanelStrong": "#cc1a0e3a",
+        "bgPlaying": "#d62d1658",
+        "borderSoft": "#3dcd8fff",
+        "borderStrong": "#94cd8fff",
+        "textMain": "#e1c4ff",
+        "textSoft": "#c4a7ea",
+        "accentBlue": "#bf8eff",
+        "accentCyan": "#dba8ff",
+        "accentPink": "#ff88d4",
+        "accentWarn": "#ffb6f4",
+        "borderAccent1": "#eec184ff",
+        "borderAccent2": "#7d6fff",
+        "desktopBackground": "#120a2a"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#120a2a",
+        "foreground": "#ebdcff",
+        "selection_bg": "#5e3ea3",
+        "selection_fg": "#f8f2ff",
+        "url": "#bf8eff",
+        "cursor": "#dba8ff",
+        "cursor_text": "#120a2a",
+        "visual_bell": "#7a56c3",
+        "active_border": "#bf8eff",
+        "inactive_border": "#37235c",
+        "bell_border": "#ffb6f4",
+        "active_tab_bg": "#4a2f83",
+        "active_tab_fg": "#f8f2ff",
+        "inactive_tab_bg": "#2f1d53",
+        "inactive_tab_fg": "#c6afe9",
+        "tab_bg": "#0b061b",
+        "color0": "#170d33",
+        "color8": "#593d88",
+        "color1": "#ff80c0",
+        "color9": "#ffa6d3",
+        "color2": "#8fe6c9",
+        "color10": "#acf0d8",
+        "color3": "#ffc18f",
+        "color11": "#ffd7b1",
+        "color4": "#9b84ff",
+        "color12": "#baaaff",
+        "color5": "#da9eff",
+        "color13": "#e7beff",
+        "color6": "#9de1ff",
+        "color14": "#beeeff",
+        "color7": "#d9cbff",
+        "color15": "#f6f2ff"
+      },
+      "desktopLayout": {
+        "mode": "right",
+        "compact": false,
+        "anchors": {
+          "clock": [
+            0.73,
+            0.16
+          ],
+          "spotify": [
+            0.73,
+            0.37
+          ],
+          "priorities": [
+            0.77,
+            0.59
+          ],
+          "deadline": [
+            0.77,
+            0.79
+          ]
+        },
+        "clockTone": "light"
+      }
+    },
+    {
+      "id": "4-sakura-cityline",
+      "name": "Sakura Cityline",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a822122a",
+        "bgPanelStrong": "#d130183a",
+        "bgPlaying": "#db3e1e4c",
+        "borderSoft": "#3dffa7c6",
+        "borderStrong": "#99ffba7d",
+        "textMain": "#ffd0e3",
+        "textSoft": "#ffc2d9",
+        "accentBlue": "#f4b4c8",
+        "accentCyan": "#ffd1dc",
+        "accentPink": "#f099bc",
+        "accentWarn": "#f8c3d5",
+        "borderAccent1": "#eeffb86b",
+        "borderAccent2": "#eeff7ea9",
+        "desktopBackground": "#22122a"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#29162f",
+        "foreground": "#ffe6f1",
+        "selection_bg": "#8b3e69",
+        "selection_fg": "#fff4f9",
+        "url": "#f4b4c8",
+        "cursor": "#ffd8a5",
+        "cursor_text": "#29162f",
+        "visual_bell": "#bf5b8d",
+        "active_border": "#f4b4c8",
+        "inactive_border": "#5c2e4d",
+        "bell_border": "#f8c3d5",
+        "active_tab_bg": "#6f3356",
+        "active_tab_fg": "#fff4f9",
+        "inactive_tab_bg": "#4c2740",
+        "inactive_tab_fg": "#efbdd1",
+        "tab_bg": "#1f1124",
+        "color0": "#2b162f",
+        "color8": "#7a4c67",
+        "color1": "#ff7aa8",
+        "color9": "#ff9cbe",
+        "color2": "#ffb95f",
+        "color10": "#ffd08c",
+        "color3": "#ffd17b",
+        "color11": "#ffe1a6",
+        "color4": "#ff93c3",
+        "color12": "#ffb2d8",
+        "color5": "#e98cff",
+        "color13": "#f2b1ff",
+        "color6": "#ffad86",
+        "color14": "#ffc5a8",
+        "color7": "#ffd9e7",
+        "color15": "#fff4fa"
+      },
+      "desktopLayout": {
+        "mode": "split",
+        "compact": true,
+        "anchors": {
+          "clock": [
+            0.055,
+            0.075
+          ],
+          "spotify": [
+            0.055,
+            0.7
+          ],
+          "priorities": [
+            0.76,
+            0.67
+          ],
+          "deadline": [
+            0.76,
+            0.85
+          ]
+        },
+        "clockTone": "dark"
+      }
+    },
+    {
+      "id": "5-darknight-maroon",
+      "name": "Darknight Maroon",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a310080b",
+        "bgPanelStrong": "#c7140a0f",
+        "bgPlaying": "#d1230f19",
+        "borderSoft": "#33dc505a",
+        "borderStrong": "#80c33c46",
+        "textMain": "#ef7778",
+        "textSoft": "#cc5152",
+        "accentBlue": "#c33e3f",
+        "accentCyan": "#ea4ab5",
+        "accentPink": "#ea4a4b",
+        "accentWarn": "#f3f24d",
+        "borderAccent1": "#eec33e3f",
+        "borderAccent2": "#eeea4a4b",
+        "desktopBackground": "#10080b"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#0f080a",
+        "foreground": "#f0a0a5",
+        "selection_bg": "#8a4a55",
+        "selection_fg": "#ffd5df",
+        "url": "#d87a82",
+        "cursor": "#ea4a4b",
+        "cursor_text": "#0f080a",
+        "visual_bell": "#8a6a75",
+        "active_border": "#ea4a5b",
+        "inactive_border": "#402530",
+        "bell_border": "#ea4a4b",
+        "active_tab_bg": "#552a3a",
+        "active_tab_fg": "#ffd5df",
+        "inactive_tab_bg": "#3a1825",
+        "inactive_tab_fg": "#c8808a",
+        "tab_bg": "#0a0508",
+        "color0": "#1a0a0f",
+        "color8": "#7a3a45",
+        "color1": "#ea4a4b",
+        "color9": "#ff7a8a",
+        "color2": "#ba8fa5",
+        "color10": "#d8a0b0",
+        "color3": "#f3f24d",
+        "color11": "#ffff7f",
+        "color4": "#c33e3f",
+        "color12": "#ea6a72",
+        "color5": "#d03540",
+        "color13": "#f0707a",
+        "color6": "#ca4a5b",
+        "color14": "#f0707a",
+        "color7": "#ea9aa5",
+        "color15": "#ffd5df"
+      },
+      "desktopLayout": {
+        "mode": "left",
+        "compact": false,
+        "anchors": {
+          "clock": [
+            0.055,
+            0.17
+          ],
+          "spotify": [
+            0.055,
+            0.37
+          ],
+          "priorities": [
+            0.055,
+            0.58
+          ],
+          "deadline": [
+            0.055,
+            0.79
+          ]
+        },
+        "clockTone": "light"
+      }
+    },
+    {
+      "id": "6-deepnight-cyan",
+      "name": "Deepnight Cyan",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a30e1318",
+        "bgPanelStrong": "#c7121820",
+        "bgPlaying": "#d1182230",
+        "borderSoft": "#3364b4be",
+        "borderStrong": "#8050a0aa",
+        "textMain": "#7cbebe",
+        "textSoft": "#69a1a1",
+        "accentBlue": "#7cbebe",
+        "accentCyan": "#94e4af",
+        "accentPink": "#a8c8d8",
+        "accentWarn": "#9b9bed",
+        "borderAccent1": "#ee7cbebe",
+        "borderAccent2": "#ee5ea0a0",
+        "desktopBackground": "#0e1318"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#0d1218",
+        "foreground": "#94d8e8",
+        "selection_bg": "#4a9aaa",
+        "selection_fg": "#d8f0f8",
+        "url": "#6ab8c8",
+        "cursor": "#7cbebe",
+        "cursor_text": "#0d1218",
+        "visual_bell": "#5aa8b8",
+        "active_border": "#7cbebe",
+        "inactive_border": "#1a3540",
+        "bell_border": "#94e4af",
+        "active_tab_bg": "#2a5070",
+        "active_tab_fg": "#d8f0f8",
+        "inactive_tab_bg": "#1a3050",
+        "inactive_tab_fg": "#7ab8c8",
+        "tab_bg": "#0a0e18",
+        "color0": "#0f1520",
+        "color8": "#4a7a8a",
+        "color1": "#ff8a9a",
+        "color9": "#ffaaaa",
+        "color2": "#4ecfc5",
+        "color10": "#7addd5",
+        "color3": "#6ac8cc",
+        "color11": "#94e4af",
+        "color4": "#7cbebe",
+        "color12": "#94d8e8",
+        "color5": "#6ab0c8",
+        "color13": "#7cb8d0",
+        "color6": "#4ad8e8",
+        "color14": "#7ae8f0",
+        "color7": "#94d8e8",
+        "color15": "#d8f0f8"
+      },
+      "desktopLayout": {
+        "mode": "left",
+        "compact": true,
+        "anchors": {
+          "clock": [
+            0.055,
+            0.12
+          ],
+          "spotify": [
+            0.055,
+            0.56
+          ],
+          "priorities": [
+            0.055,
+            0.72
+          ],
+          "deadline": [
+            0.055,
+            0.89
+          ]
+        },
+        "clockTone": "dark"
+      }
+    },
+    {
+      "id": "7-obsidian-night",
+      "name": "Obsidian Night",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a32b2c2a",
+        "bgPanelStrong": "#c7323230",
+        "bgPlaying": "#d13c3a36",
+        "borderSoft": "#33b4a58c",
+        "borderStrong": "#80a09178",
+        "textMain": "#cac0ae",
+        "textSoft": "#a79c89",
+        "accentBlue": "#b9ab93",
+        "accentCyan": "#deb0b1",
+        "accentPink": "#c9b8b0",
+        "accentWarn": "#c9e7b7",
+        "borderAccent1": "#eeb9ab93",
+        "borderAccent2": "#eea59b87",
+        "desktopBackground": "#2b2c2a"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#2a2b29",
+        "foreground": "#c9bbb3",
+        "selection_bg": "#7a7268",
+        "selection_fg": "#e8e0d8",
+        "url": "#a89a7f",
+        "cursor": "#b9ab93",
+        "cursor_text": "#2a2b29",
+        "visual_bell": "#8a827a",
+        "active_border": "#b9ab93",
+        "inactive_border": "#3a3a38",
+        "bell_border": "#deb0b1",
+        "active_tab_bg": "#5a5550",
+        "active_tab_fg": "#e8e0d8",
+        "inactive_tab_bg": "#3a3a38",
+        "inactive_tab_fg": "#a89a7f",
+        "tab_bg": "#1f1e1c",
+        "color0": "#2a2a28",
+        "color8": "#7a6f60",
+        "color1": "#de8a8f",
+        "color9": "#ffaaab",
+        "color2": "#a5c5a0",
+        "color10": "#c8d5c0",
+        "color3": "#c9e7b7",
+        "color11": "#d8f5c8",
+        "color4": "#b9ab93",
+        "color12": "#d0bfaf",
+        "color5": "#c9a89a",
+        "color13": "#deb8a8",
+        "color6": "#deb0b1",
+        "color14": "#f0c8c8",
+        "color7": "#c9bbb3",
+        "color15": "#e8e0d8"
+      },
+      "desktopLayout": {
+        "mode": "split",
+        "compact": true,
+        "anchors": {
+          "clock": [
+            0.055,
+            0.12
+          ],
+          "spotify": [
+            0.055,
+            0.75
+          ],
+          "priorities": [
+            0.78,
+            0.15
+          ],
+          "deadline": [
+            0.78,
+            0.83
+          ]
+        },
+        "clockTone": "light"
+      }
+    },
+    {
+      "id": "8-carbon-steel",
+      "name": "Carbon Steel",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a30d0d0d",
+        "bgPanelStrong": "#c7121212",
+        "bgPlaying": "#d1191919",
+        "borderSoft": "#336e6e6e",
+        "borderStrong": "#805a5a5a",
+        "textMain": "#a0a0a0",
+        "textSoft": "#888888",
+        "accentBlue": "#989898",
+        "accentCyan": "#b0b0b0",
+        "accentPink": "#a8a8a8",
+        "accentWarn": "#b8b8b8",
+        "borderAccent1": "#ee8c8c8c",
+        "borderAccent2": "#ee787878",
+        "desktopBackground": "#0d0d0d"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#0f0f0f",
+        "foreground": "#a8a8a8",
+        "selection_bg": "#5a5a5a",
+        "selection_fg": "#e0e0e0",
+        "url": "#808080",
+        "cursor": "#b0b0b0",
+        "cursor_text": "#0f0f0f",
+        "visual_bell": "#6a6a6a",
+        "active_border": "#989898",
+        "inactive_border": "#282828",
+        "bell_border": "#b0b0b0",
+        "active_tab_bg": "#3a3a3a",
+        "active_tab_fg": "#e0e0e0",
+        "inactive_tab_bg": "#202020",
+        "inactive_tab_fg": "#808080",
+        "tab_bg": "#0a0a0a",
+        "color0": "#1a1a1a",
+        "color8": "#5a5a5a",
+        "color1": "#e8a8b8",
+        "color9": "#f8b8c8",
+        "color2": "#8aa8a0",
+        "color10": "#a8c0b8",
+        "color3": "#b8b8a0",
+        "color11": "#d0d0b8",
+        "color4": "#9a9a9a",
+        "color12": "#c0c0c0",
+        "color5": "#b8a8a8",
+        "color13": "#d0b8b8",
+        "color6": "#a8a8b8",
+        "color14": "#c0c0d8",
+        "color7": "#a8a8a8",
+        "color15": "#e0e0e0"
+      },
+      "desktopLayout": {
+        "mode": "split",
+        "compact": true,
+        "anchors": {
+          "clock": [
+            0.39,
+            0.16
+          ],
+          "spotify": [
+            0.055,
+            0.74
+          ],
+          "priorities": [
+            0.76,
+            0.64
+          ],
+          "deadline": [
+            0.76,
+            0.84
+          ]
+        },
+        "clockTone": "light"
+      }
+    },
+    {
+      "id": "9-void-minimal",
+      "name": "Void Minimal",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a3131313",
+        "bgPanelStrong": "#c7181818",
+        "bgPlaying": "#d1202020",
+        "borderSoft": "#33646464",
+        "borderStrong": "#80505050",
+        "textMain": "#a8a8a8",
+        "textSoft": "#8e8e8e",
+        "accentBlue": "#9c9c9c",
+        "accentCyan": "#a8a8a8",
+        "accentPink": "#a0a0a0",
+        "accentWarn": "#afafaf",
+        "borderAccent1": "#ee808080",
+        "borderAccent2": "#ee6c6c6c",
+        "desktopBackground": "#131313"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#131313",
+        "foreground": "#a0a0a0",
+        "selection_bg": "#505050",
+        "selection_fg": "#d8d8d8",
+        "url": "#707070",
+        "cursor": "#a8a8a8",
+        "cursor_text": "#131313",
+        "visual_bell": "#606060",
+        "active_border": "#9c9c9c",
+        "inactive_border": "#252525",
+        "bell_border": "#a8a8a8",
+        "active_tab_bg": "#353535",
+        "active_tab_fg": "#d8d8d8",
+        "inactive_tab_bg": "#1c1c1c",
+        "inactive_tab_fg": "#707070",
+        "tab_bg": "#0a0a0a",
+        "color0": "#161616",
+        "color8": "#505050",
+        "color1": "#e0909a",
+        "color9": "#f0a8b0",
+        "color2": "#7e9080",
+        "color10": "#9aa8a0",
+        "color3": "#a8a890",
+        "color11": "#c0c0a8",
+        "color4": "#909090",
+        "color12": "#b8b8b8",
+        "color5": "#a8909a",
+        "color13": "#c0a8b0",
+        "color6": "#9a9aa8",
+        "color14": "#b8b8c8",
+        "color7": "#a0a0a0",
+        "color15": "#d8d8d8"
+      },
+      "desktopLayout": {
+        "mode": "split",
+        "compact": true,
+        "anchors": {
+          "clock": [
+            0.055,
+            0.65
+          ],
+          "spotify": [
+            0.055,
+            0.83
+          ],
+          "priorities": [
+            0.76,
+            0.67
+          ],
+          "deadline": [
+            0.76,
+            0.86
+          ]
+        },
+        "clockTone": "light"
+      }
+    },
+    {
+      "id": "10-twilight-shadow",
+      "name": "Twilight Shadow",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a30d0e0b",
+        "bgPanelStrong": "#c712130f",
+        "bgPlaying": "#d1191a14",
+        "borderSoft": "#336e6c37",
+        "borderStrong": "#805a582d",
+        "textMain": "#a7a679",
+        "textSoft": "#838253",
+        "accentBlue": "#6c6b35",
+        "accentCyan": "#81543f",
+        "accentPink": "#826c50",
+        "accentWarn": "#438742",
+        "borderAccent1": "#ee6c6b35",
+        "borderAccent2": "#ee76743c",
+        "desktopBackground": "#0d0e0b"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#0c0d0a",
+        "foreground": "#a8a870",
+        "selection_bg": "#5a5840",
+        "selection_fg": "#d5d0a0",
+        "url": "#7a7840",
+        "cursor": "#81803f",
+        "cursor_text": "#0c0d0a",
+        "visual_bell": "#6a6850",
+        "active_border": "#9a9860",
+        "inactive_border": "#252415",
+        "bell_border": "#438742",
+        "active_tab_bg": "#4a4820",
+        "active_tab_fg": "#d5d0a0",
+        "inactive_tab_bg": "#202015",
+        "inactive_tab_fg": "#707060",
+        "tab_bg": "#090908",
+        "color0": "#131210",
+        "color8": "#5a5840",
+        "color1": "#d8a0a8",
+        "color9": "#f0b8b8",
+        "color2": "#4ca580",
+        "color10": "#7ab8a0",
+        "color3": "#a8a870",
+        "color11": "#d8d090",
+        "color4": "#6c6b35",
+        "color12": "#9a9860",
+        "color5": "#9a7a70",
+        "color13": "#c8a098",
+        "color6": "#80a860",
+        "color14": "#a8d080",
+        "color7": "#a8a870",
+        "color15": "#d5d0a0"
+      },
+      "desktopLayout": {
+        "mode": "left",
+        "compact": false,
+        "anchors": {
+          "clock": [
+            0.055,
+            0.18
+          ],
+          "spotify": [
+            0.055,
+            0.38
+          ],
+          "priorities": [
+            0.055,
+            0.59
+          ],
+          "deadline": [
+            0.055,
+            0.8
+          ]
+        },
+        "clockTone": "light"
+      }
+    },
+    {
+      "id": "11-golden-dunes",
+      "name": "Golden Dunes",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a3211b15",
+        "bgPanelStrong": "#c7282019",
+        "bgPlaying": "#d1372a1e",
+        "borderSoft": "#33dca03c",
+        "borderStrong": "#80c88c28",
+        "textMain": "#e9aa40",
+        "textSoft": "#c69036",
+        "accentBlue": "#d49a30",
+        "accentCyan": "#ff4c54",
+        "accentPink": "#e88a40",
+        "accentWarn": "#9dff50",
+        "borderAccent1": "#eee9aa40",
+        "borderAccent2": "#eedc9e33",
+        "desktopBackground": "#211b15"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#1e1a14",
+        "foreground": "#f0d0a0",
+        "selection_bg": "#a08050",
+        "selection_fg": "#fff5e0",
+        "url": "#d8a850",
+        "cursor": "#e9aa40",
+        "cursor_text": "#1e1a14",
+        "visual_bell": "#a89060",
+        "active_border": "#e9aa40",
+        "inactive_border": "#4a3820",
+        "bell_border": "#ff4c54",
+        "active_tab_bg": "#6a4a20",
+        "active_tab_fg": "#fff5e0",
+        "inactive_tab_bg": "#3a2810",
+        "inactive_tab_fg": "#c89050",
+        "tab_bg": "#140f0a",
+        "color0": "#2a2014",
+        "color8": "#8a6a30",
+        "color1": "#ff6a72",
+        "color9": "#ff9aa0",
+        "color2": "#4ea080",
+        "color10": "#70c8a8",
+        "color3": "#e9aa40",
+        "color11": "#ffd080",
+        "color4": "#d49a30",
+        "color12": "#f0b860",
+        "color5": "#d8a850",
+        "color13": "#f0c880",
+        "color6": "#ff4c54",
+        "color14": "#ff8888",
+        "color7": "#f0d0a0",
+        "color15": "#fff5e0"
+      },
+      "desktopLayout": {
+        "mode": "split",
+        "compact": false,
+        "anchors": {
+          "clock": [
+            0.055,
+            0.2
+          ],
+          "spotify": [
+            0.055,
+            0.7
+          ],
+          "priorities": [
+            0.77,
+            0.6
+          ],
+          "deadline": [
+            0.77,
+            0.8
+          ]
+        },
+        "clockTone": "light"
+      }
+    },
+    {
+      "id": "12-ashfall-monochrome",
+      "name": "Ashfall Monochrome",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a3151415",
+        "bgPanelStrong": "#c71c1a1c",
+        "bgPlaying": "#d1282428",
+        "borderSoft": "#33c8505a",
+        "borderStrong": "#80b43c46",
+        "textMain": "#e79599",
+        "textSoft": "#c96e75",
+        "accentBlue": "#b73e46",
+        "accentCyan": "#fd4aca",
+        "accentPink": "#d33e46",
+        "accentWarn": "#fffc4d",
+        "borderAccent1": "#eed33e46",
+        "borderAccent2": "#eef4454f",
+        "desktopBackground": "#151415"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#161515",
+        "foreground": "#d87880",
+        "selection_bg": "#7a4a54",
+        "selection_fg": "#f0c0c8",
+        "url": "#b83e47",
+        "cursor": "#d33e46",
+        "cursor_text": "#161515",
+        "visual_bell": "#8a5a65",
+        "active_border": "#d33e46",
+        "inactive_border": "#3a3538",
+        "bell_border": "#fb515a",
+        "active_tab_bg": "#4a2a35",
+        "active_tab_fg": "#f0c0c8",
+        "inactive_tab_bg": "#2a1820",
+        "inactive_tab_fg": "#c07075",
+        "tab_bg": "#0f0e0f",
+        "color0": "#1d1b1d",
+        "color8": "#6a3a45",
+        "color1": "#d33e46",
+        "color9": "#fb515a",
+        "color2": "#8a7a80",
+        "color10": "#a89a9f",
+        "color3": "#c8a0a8",
+        "color11": "#d0b0b8",
+        "color4": "#b73e46",
+        "color12": "#d85a62",
+        "color5": "#c03e47",
+        "color13": "#d87880",
+        "color6": "#c83e46",
+        "color14": "#e07a85",
+        "color7": "#d87880",
+        "color15": "#f0c0c8"
+      },
+      "desktopLayout": {
+        "mode": "split",
+        "compact": true,
+        "anchors": {
+          "clock": [
+            0.65,
+            0.09
+          ],
+          "spotify": [
+            0.055,
+            0.77
+          ],
+          "priorities": [
+            0.77,
+            0.6
+          ],
+          "deadline": [
+            0.77,
+            0.8
+          ]
+        },
+        "clockTone": "dark"
+      }
+    },
+    {
+      "id": "13-charcoal-slate",
+      "name": "Charcoal Slate",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a3070707",
+        "bgPanelStrong": "#c70a0a0a",
+        "bgPlaying": "#d1050505",
+        "borderSoft": "#33aaaaaa",
+        "borderStrong": "#80969696",
+        "textMain": "#dcdcdc",
+        "textSoft": "#b4b4b4",
+        "accentBlue": "#969696",
+        "accentCyan": "#aaaaaa",
+        "accentPink": "#969696",
+        "accentWarn": "#a19f9e",
+        "borderAccent1": "#ee969696",
+        "borderAccent2": "#eeaaaaaa",
+        "desktopBackground": "#070707"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#0f0f0f",
+        "foreground": "#dcdcdc",
+        "selection_bg": "#383838",
+        "selection_fg": "#e0e0e0",
+        "url": "#969696",
+        "cursor": "#aaaaaa",
+        "cursor_text": "#0f0f0f",
+        "visual_bell": "#aaaaaa",
+        "active_border": "#969696",
+        "inactive_border": "#0a0a0a",
+        "bell_border": "#a19f9e",
+        "active_tab_bg": "#0a0a0a",
+        "active_tab_fg": "#e0e0e0",
+        "inactive_tab_bg": "#070707",
+        "inactive_tab_fg": "#b4b4b4",
+        "tab_bg": "#0a0a0a",
+        "color0": "#1a1a1a",
+        "color8": "#5a5a5a",
+        "color1": "#969696",
+        "color9": "#969696",
+        "color2": "#aaaaaa",
+        "color10": "#aaaaaa",
+        "color3": "#a19f9e",
+        "color11": "#a19f9e",
+        "color4": "#969696",
+        "color12": "#969696",
+        "color5": "#aaaaaa",
+        "color13": "#aaaaaa",
+        "color6": "#a19f9e",
+        "color14": "#a19f9e",
+        "color7": "#dcdcdc",
+        "color15": "#e0e0e0"
+      },
+      "desktopLayout": {
+        "mode": "split",
+        "compact": false,
+        "anchors": {
+          "clock": [
+            0.19,
+            0.12
+          ],
+          "spotify": [
+            0.19,
+            0.73
+          ],
+          "priorities": [
+            0.7,
+            0.64
+          ],
+          "deadline": [
+            0.7,
+            0.84
+          ]
+        },
+        "clockTone": "light"
+      }
+    },
+    {
+      "id": "14-frosted-mint",
+      "name": "Frosted Mint",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a3181919",
+        "bgPanelStrong": "#c7212323",
+        "bgPlaying": "#d1131414",
+        "borderSoft": "#33d3dddb",
+        "borderStrong": "#80c9d5d2",
+        "textMain": "#f4f6f6",
+        "textSoft": "#e9eeed",
+        "accentBlue": "#c9d5d2",
+        "accentCyan": "#d3dddb",
+        "accentPink": "#c9d5d2",
+        "accentWarn": "#f1ead2",
+        "borderAccent1": "#eec9d5d2",
+        "borderAccent2": "#eed3dddb",
+        "desktopBackground": "#181919"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#0f0f0f",
+        "foreground": "#f4f6f6",
+        "selection_bg": "#464747",
+        "selection_fg": "#e0e0e0",
+        "url": "#c9d5d2",
+        "cursor": "#d3dddb",
+        "cursor_text": "#0f0f0f",
+        "visual_bell": "#d3dddb",
+        "active_border": "#c9d5d2",
+        "inactive_border": "#212323",
+        "bell_border": "#f1ead2",
+        "active_tab_bg": "#212323",
+        "active_tab_fg": "#e0e0e0",
+        "inactive_tab_bg": "#181919",
+        "inactive_tab_fg": "#e9eeed",
+        "tab_bg": "#0a0a0a",
+        "color0": "#1a1a1a",
+        "color8": "#5a5a5a",
+        "color1": "#c9d5d2",
+        "color9": "#c9d5d2",
+        "color2": "#d3dddb",
+        "color10": "#d3dddb",
+        "color3": "#f1ead2",
+        "color11": "#f1ead2",
+        "color4": "#c9d5d2",
+        "color12": "#c9d5d2",
+        "color5": "#d3dddb",
+        "color13": "#d3dddb",
+        "color6": "#f1ead2",
+        "color14": "#f1ead2",
+        "color7": "#f4f6f6",
+        "color15": "#e0e0e0"
+      },
+      "desktopLayout": {
+        "mode": "left",
+        "compact": false,
+        "anchors": {
+          "clock": [
+            0.055,
+            0.24
+          ],
+          "spotify": [
+            0.055,
+            0.44
+          ],
+          "priorities": [
+            0.055,
+            0.64
+          ],
+          "deadline": [
+            0.055,
+            0.84
+          ]
+        },
+        "clockTone": "light"
+      }
+    },
+    {
+      "id": "15-cyan-breeze",
+      "name": "Cyan Breeze",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a3091c21",
+        "bgPanelStrong": "#c70c282e",
+        "bgPlaying": "#d107161a",
+        "borderSoft": "#3366bacd",
+        "borderStrong": "#8042aac2",
+        "textMain": "#d6edf2",
+        "textSoft": "#aedbe5",
+        "accentBlue": "#42aac2",
+        "accentCyan": "#66bacd",
+        "accentPink": "#42aac2",
+        "accentWarn": "#46b7c1",
+        "borderAccent1": "#ee42aac2",
+        "borderAccent2": "#ee66bacd",
+        "desktopBackground": "#091c21"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#0f0f0f",
+        "foreground": "#d6edf2",
+        "selection_bg": "#3a494d",
+        "selection_fg": "#e0e0e0",
+        "url": "#42aac2",
+        "cursor": "#66bacd",
+        "cursor_text": "#0f0f0f",
+        "visual_bell": "#66bacd",
+        "active_border": "#42aac2",
+        "inactive_border": "#0c282e",
+        "bell_border": "#46b7c1",
+        "active_tab_bg": "#0c282e",
+        "active_tab_fg": "#e0e0e0",
+        "inactive_tab_bg": "#091c21",
+        "inactive_tab_fg": "#aedbe5",
+        "tab_bg": "#0a0a0a",
+        "color0": "#1a1a1a",
+        "color8": "#5a5a5a",
+        "color1": "#42aac2",
+        "color9": "#42aac2",
+        "color2": "#66bacd",
+        "color10": "#66bacd",
+        "color3": "#46b7c1",
+        "color11": "#46b7c1",
+        "color4": "#42aac2",
+        "color12": "#42aac2",
+        "color5": "#66bacd",
+        "color13": "#66bacd",
+        "color6": "#46b7c1",
+        "color14": "#46b7c1",
+        "color7": "#d6edf2",
+        "color15": "#e0e0e0"
+      },
+      "desktopLayout": {
+        "mode": "split",
+        "compact": true,
+        "anchors": {
+          "clock": [
+            0.055,
+            0.1
+          ],
+          "spotify": [
+            0.055,
+            0.75
+          ],
+          "priorities": [
+            0.77,
+            0.63
+          ],
+          "deadline": [
+            0.77,
+            0.83
+          ]
+        },
+        "clockTone": "dark"
+      }
+    },
+    {
+      "id": "16-abyssal-navy",
+      "name": "Abyssal Navy",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a3000103",
+        "bgPanelStrong": "#c7010204",
+        "bgPlaying": "#d1000002",
+        "borderSoft": "#33a9aaab",
+        "borderStrong": "#80959598",
+        "textMain": "#dbdcdc",
+        "textSoft": "#b3b4b5",
+        "accentBlue": "#959598",
+        "accentCyan": "#a9aaab",
+        "accentPink": "#959598",
+        "accentWarn": "#9f9fa2",
+        "borderAccent1": "#ee959598",
+        "borderAccent2": "#eea9aaab",
+        "desktopBackground": "#000103"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#0f0f0f",
+        "foreground": "#dbdcdc",
+        "selection_bg": "#333335",
+        "selection_fg": "#e0e0e0",
+        "url": "#959598",
+        "cursor": "#a9aaab",
+        "cursor_text": "#0f0f0f",
+        "visual_bell": "#a9aaab",
+        "active_border": "#959598",
+        "inactive_border": "#010204",
+        "bell_border": "#9f9fa2",
+        "active_tab_bg": "#010204",
+        "active_tab_fg": "#e0e0e0",
+        "inactive_tab_bg": "#000103",
+        "inactive_tab_fg": "#b3b4b5",
+        "tab_bg": "#0a0a0a",
+        "color0": "#1a1a1a",
+        "color8": "#5a5a5a",
+        "color1": "#959598",
+        "color9": "#959598",
+        "color2": "#a9aaab",
+        "color10": "#a9aaab",
+        "color3": "#9f9fa2",
+        "color11": "#9f9fa2",
+        "color4": "#959598",
+        "color12": "#959598",
+        "color5": "#a9aaab",
+        "color13": "#a9aaab",
+        "color6": "#9f9fa2",
+        "color14": "#9f9fa2",
+        "color7": "#dbdcdc",
+        "color15": "#e0e0e0"
+      },
+      "desktopLayout": {
+        "mode": "right",
+        "compact": false,
+        "anchors": {
+          "clock": [
+            0.73,
+            0.14
+          ],
+          "spotify": [
+            0.73,
+            0.39
+          ],
+          "priorities": [
+            0.77,
+            0.61
+          ],
+          "deadline": [
+            0.77,
+            0.82
+          ]
+        },
+        "clockTone": "light"
+      }
+    },
+    {
+      "id": "17-sage-olive",
+      "name": "Sage Olive",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a3171912",
+        "bgPanelStrong": "#c7212419",
+        "bgPlaying": "#d112140e",
+        "borderSoft": "#33b1bd95",
+        "borderStrong": "#809ead7b",
+        "textMain": "#ebeee4",
+        "textSoft": "#d8deca",
+        "accentBlue": "#9ead7b",
+        "accentCyan": "#b1bd95",
+        "accentPink": "#9ead7b",
+        "accentWarn": "#bdbe7b",
+        "borderAccent1": "#ee9ead7b",
+        "borderAccent2": "#eeb1bd95",
+        "desktopBackground": "#171912"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#0f0f0f",
+        "foreground": "#ebeee4",
+        "selection_bg": "#454741",
+        "selection_fg": "#e0e0e0",
+        "url": "#9ead7b",
+        "cursor": "#b1bd95",
+        "cursor_text": "#0f0f0f",
+        "visual_bell": "#b1bd95",
+        "active_border": "#9ead7b",
+        "inactive_border": "#212419",
+        "bell_border": "#bdbe7b",
+        "active_tab_bg": "#212419",
+        "active_tab_fg": "#e0e0e0",
+        "inactive_tab_bg": "#171912",
+        "inactive_tab_fg": "#d8deca",
+        "tab_bg": "#0a0a0a",
+        "color0": "#1a1a1a",
+        "color8": "#5a5a5a",
+        "color1": "#9ead7b",
+        "color9": "#9ead7b",
+        "color2": "#b1bd95",
+        "color10": "#b1bd95",
+        "color3": "#bdbe7b",
+        "color11": "#bdbe7b",
+        "color4": "#9ead7b",
+        "color12": "#9ead7b",
+        "color5": "#b1bd95",
+        "color13": "#b1bd95",
+        "color6": "#bdbe7b",
+        "color14": "#bdbe7b",
+        "color7": "#ebeee4",
+        "color15": "#e0e0e0"
+      },
+      "desktopLayout": {
+        "mode": "split",
+        "compact": true,
+        "anchors": {
+          "clock": [
+            0.055,
+            0.2
+          ],
+          "spotify": [
+            0.055,
+            0.71
+          ],
+          "priorities": [
+            0.77,
+            0.63
+          ],
+          "deadline": [
+            0.77,
+            0.83
+          ]
+        },
+        "clockTone": "dark"
+      }
+    },
+    {
+      "id": "18-sandy-dunes",
+      "name": "Sandy Dunes",
+      "wallpaper": "",
+      "thumbnail": "",
+      "colors": {
+        "bgPanel": "#a31b1814",
+        "bgPanelStrong": "#c725221c",
+        "bgPlaying": "#d1151310",
+        "borderSoft": "#33f5e5c5",
+        "borderStrong": "#80f3dfb7",
+        "textMain": "#fcf8f0",
+        "textSoft": "#faf2e2",
+        "accentBlue": "#f3dfb7",
+        "accentCyan": "#f5e5c5",
+        "accentPink": "#f3dfb7",
+        "accentWarn": "#fff5b7",
+        "borderAccent1": "#eef3dfb7",
+        "borderAccent2": "#eef5e5c5",
+        "desktopBackground": "#1b1814"
+      },
+      "font": "Adwaita Sans",
+      "fontMono": "JetBrainsMono Nerd Font",
+      "fontSize": 14,
+      "windowRounding": 16,
+      "borderWidth": 1,
+      "terminal": {
+        "background": "#0f0f0f",
+        "foreground": "#fcf8f0",
+        "selection_bg": "#484643",
+        "selection_fg": "#e0e0e0",
+        "url": "#f3dfb7",
+        "cursor": "#f5e5c5",
+        "cursor_text": "#0f0f0f",
+        "visual_bell": "#f5e5c5",
+        "active_border": "#f3dfb7",
+        "inactive_border": "#25221c",
+        "bell_border": "#fff5b7",
+        "active_tab_bg": "#25221c",
+        "active_tab_fg": "#e0e0e0",
+        "inactive_tab_bg": "#1b1814",
+        "inactive_tab_fg": "#faf2e2",
+        "tab_bg": "#0a0a0a",
+        "color0": "#1a1a1a",
+        "color8": "#5a5a5a",
+        "color1": "#f3dfb7",
+        "color9": "#f3dfb7",
+        "color2": "#f5e5c5",
+        "color10": "#f5e5c5",
+        "color3": "#fff5b7",
+        "color11": "#fff5b7",
+        "color4": "#f3dfb7",
+        "color12": "#f3dfb7",
+        "color5": "#f5e5c5",
+        "color13": "#f5e5c5",
+        "color6": "#fff5b7",
+        "color14": "#fff5b7",
+        "color7": "#fcf8f0",
+        "color15": "#e0e0e0"
+      },
+      "desktopLayout": {
+        "mode": "right",
+        "compact": false,
+        "anchors": {
+          "clock": [
+            0.73,
+            0.32
+          ],
+          "spotify": [
+            0.73,
+            0.5
+          ],
+          "priorities": [
+            0.77,
+            0.68
+          ],
+          "deadline": [
+            0.77,
+            0.86
+          ]
+        },
+        "clockTone": "dark"
+      }
+    }
+  ]
+}
