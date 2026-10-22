@@ -400,11 +400,6 @@ with patch("sumi.actions.run", return_value=Mock(stdout="0,0 100x100")), patch("
         kill.assert_called_once()
 
     @patch('sumi.actions.spawn')
-    def test_ghostty_desktop_entry_avoids_broken_vendor_service(self, spawn):
-        main(['launch-desktop', 'com.mitchellh.ghostty.desktop'])
-        spawn.assert_called_once_with(['ghostty', '--gtk-single-instance=false'])
-
-    @patch('sumi.actions.spawn')
     def test_terminal_keeps_directory_arguments_as_separate_values(self, spawn):
         main(['terminal', '--working-directory=/tmp/a b'])
         spawn.assert_called_once_with(['kitty', '--single-instance', '--directory=/tmp/a b'])
@@ -462,7 +457,7 @@ with patch("sumi.actions.run", return_value=Mock(stdout="0,0 100x100")), patch("
     def test_search_ignores_dependency_trees_and_does_not_follow_links(self):
         with tempfile.TemporaryDirectory() as folder:
             home = Path(folder)
-            project = home / 'Coading' / 'demo'
+            project = home / 'Projects' / 'demo'
             (project / 'node_modules').mkdir(parents=True)
             (project / 'report.pdf').touch()
             (project / 'node_modules' / 'report-secret.pdf').touch()
@@ -470,6 +465,54 @@ with patch("sumi.actions.run", return_value=Mock(stdout="0,0 100x100")), patch("
             (home / 'Downloads' / 'link').symlink_to(project, target_is_directory=True)
             result = search_files('report', home)
             self.assertEqual([x['name'] for x in result], ['report.pdf'])
+
+    def test_search_honors_home_and_skips_hidden_files(self):
+        (self.root / "Research").mkdir()
+        (self.root / "Research" / "report.txt").touch()
+        (self.root / ".report-private").touch()
+        (self.root / ".private").mkdir()
+        (self.root / ".private" / "report.txt").touch()
+        with patch.dict(os.environ, SUMI_HOME=str(self.root)):
+            self.assertEqual([item["detail"] for item in search_files("report")], ["Research/report.txt"])
+
+    def test_xdg_capture_directory_supports_localized_names_and_spaces(self):
+        config = self.root / "config with spaces"
+        config.mkdir()
+        (config / "user-dirs.dirs").write_text('XDG_PICTURES_DIR="$HOME/My Pictures"\nXDG_VIDEOS_DIR="' + str(self.root / "Movies") + '"\n')
+        with patch.dict(os.environ, XDG_CONFIG_HOME=str(config), SUMI_HOME=str(self.root)):
+            self.assertEqual(actions.user_directory("PICTURES", "Pictures"), self.root / "My Pictures")
+            self.assertEqual(actions.user_directory("VIDEOS", "Videos"), self.root / "Movies")
+            (config / "user-dirs.dirs").write_text('XDG_PICTURES_DIR="$(touch /tmp/unwanted)"\n')
+            self.assertEqual(actions.user_directory("PICTURES", "Pictures"), self.root / "Pictures")
+
+    @patch('sumi.actions.spawn')
+    def test_file_manager_and_visual_editor_use_literal_argv(self, launch):
+        path = self.root / "project with spaces"
+        path.mkdir()
+        main(["files", str(path)])
+        launch.assert_called_with(["xdg-open", str(path)])
+        with patch.dict(os.environ, VISUAL='editor --new-window'):
+            main(["project", str(path)])
+        launch.assert_called_with(["editor", "--new-window", str(path)])
+        with patch.dict(os.environ, VISUAL=''):
+            main(["project", str(path)])
+        launch.assert_called_with(["xdg-open", str(path)])
+
+    def test_browser_uses_system_default_without_a_vendor_command(self):
+        from gi.repository import Gio
+        application = Mock()
+        with patch.object(Gio.AppInfo, "get_default_for_uri_scheme", return_value=application) as selected:
+            main(["browser"])
+        selected.assert_called_once_with("https")
+        application.launch.assert_called_once_with([], None)
+
+    def test_installed_desktop_entries_launch_using_their_own_metadata(self):
+        from gi.repository import Gio
+        application = Mock()
+        with patch.object(Gio.DesktopAppInfo, "new", return_value=application) as selected:
+            main(["launch-desktop", "org.example.Editor.desktop"])
+        selected.assert_called_once_with("org.example.Editor.desktop")
+        application.launch.assert_called_once_with([], None)
 
     def test_short_queries_do_not_scan(self):
         self.assertEqual(search_files('a'), [])

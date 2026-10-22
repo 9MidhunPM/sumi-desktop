@@ -5,12 +5,13 @@ import json
 import os
 from pathlib import Path
 import shutil
+import shlex
 import signal
 import subprocess
 import sys
 import time
 
-from .statefiles import atomic_write, file_lock, state_path
+from .statefiles import atomic_write, file_lock, state_path, home_path
 
 CLIPBOARD_UNITS = ("sumi-clipboard-text.service", "sumi-clipboard-image.service")
 
@@ -97,28 +98,62 @@ def toggle_night_light() -> dict:
     raise RuntimeError("Night light did not confirm the requested state; try again")
 
 
+def user_directory(kind: str, fallback: str, home: Path | None = None) -> Path:
+    """Read XDG user directories as data, without executing shell assignments."""
+    home = home_path(home)
+    config = Path(os.environ.get("XDG_CONFIG_HOME", home / ".config")) / "user-dirs.dirs"
+    try:
+        lines = config.read_text().splitlines()
+    except OSError:
+        lines = []
+    for line in lines:
+        key, separator, value = line.partition("=")
+        if separator and key.strip() == "XDG_" + kind + "_DIR":
+            try:
+                words = shlex.split(value, comments=True)
+            except ValueError:
+                break
+            if len(words) != 1:
+                break
+            text = words[0].replace("${HOME}", str(home)).replace("$HOME", str(home))
+            candidate = Path(text)
+            if candidate.is_absolute() and "$" not in text and "`" not in text:
+                return candidate
+            break
+    return home / fallback
+
+
 def search_files(query: str, home: Path | None = None) -> list[dict]:
-    """Bounded filename search; never follows symlinks or reads file contents."""
-    home = home or Path.home()
+    """Bounded filename search in visible home folders; never follows symlinks."""
+    home = home_path(home)
     if len(query.strip()) < 2:
         return []
     ignored = {"node_modules", ".git", ".venv", "venv", "__pycache__", "build", "dist", ".next", "target", ".cache"}
     needle = query.casefold()
     results = []
     deadline = time.monotonic() + 1.0
-    for folder in ("Downloads", "Documents", "Pictures", "Desktop", "Coading"):
-        root = home / folder
-        for parent, dirs, files in os.walk(root, followlinks=False):
-            dirs[:] = sorted(d for d in dirs if not d.startswith(".") and d not in ignored)
-            for name in dirs + sorted(files):
-                if needle in name.casefold():
-                    path = Path(parent) / name
-                    results.append({"name": name, "path": str(path), "detail": str(path.relative_to(home)), "directory": name in dirs})
-                    if len(results) >= 60:
-                        return results
-            if time.monotonic() >= deadline:
-                return results
+    for parent, dirs, files in os.walk(home, followlinks=False):
+        dirs[:] = sorted(d for d in dirs if not d.startswith(".") and d not in ignored and not (Path(parent) / d).is_symlink())
+        for name in dirs + sorted(files):
+            if not name.startswith(".") and needle in name.casefold():
+                path = Path(parent) / name
+                if path.is_symlink():
+                    continue
+                results.append({"name": name, "path": str(path), "detail": str(path.relative_to(home)), "directory": name in dirs})
+                if len(results) >= 60:
+                    return results
+        if time.monotonic() >= deadline:
+            return results
     return results
+
+
+def launch_browser() -> None:
+    """Use the selected HTTPS handler, with the installed Firefox as fallback."""
+    from gi.repository import Gio
+    application = Gio.AppInfo.get_default_for_uri_scheme("https") or Gio.DesktopAppInfo.new("firefox.desktop")
+    if application is None:
+        raise RuntimeError("No browser is installed. Install Firefox or choose a default HTTPS browser.")
+    application.launch([], None)
 
 
 def _clipboard_paused(state_dir: Path | None = None) -> bool:
@@ -217,7 +252,7 @@ def capture(argv: list[str]):
     mode = argv[0] if argv else "region"
     if mode not in {"region", "window", "output"}:
         raise ValueError("Unknown capture mode")
-    destination = Path.home() / "Pictures" / "Screenshots"
+    destination = user_directory("PICTURES", "Pictures") / "Screenshots"
     destination.mkdir(parents=True, exist_ok=True)
     annotate = "annotate" in argv
     if annotate and not shutil.which("satty"):
@@ -246,7 +281,7 @@ def capture(argv: list[str]):
     if shutil.which("notify-send"):
         # Notification delivery is optional; it must not undo a saved copy.
         try:
-            run(["notify-send", "--app-name=Sumi", "--icon=camera-photo", "Screenshot saved", "Saved to Pictures/Screenshots and copied to the clipboard"], capture_output=True, timeout=5)
+            run(["notify-send", "--app-name=Sumi", "--icon=camera-photo", "Screenshot saved", f"Saved to {destination} and copied to the clipboard"], capture_output=True, timeout=5)
         except (OSError, subprocess.SubprocessError):
             pass
     return {"file": str(output), "saved": True, "copied": True}
@@ -296,7 +331,7 @@ def recording(operation: str):
         geometry = run(["slurp"], capture_output=True, text=True).stdout.strip()
         if not geometry:
             return {"recording": False, "cancelled": True}
-        destination = Path.home() / "Videos" / "Recordings"
+        destination = user_directory("VIDEOS", "Videos") / "Recordings"
         destination.mkdir(parents=True, exist_ok=True)
         filename = destination / (time.strftime("Recording-%Y%m%d-%H%M%S-") + str(time.time_ns() % 1_000_000_000) + ".mp4")
         error_log = runtime / "recorder-error.log"
@@ -389,23 +424,15 @@ def main(argv: list[str] | None = None) -> int:
                          if value.startswith("--working-directory=") else value for value in args]
         spawn(["kitty", "--single-instance", *terminal_args])
     elif command == "files":
-        spawn(["thunar", *(args or [str(Path.home())])])
+        spawn(["xdg-open", *(args or [str(home_path())])])
     elif command == "browser":
-        spawn(["brave"])
+        launch_browser()
     elif command == "launch-desktop" and args:
         identifier = args[0]
         app_id = identifier.removesuffix(".desktop")
-        if app_id == "com.mitchellh.ghostty":
-            spawn(["ghostty", "--gtk-single-instance=false"])
-            return 0
         if app_id.startswith("theme-switcher-"):
             from . import profiles
             profiles.apply_theme_live(app_id.removeprefix("theme-switcher-"))
-            return 0
-        if app_id == "thursday":
-            from . import profiles
-            run(["systemctl", "--user", "start", "thursday.service"])
-            profiles.ipc("thursday", "focus")
             return 0
         from gi.repository import Gio, GLib
         try:
@@ -422,13 +449,12 @@ def main(argv: list[str] | None = None) -> int:
                                        state_dir=profiles.state_path(home), data_dir=profiles.data_path(home))
         print(json.dumps(profiles.apply_theme_live(theme["id"]), default=str))
     elif command == "project" and args:
-        editor = next((candidate for candidate in ("antigravity", "code", "codium") if shutil.which(candidate)), None)
-        if editor is None:
-            raise RuntimeError("No supported project editor is installed")
         path = Path(args[0]).expanduser().resolve()
         if not path.exists():
             raise ValueError("Project does not exist")
-        spawn([editor, str(path)])
+        # VISUAL is optional and parsed as argv. Never execute a command string.
+        editor = shlex.split(os.environ.get("VISUAL", ""))
+        spawn([*(editor or ["xdg-open"]), str(path)])
     elif command == "audio-manager":
         spawn(["pwvucontrol"])
     elif command == "bluetooth-manager" or command == "bluetooth-pair":

@@ -37,7 +37,7 @@ C.Surface {
     property bool fetchPending: false
     readonly property string requestKey: tab === "Files" ? "Files:" + search.text : tab === "Clipboard" ? "Clipboard:" + clipboardListRevision : ""
     property var actions: [
-        {historyId:"action:appearance",name:"Appearance",detail:"Wallpapers, colors and desktop profiles",panel:"appearance",icon:"󰏘"},
+        {historyId:"action:appearance",name:"Appearance",detail:"Wallpapers, colors and desktop preferences",panel:"appearance",icon:"󰏘"},
         {historyId:"action:widgets",name:"Desktop widgets",detail:"Priorities, deadline and visible widgets",panel:"widgets",icon:"󰄬"},
         {historyId:"action:settings",name:"Quick settings",detail:"Network, sound and power",panel:"settings",icon:"󰒓"},
         {historyId:"action:notifications",name:"Notifications",detail:"History and Do Not Disturb",panel:"notifications",icon:"󰂚"},
@@ -107,7 +107,7 @@ C.Surface {
     }
     function appPriority(entry) {
         const name = ((entry.name || "") + " " + (entry.entry ? entry.entry.id : "")).toLowerCase();
-        const favorites = ["kitty", "thunar", "brave", "antigravity", "papers", "loupe", "ghostty"];
+        const favorites = ["kitty", "thunar", "firefox", "papers", "loupe"];
         const rank = favorites.findIndex(favorite => name.indexOf(favorite) >= 0);
         return rank < 0 ? favorites.length : rank;
     }

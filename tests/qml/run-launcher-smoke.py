@@ -69,7 +69,7 @@ ShellRoot {
                 const availableApps = DesktopEntries.applications.values.filter(entry => !entry.noDisplay && !entry.id.startsWith("theme-switcher-"));
                 if (launcher.entries.length !== availableApps.length) { smoke.fail("APPS_HIDDEN"); return; }
                 if (launcher.entries.some(entry => entry.entry.id.startsWith("theme-switcher-"))) { smoke.fail("LEGACY_THEME_ACTION_EXPOSED"); return; }
-                const favorites = ["Kitty", "Thunar", "Brave", "Antigravity", "Papers", "Loupe", "Ghostty", "Other"];
+                const favorites = ["Kitty", "Thunar", "Firefox", "Papers", "Loupe", "Other"];
                 for (let index = 0; index < favorites.length; index++) {
                     if (launcher.appPriority({name: favorites[index]}) !== index) { smoke.fail("FAVORITE_ORDER"); return; }
                 }
