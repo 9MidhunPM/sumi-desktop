@@ -459,7 +459,7 @@ def main(argv: list[str] | None = None) -> int:
         editor = shlex.split(os.environ.get("VISUAL", ""))
         spawn([*(editor or ["xdg-open"]), str(path)])
     elif command == "audio-manager":
-        spawn(["pwvucontrol"])
+        spawn(["pavucontrol"])
     elif command == "bluetooth-manager" or command == "bluetooth-pair":
         spawn(["blueman-manager"])
     elif command == "lock":

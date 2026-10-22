@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import shlex
+import shutil
 import subprocess
 
 from .paths import InstallError
@@ -30,12 +31,18 @@ def install_packages(source: Path) -> None:
         raise InstallError("Package installation failed. Desktop files were not changed. Fix the pacman/network error and rerun ./install.sh. Packages already installed by pacman are retained.") from exc
 
 
+def check_dependencies(source: Path) -> list[str]:
+    return [f"Missing {command}; install official package {package} with ./install.sh."
+            for command, package in manifest(source)["capabilities"]["required"].items()
+            if not shutil.which(command)]
+
+
 def configure_system_services() -> list[str]:
     """Start supported daemons without displacing another network manager."""
     notes = []
     def active(unit: str) -> bool:
         return subprocess.run(["systemctl", "is-active", "--quiet", unit], check=False).returncode == 0
-    competing = any(active(unit) for unit in ("systemd-networkd.service", "connman.service"))
+    competing = any(active(unit) for unit in ("systemd-networkd.service", "connman.service", "iwd.service"))
     units = [] if competing and not active("NetworkManager.service") else ["NetworkManager.service"]
     if not units:
         notes.append("Existing network manager retained. After migrating networking, run sudo systemctl enable --now NetworkManager.service to use Sumi network controls.")

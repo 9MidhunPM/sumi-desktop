@@ -77,6 +77,16 @@ class SessionArtifactsTests(unittest.TestCase):
         self.assertNotIn("ignore_dbus_inhibit = true", idle)
         self.assertNotIn("brightnessctl", idle)
 
+    def test_fallback_lock_palette_is_replaced_when_a_theme_is_selected(self):
+        from sumi import themes
+        base = Path("/tmp/home")
+        lock = self.artifacts(base)[base / "settings/hypr/hyprlock.conf"][0].decode()
+        theme = themes.get_theme("sumi-ember", home=base, state_dir=base / "state", data_dir=base / "data")
+        updated, variables = themes._hyprlock(lock, theme, base / "settings/sumi/generated/hyprlock.conf")
+        self.assertNotIn("$sumi_wallpaper = screenshot", updated)
+        self.assertIn("source = /tmp/home/settings/sumi/generated/hyprlock.conf", updated)
+        self.assertIn(theme["wallpaper"], variables)
+
 
 class SessionLifecycleTests(unittest.TestCase):
     def setUp(self):
@@ -111,6 +121,18 @@ class SessionLifecycleTests(unittest.TestCase):
         self.assertTrue(result["started"])
         clipboard.assert_called_once_with(state_dir=Path("/tmp/state"))
 
+    def test_optional_audio_failure_does_not_prevent_desktop_start(self):
+        def command(argv, **kwargs):
+            if "pipewire.socket" in argv:
+                raise RuntimeError("Audio unavailable")
+            return Mock(returncode=0, stdout="")
+        with patch.dict(os.environ, self.environment, clear=True), patch.object(session, "_run", side_effect=command) as run, \
+             patch("sumi.actions.restore_clipboard_watchers"), patch.object(session, "restore_wallpaper", return_value={"applied": False}):
+            result = session.start()
+        self.assertTrue(result["started"])
+        self.assertIn("Audio unavailable", result["warnings"])
+        self.assertIn(["systemctl", "--user", "start", "sumi-session.target"], [call.args[0] for call in run.call_args_list])
+
     def test_stop_never_terminates_other_desktops(self):
         with patch.object(session, "_run") as run:
             session.stop()
@@ -141,6 +163,45 @@ class SessionLifecycleTests(unittest.TestCase):
             session.watch()
         connection.connect.assert_called_once_with("/tmp/sumi-runtime/hypr/sumi-test/.socket2.sock")
         run.assert_called_once_with(["systemctl", "--user", "--no-block", "stop", "sumi-session.target"], check=False)
+
+
+class LoginWallpaperTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="sumi wallpaper ")
+        self.addCleanup(self.temporary.cleanup)
+        self.state = Path(self.temporary.name)
+        self.wallpaper = self.state / "warm image.png"
+        self.wallpaper.write_bytes(b"synthetic image")
+        self.theme = self.state / "theme.json"
+        self.theme.write_text(json.dumps({"wallpaper": str(self.wallpaper), "sourceSize": [1920, 1080]}))
+
+    def test_readiness_retry_applies_image_then_scene_without_changing_theme(self):
+        original = self.theme.read_bytes()
+        def apply(argv, **kwargs):
+            self.assertFalse((self.state / "scene.json").exists())
+            self.assertEqual(argv, ["awww", "img", "--transition-type", "none", str(self.wallpaper)])
+        with patch.object(session.subprocess, "run", side_effect=[Mock(returncode=1), Mock(returncode=0)]) as query, \
+             patch.object(session, "_run", side_effect=apply), patch.object(session.time, "sleep"):
+            result = session.restore_wallpaper(state_dir=self.state)
+        self.assertEqual(query.call_count, 2)
+        self.assertTrue(result["applied"])
+        self.assertEqual(self.theme.read_bytes(), original)
+        self.assertEqual(json.loads((self.state / "scene.json").read_text())["wallpaper"], str(self.wallpaper))
+
+    def test_failed_wallpaper_does_not_publish_widget_scene(self):
+        with patch.object(session.subprocess, "run", return_value=Mock(returncode=0)), \
+             patch.object(session, "_run", side_effect=RuntimeError("Image rejected")):
+            with self.assertRaisesRegex(RuntimeError, "Image rejected"):
+                session.restore_wallpaper(state_dir=self.state)
+        self.assertFalse((self.state / "scene.json").exists())
+
+    def test_readiness_has_a_retry_limit(self):
+        with patch.object(session.subprocess, "run", return_value=Mock(returncode=1)) as query, \
+             patch.object(session, "_run") as apply, patch.object(session.time, "sleep"):
+            with self.assertRaisesRegex(RuntimeError, "did not become ready"):
+                session.restore_wallpaper(state_dir=self.state)
+        self.assertEqual(query.call_count, 20)
+        apply.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ PartOf=sumi-session.target
 
 [Service]
 Type=simple
-ExecStart=/usr/lib/polkit-kde-authentication-agent-1
+ExecStart=/usr/lib/hyprpolkitagent/hyprpolkitagent
 Restart=on-failure
 RestartSec=2
 UMask=0077

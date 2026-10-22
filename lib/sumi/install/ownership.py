@@ -97,8 +97,25 @@ def copy(source: Path, destination: Path) -> None:
         shutil.copy2(source, destination)
 
 
+def sync_tree(path: Path) -> None:
+    """Flush copied snapshot bytes before publishing the transaction journal."""
+    if path.is_symlink():
+        return
+    if path.is_dir():
+        for child in path.iterdir():
+            sync_tree(child)
+        sync_directory(path)
+    else:
+        descriptor = os.open(path, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+
+
 @contextlib.contextmanager
 def locked(layout: Layout) -> Iterator[None]:
+    layout.validate([])
     layout.records.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.chmod(layout.records, 0o700)
     with (layout.records / "lock").open("a") as stream:
@@ -121,6 +138,7 @@ def snapshot(layout: Layout, paths: list[Path], *, kind: str) -> Path:
             copy(path, destination / "objects" / record["object"])
             if inventory(destination / "objects" / record["object"]) != record["inventory"]:
                 raise InstallError(f"Snapshot verification failed: {path}")
+            sync_tree(destination / "objects" / record["object"])
         records[str(path)] = record
     json_write(destination / "snapshot.json", {"version": 1, "kind": kind, "paths": records,
                                                 "previous_install": load(layout.manifest)})
@@ -192,6 +210,12 @@ def transact(layout: Layout, artifacts: dict[Path, Path], *, kind: str) -> dict:
     previous = load(layout.manifest)
     paths = list(artifacts)
     layout.validate(paths)
+    preserved = set(previous.get("preserve_on_uninstall", [])) if previous else set()
+    if previous:
+        # Updates may retain user-added files and merge user settings. Such
+        # contents do not become installer-owned merely because we copied them.
+        preserved.update(path for path, expected in previous["artifacts"].items()
+                         if inventory(Path(path)) != expected)
     backup = snapshot(layout, paths, kind=kind)
     json_write(layout.journal, {"version": 1, "snapshot": str(backup), "kind": kind})
     try:
@@ -201,7 +225,8 @@ def transact(layout: Layout, artifacts: dict[Path, Path], *, kind: str) -> dict:
                      "runtime": str(layout.runtime), "original": previous["original"] if previous else str(backup),
                      "rollback": str(backup) if previous else None,
                      "artifacts": {str(path): inventory(path) for path in paths},
-                     "origins": dict(previous.get("origins", {})) if previous else {}}
+                     "origins": dict(previous.get("origins", {})) if previous else {},
+                     "preserve_on_uninstall": sorted(preserved)}
         for path in paths:
             installed["origins"].setdefault(str(path), str(backup))
         # Keep ownership of an artifact removed from a newer release until uninstall.

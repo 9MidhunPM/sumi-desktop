@@ -8,6 +8,7 @@ import re
 import shlex
 import socket
 import subprocess
+import time
 
 ROOT = Path(__file__).resolve().parents[2]
 TARGET = "sumi-session.target"
@@ -57,6 +58,7 @@ def build_artifacts(runtime: Path, config: Path, data: Path, state: Path,
     The controller always lives in the copied runtime, independently of PATH.
     """
     from .hyprland import motion_lua
+    from .shortcuts import render_bindings
     home = home or Path.home()
     paths = (runtime, config, data, state, bin_dir, home)
     for path in paths:
@@ -70,10 +72,11 @@ def build_artifacts(runtime: Path, config: Path, data: Path, state: Path,
     # Fixed service commands avoid nesting shell paths inside Hyprlang syntax.
     idle = (ROOT / "templates/hypridle.conf").read_text()
     lock = "\n".join((
+        "# >>> SUMI LOCK START",
         "# Initial Sumi lock palette; theme selection replaces these visuals.",
         "$sumi_wallpaper = screenshot", "$sumi_main = rgba(e8eef5ff)",
         "$sumi_soft = rgba(c1cbd6ff)", "$sumi_accent = rgba(93b9dcff)",
-        "$sumi_panel = rgba(161c24ee)", "$sumi_font = Noto Sans", "",
+        "$sumi_panel = rgba(161c24ee)", "$sumi_font = Noto Sans", "# <<< SUMI LOCK END", "",
     )) + (ROOT / "templates/hyprlock.conf").read_text()
     artifacts = {
         config / "hypr/hyprland.lua": (lua.encode(), 0o644),
@@ -81,6 +84,7 @@ def build_artifacts(runtime: Path, config: Path, data: Path, state: Path,
         config / "hypr/hyprlock.conf": (lock.encode(), 0o644),
         config / "hypr/config/general.lua": (("dofile(" + _literal(config / "sumi/generated/motion.lua") + ")\n").encode(), 0o644),
         config / "sumi/generated/motion.lua": (motion_lua("normal").encode(), 0o644),
+        config / "sumi/generated/shortcuts.lua": (render_bindings("", str(controller), config_dir=config)[1].encode(), 0o644),
         config / "xdg-desktop-portal/portals.conf": (b"[preferred]\ndefault=hyprland;gtk\norg.freedesktop.impl.portal.FileChooser=gtk\n", 0o644),
     }
     values = {"DESKTOPCTL": controller, "ROOT": runtime, "HOME": home,
@@ -104,7 +108,9 @@ def start(*, home: Path | None = None, state_dir: Path | None = None,
     home = home or Path(os.environ.get("SUMI_HOME", str(Path.home())))
     env = dict(os.environ)
     env.update(XDG_CURRENT_DESKTOP="Hyprland", XDG_SESSION_DESKTOP="Hyprland",
-               XDG_SESSION_TYPE="wayland", QT_QPA_PLATFORMTHEME="qt6ct")
+               XDG_SESSION_TYPE="wayland", QT_QPA_PLATFORMTHEME="qt6ct", SUMI_HOME=str(home))
+    if state_dir is not None:
+        env["SUMI_STATE_DIR"] = str(state_dir)
     env["PATH"] = str(home / ".local/bin") + os.pathsep + env.get("PATH", "/usr/local/bin:/usr/bin")
     keys = [key for key in ENVIRONMENT if env.get(key)]
     commands = [
@@ -119,17 +125,64 @@ def start(*, home: Path | None = None, state_dir: Path | None = None,
         return {"started": False, "dry_run": True, "commands": commands}
     if not env.get("WAYLAND_DISPLAY") or not env.get("HYPRLAND_INSTANCE_SIGNATURE") or not env.get("XDG_RUNTIME_DIR"):
         raise RuntimeError("Start Sumi from a Hyprland session; WAYLAND_DISPLAY, HYPRLAND_INSTANCE_SIGNATURE and XDG_RUNTIME_DIR are required")
-    for command in commands:
-        _run(command, env=env)
+    warnings = []
+    for index, command in enumerate(commands):
+        try:
+            _run(command, env=env)
+        except (RuntimeError, OSError, subprocess.SubprocessError) as error:
+            if index not in {3, 4}:
+                raise
+            warnings.append(str(error))
+    try:
+        wallpaper = restore_wallpaper(state_dir=state_dir, home=home)
+    except (RuntimeError, OSError, ValueError, subprocess.SubprocessError) as error:
+        wallpaper = {"applied": False}
+        warnings.append("Wallpaper: " + str(error))
     # Honor the persisted privacy choice; a shell restart never silently resumes.
     from .actions import restore_clipboard_watchers
-    restore_clipboard_watchers(state_dir=state_dir)
-    return {"profile": "sumi", "started": True, "target": TARGET}
+    try:
+        restore_clipboard_watchers(state_dir=state_dir)
+    except (RuntimeError, OSError, subprocess.SubprocessError) as error:
+        warnings.append("Clipboard: " + str(error))
+    return {"profile": "sumi", "started": True, "target": TARGET, "wallpaper": wallpaper, "warnings": warnings}
+
+
+def restore_wallpaper(*, state_dir: Path | None = None, home: Path | None = None) -> dict:
+    """Restore the saved image and publish matching widgets only after success.
+
+    Login changes no theme-owned configuration. Retry awww's readiness briefly
+    because Type=simple acknowledges process creation before its socket exists.
+    """
+    from .scenes import scene_for_theme
+    from .statefiles import atomic_write
+    home = home or Path.home()
+    state_dir = state_dir or Path(os.environ.get("SUMI_STATE_DIR", str(Path(os.environ.get("XDG_STATE_HOME", str(home / ".local/state"))) / "sumi")))
+    path = state_dir / "theme.json"
+    if not path.exists():
+        return {"applied": False, "reason": "No saved theme"}
+    theme = json.loads(path.read_text())
+    if not isinstance(theme, dict) or not isinstance(theme.get("wallpaper"), str):
+        raise ValueError("Saved theme has no valid wallpaper; choose a theme in Appearance")
+    wallpaper = Path(theme["wallpaper"])
+    if not wallpaper.is_absolute() or not wallpaper.is_file():
+        raise ValueError("Saved wallpaper is missing; choose a theme in Appearance")
+    scene = scene_for_theme(theme)
+    for attempt in range(20):
+        ready = subprocess.run(["awww", "query"], capture_output=True, text=True, timeout=1)
+        if ready.returncode == 0:
+            break
+        if attempt == 19:
+            raise RuntimeError("awww did not become ready; check systemctl --user status sumi-awww.service")
+        time.sleep(0.1)
+    _run(["awww", "img", "--transition-type", "none", str(wallpaper)])
+    atomic_write(state_dir / "scene.json", (json.dumps(scene, indent=2) + "\n").encode())
+    return {"applied": True, "wallpaper": str(wallpaper)}
 
 
 def stop(*, dry_run: bool = False) -> dict:
     command = ["systemctl", "--user", "stop", TARGET]
-    if not (dry_run or os.environ.get("SUMI_DRY_RUN") == "1"):
+    dry_run = dry_run or os.environ.get("SUMI_DRY_RUN") == "1"
+    if not dry_run:
         _run(command)
     return {"stopped": not dry_run, "command": command}
 

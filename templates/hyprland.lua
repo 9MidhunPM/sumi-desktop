@@ -46,16 +46,22 @@ hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 -- Generated colors and motion are independently replaceable by Sumi themes.
 include_if_present(config .. "/hypr/config/theme.lua")
 include_if_present(config .. "/hypr/config/general.lua")
+include_if_present(config .. "/sumi/generated/shortcuts.lua")
+local palette_path = config .. "/sumi/generated/hyprland.lua"
+local palette_file = io.open(palette_path, "r")
+if palette_file then
+    palette_file:close()
+    local palette = dofile(palette_path)
+    hl.config({
+        general = { col = { active_border = { colors = { palette.accent_primary, palette.accent_secondary }, angle = 45 } } },
+        decoration = { rounding = palette.window_rounding, shadow = { color = palette.bg_shadow } },
+    })
+end
 
 -- Keyboard-first navigation. Super means the Windows/Command key.
-hl.bind("SUPER + Return", sumi("action terminal"))
-hl.bind("SUPER + E", sumi("action files"))
 hl.bind("SUPER + B", sumi("action browser"))
-hl.bind("SUPER + space", sumi("ipc launcher toggle"))
 hl.bind("SUPER + A", sumi("ipc launcher toggle"))
-hl.bind("SUPER + N", sumi("ipc notifications toggle"))
 hl.bind("SUPER + comma", sumi("ipc settings toggle"))
-hl.bind("SUPER + SHIFT + V", sumi("ipc clipboard toggle"))
 hl.bind("SUPER + Q", hl.dsp.window.close())
 hl.bind("SUPER + F", hl.dsp.window.fullscreen({ action = "toggle" }))
 hl.bind("SUPER + V", hl.dsp.window.float({ action = "toggle" }))
@@ -82,7 +88,7 @@ hl.bind("SUPER + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true })
 hl.bind("SUPER + S", hl.dsp.workspace.toggle_special("scratchpad"))
-hl.bind("SUPER + SHIFT + S", hl.dsp.window.move({ workspace = "special:scratchpad" }))
+hl.bind("SUPER + ALT + S", hl.dsp.window.move({ workspace = "special:scratchpad" }))
 hl.bind("SUPER + CTRL + left", hl.dsp.window.resize({ x = -40, y = 0, relative = true }), { repeating = true })
 hl.bind("SUPER + CTRL + right", hl.dsp.window.resize({ x = 40, y = 0, relative = true }), { repeating = true })
 hl.bind("SUPER + CTRL + up", hl.dsp.window.resize({ x = 0, y = -40, relative = true }), { repeating = true })

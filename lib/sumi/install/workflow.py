@@ -28,10 +28,15 @@ def render_artifacts(source: Path, layout: Layout, *, update: bool = False) -> d
         theme = themes.get_theme(theme_id, home=layout.home, state_dir=layout.state, data_dir=layout.data)
     except (KeyError, ValueError):
         theme = themes.get_theme(themes.DEFAULT_THEME_ID, home=layout.home, state_dir=layout.state, data_dir=layout.data)
+    # Resolved themes already include dimensions and image hashes, so rebasing
+    # these fields does not need the installed wallpaper to exist yet. Rebase
+    # before serialization: quoted source paths cannot be replaced safely in JSON.
+    for field in ("wallpaper", "thumbnail"):
+        image = Path(theme[field])
+        if image.is_relative_to(source / "assets"):
+            theme[field] = str(layout.runtime / "assets" / image.relative_to(source / "assets"))
     rendered, _warnings = themes.render_theme(theme, home=layout.home, state_dir=layout.state)
     for path, content in rendered.items():
-        # Bundled images must survive deletion or movement of the source checkout.
-        content = content.replace(str(source / "assets"), str(layout.runtime / "assets"))
         files[path] = (content.encode(), 0o600)
     wrapper = "#!/bin/sh\nexport PYTHONDONTWRITEBYTECODE=1\nexec " + shlex.quote(str(layout.runtime / "bin/desktopctl")) + ' "$@"\n'
     files[layout.bin / "desktopctl"] = (wrapper.encode(), 0o755)
@@ -143,18 +148,26 @@ def run(source: Path, *, dry_run: bool = False, update: bool = False, no_package
         choice = ""
     if choice != required:
         return {"cancelled": True, "changed": False}
+    def check_new_collisions() -> None:
+        if not collisions and any(os.path.lexists(path) for path in paths):
+            raise InstallError("Configuration appeared after the setup summary. Rerun setup and choose Back up and use Sumi before replacing it.")
+    check_new_collisions()
     if not no_packages:
         packages.install_packages(source)
     errors = prerequisites.check_versions() + packages.check_dependencies(source)
     if errors:
         raise InstallError("\n".join(errors) + "\nDesktop files have not been changed.")
+    check_new_collisions()
     previous_handler = signal.getsignal(signal.SIGTERM)
     def interrupted(_signal, _frame):
         raise KeyboardInterrupt("Installation interrupted")
     signal.signal(signal.SIGTERM, interrupted)
     try:
         with ownership.locked(layout):
+            check_new_collisions()
             recovered = ownership.recover_pending(layout)
+            if not recovered and ownership.load(layout.manifest) != existing:
+                raise InstallError("Installation ownership changed while setup was open. Rerun setup to review the new state.")
             # A recovered partial operation may have altered the files that theme
             # adapters merge; render again after restoring the known state.
             if recovered:

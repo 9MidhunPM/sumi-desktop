@@ -25,4 +25,15 @@ class XdgPathsTests(unittest.TestCase):
                 with patch.dict(os.environ, {'XDG_CONFIG_HOME':str(root/'changed')}):
                     with self.assertRaises(profiles.ProfileError): profiles.restore_snapshot(snapshot,home)
 
+    def test_pending_install_blocks_foreground_and_session_start(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home=Path(tmp); state=home/'state'
+            journal=state/'installer/pending.json'; journal.parent.mkdir(parents=True)
+            journal.write_text('{"kind":"install","snapshot":"pending"}')
+            with patch.object(profiles,'_run',side_effect=AssertionError('must not start')):
+                for function,kwargs in ((profiles.start,{'foreground':True}),(profiles.session_start,{})):
+                    with self.assertRaisesRegex(profiles.ProfileError,'restore pending'):
+                        function(home=home,state_dir=state,**kwargs)
+            self.assertEqual(profiles.profile_status(home=home,state_dir=state)['pending_recovery']['kind'],'install')
+
 if __name__=='__main__': unittest.main()

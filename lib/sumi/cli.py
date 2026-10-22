@@ -103,7 +103,7 @@ def main(argv: list[str] | None = None) -> int:
                        or (args.command == "profile" and args.profile_command in {"use", "toggle"})
                        or (args.command == "action" and args.args[:1] == ["profile"])
                        or args.command in {"uninstall", "rollback"})
-        if stops_shell and profiles.in_shell_cgroup():
+        if stops_shell and not getattr(args, "dry_run", False) and profiles.in_shell_cgroup():
             print(json.dumps(profiles.delegate_controller(raw_args, home=home, state_dir=state_dir)))
             return 0
         if args.command == "operation":

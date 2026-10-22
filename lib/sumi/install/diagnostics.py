@@ -37,13 +37,22 @@ def diagnostics(*, home: Path | None = None) -> dict:
     session = bool(os.environ.get("WAYLAND_DISPLAY") and os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"))
     add("hyprland_session", session, "Log out and select Hyprland, or start Hyprland from a TTY.", "info")
     if session:
-        for unit in ("sumi-session.target", "sumi-shell.service", "sumi-awww.service", "sumi-idle.service"):
+        for unit in ("sumi-session.target", "sumi-shell.service", "sumi-awww.service", "sumi-idle.service", "sumi-polkit.service", "sumi-session-watch.service"):
             try:
                 status = subprocess.run(["systemctl", "--user", "is-active", "--quiet", unit], check=False,
                                         capture_output=True, timeout=10).returncode == 0
             except (OSError, subprocess.TimeoutExpired):
                 status = False
             add("service:" + unit, status, "Run desktopctl session-start; inspect journalctl --user -b -u " + unit)
+    if session:
+        from .. import profiles
+        try:
+            ready = profiles.ipc("sumi", "ping", home=layout.home, state_dir=layout.state) == "pong"
+        except (RuntimeError, OSError, ValueError):
+            ready = False
+        add("shell_ipc", ready, "Inspect journalctl --user -b -u sumi-shell.service, then run desktopctl restart.")
+        add("notification_owner", profiles._notifications_owned(),
+            "Another notification daemon may own the session bus. Disable its autostart (for example swaync/dunst), then restart Sumi.")
     hardware = {"battery": any(Path("/sys/class/power_supply").glob("BAT*")),
                 "brightness": any(Path("/sys/class/backlight").glob("*")),
                 "bluetooth": any(Path("/sys/class/bluetooth").glob("*"))}

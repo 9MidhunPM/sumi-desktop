@@ -36,12 +36,14 @@ def check_host(*, os_release: Path = Path("/etc/os-release"), machine: str | Non
 
 def check_versions() -> list[str]:
     errors = []
-    for program, minimum in (("Hyprland", (0, 55, 0)), ("qs", (0, 3, 0))):
+    for package, minimum in (("hyprland", (0, 55, 0)), ("quickshell", (0, 3, 0))):
         try:
-            result = subprocess.run([program, "--version"], text=True, capture_output=True, timeout=15)
+            # Query installed package metadata: launching the compositor even
+            # with --version can fail before the first graphical login.
+            result = subprocess.run(["pacman", "-Q", package], text=True, capture_output=True, timeout=15)
             match = re.search(r"(?:v)?(\d+)\.(\d+)\.(\d+)", result.stdout + result.stderr)
             if result.returncode or not match or tuple(map(int, match.groups())) < minimum:
-                errors.append(f"{program} must be at least {'.'.join(map(str, minimum))}; run a full Arch upgrade.")
+                errors.append(f"{package} must be at least {'.'.join(map(str, minimum))}; run a full Arch upgrade.")
         except (OSError, subprocess.TimeoutExpired):
-            errors.append(f"Cannot query {program}; run ./install.sh to install its official package.")
+            errors.append(f"Cannot query {package}; run ./install.sh to install its official package.")
     return errors

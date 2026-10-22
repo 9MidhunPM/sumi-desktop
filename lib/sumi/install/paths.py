@@ -57,6 +57,9 @@ class Layout:
 
     def validate(self, paths: list[Path]) -> None:
         """Reject nested destinations and symlinked parents, including stale manifests."""
+        for internal in (self.records, self.records / "backups", self.records / "lock"):
+            if internal.is_symlink():
+                raise InstallError(f"Installer storage cannot be a symlink: {internal}")
         allowed = (self.runtime, self.bin / "desktopctl", self.state / "profile.json",
                    self.state / "theme.json", self.shared_data / "color-schemes/Sumi.colors")
         for path in paths:

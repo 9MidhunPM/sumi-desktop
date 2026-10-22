@@ -407,7 +407,7 @@ with patch("sumi.actions.run", return_value=Mock(stdout="0,0 100x100")), patch("
     @patch('sumi.actions.spawn')
     def test_managers_launch_without_teaching_launcher_history(self, spawn):
         main(['audio-manager'])
-        spawn.assert_called_with(['pwvucontrol'])
+        spawn.assert_called_with(['pavucontrol'])
         main(['bluetooth-manager'])
         spawn.assert_called_with(['blueman-manager'])
         self.assertFalse((self.root / 'state/launcher-history.json').exists())

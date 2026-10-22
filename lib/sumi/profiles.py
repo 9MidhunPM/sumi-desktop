@@ -381,7 +381,7 @@ def profile_status(*, home: Path | None = None, state_dir: Path | None = None) -
             value["recovery_available"] = any(item.get("exists") for key, item in original["paths"].items() if key.startswith(".config/hypr/"))
         except (OSError, ValueError, RuntimeError):
             pass
-    pending = _load(state_dir / "transaction.json")
+    pending = _load(state_dir / "transaction.json") or _load(state_dir / "installer/pending.json")
     if pending:
         value["pending_recovery"] = pending
     return value
@@ -1370,6 +1370,8 @@ def restore_original(*, home: Path | None = None, state_dir: Path | None = None,
 def start(*, foreground: bool = False, home: Path | None = None, state_dir: Path | None = None,
           dry_run: bool = False) -> dict:
     home, state_dir = home or home_path(), state_dir or state_path(home)
+    if (state_dir / "installer/pending.json").exists():
+        raise ProfileError("Installation was interrupted. From a TTY run desktopctl restore pending before starting Sumi")
     if foreground:
         command = ["qs", "-p", str(shell_path()), "-n"]
         if dry_run or dry_mode():
@@ -1443,6 +1445,8 @@ def apply_motion(mode: str, *, home: Path | None = None, state_dir: Path | None 
 
 def session_start(*, home: Path | None = None, state_dir: Path | None = None, dry_run: bool = False) -> dict:
     home, state_dir = home or home_path(), state_dir or state_path(home)
+    if (state_dir / "installer/pending.json").exists():
+        raise ProfileError("Installation was interrupted. From a TTY run desktopctl restore pending before starting Sumi")
     if profile_status(home=home, state_dir=state_dir).get("standalone"):
         from . import session
         if _load(state_dir / "transaction.json"):
