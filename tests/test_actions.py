@@ -514,6 +514,37 @@ with patch("sumi.actions.run", return_value=Mock(stdout="0,0 100x100")), patch("
         selected.assert_called_once_with("org.example.Editor.desktop")
         application.launch.assert_called_once_with([], None)
 
+    def test_scoped_applications_receive_literal_custom_xdg_paths(self):
+        environment = {"HOME": str(self.root / "home with spaces"),
+                       "XDG_CONFIG_HOME": str(self.root / "config with spaces"),
+                       "XDG_DATA_HOME": str(self.root / "data with spaces"),
+                       "XDG_STATE_HOME": str(self.root / "state with spaces"),
+                       "XDG_CACHE_HOME": str(self.root / "cache with spaces"),
+                       "SUMI_DESKTOPCTL": str(self.root / "runtime/bin/desktopctl")}
+        with patch.dict(os.environ, environment), patch("sumi.actions.shutil.which", return_value="/usr/bin/kitty"), patch("sumi.actions.run") as run:
+            actions.spawn(["kitty"])
+        argv = run.call_args.args[0]
+        for key, value in environment.items():
+            self.assertIn("--setenv=" + key + "=" + value, argv)
+
+    def test_lock_and_suspend_use_the_session_inhibitor_contract(self):
+        with patch("sumi.session.lock", return_value={"locked": True}) as lock, patch("sys.stdout", new_callable=StringIO):
+            main(["lock"])
+        lock.assert_called_once_with()
+        with patch("sumi.session.suspend", return_value={"suspended": True}) as suspend, patch("sys.stdout", new_callable=StringIO):
+            main(["power", "suspend"])
+        suspend.assert_called_once_with()
+
+    @patch("sumi.actions.run")
+    def test_power_actions_need_no_external_user_scripts(self, run):
+        for action, expected in (("logout", ["hyprctl", "dispatch", "hl.dsp.exit()"]),
+                                 ("shutdown", ["systemctl", "poweroff"]),
+                                 ("reboot", ["systemctl", "reboot"])):
+            main(["power", action])
+            self.assertEqual(run.call_args.args[0], expected)
+        with self.assertRaisesRegex(ValueError, "Unknown power"):
+            main(["power", "invalid"])
+
     def test_short_queries_do_not_scan(self):
         self.assertEqual(search_files('a'), [])
 

@@ -32,7 +32,10 @@ def spawn(argv: list[str], *, service_type: str = "exec", input_file: Path | Non
         scoped.append("--property=StandardInput=file:" + str(input_file.resolve()))
     if service_type == "forking":
         scoped.append("--property=TimeoutStartSec=10s")
-    for key in ("DISPLAY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS", "HYPRLAND_INSTANCE_SIGNATURE", "XDG_CURRENT_DESKTOP", "PATH"):
+    for key in ("DISPLAY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS",
+                "HYPRLAND_INSTANCE_SIGNATURE", "XDG_CURRENT_DESKTOP", "HOME", "PATH",
+                "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME",
+                "XDG_DATA_DIRS", "SUMI_HOME", "SUMI_STATE_DIR", "SUMI_DATA_DIR", "SUMI_DESKTOPCTL"):
         if key in os.environ:
             scoped.append(f"--setenv={key}={os.environ[key]}")
     scoped += ["--", shutil.which(argv[0]) or argv[0], *argv[1:]]
@@ -460,7 +463,8 @@ def main(argv: list[str] | None = None) -> int:
     elif command == "bluetooth-manager" or command == "bluetooth-pair":
         spawn(["blueman-manager"])
     elif command == "lock":
-        run(["loginctl", "lock-session"])
+        from .session import lock
+        print(json.dumps(lock()))
     elif command == "brightness" and args:
         value = max(1, min(100, round(float(args[0]))))
         run(["brightnessctl", "set", f"{value}%"], stdout=subprocess.DEVNULL)
@@ -474,10 +478,13 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(toggle_night_light()))
     elif command == "power" and args:
         choice = args[0]
-        if choice in {"logout", "shutdown", "reboot"}:
-            run([str(Path.home() / ".config" / "hypr" / "scripts" / f"safe-{choice}.sh")])
+        if choice == "logout":
+            run(["hyprctl", "dispatch", "hl.dsp.exit()"], capture_output=True, text=True, timeout=10)
+        elif choice in {"shutdown", "reboot"}:
+            run(["systemctl", "poweroff" if choice == "shutdown" else "reboot"], capture_output=True, text=True, timeout=15)
         elif choice == "suspend":
-            run(["systemctl", "suspend"])
+            from .session import suspend
+            print(json.dumps(suspend()))
         else:
             raise ValueError("Unknown power action")
     elif command == "profile" and args:
