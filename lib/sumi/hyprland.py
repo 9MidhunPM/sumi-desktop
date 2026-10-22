@@ -29,8 +29,6 @@ def classic_bindings(text: str, executable: str) -> str:
         value = ast.literal_eval(match[1])
         if re.fullmatch(r"\s*pkill\s+qs\s*;\s*qs\s*&?\s*", value):
             replacement = shlex.join([executable, "restart"])
-        elif re.fullmatch(r"(?:/usr/bin/)?qs\s+ipc\s+call\s+thursday\s+toggle", value):
-            replacement = shlex.join([executable, "ipc", "thursday", "toggle"])
         else:
             return match[0]
         return "hl.dsp.exec_cmd(" + json.dumps(replacement) + ")"

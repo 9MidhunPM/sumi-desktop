@@ -49,7 +49,7 @@ MANAGED_PATHS = (
 )
 PRESENTATION_UNITS = ("sumi-shell.service", "swaync.service")
 AUTHENTICATION_UNITS = ("plasma-polkit-agent.service",)
-OBSERVED_UNITS = PRESENTATION_UNITS + AUTHENTICATION_UNITS + ("sumi-clipboard-text.service", "sumi-clipboard-image.service", "thursday.service", "thursday-hotkeys.service", "codex-quickshell.service")
+OBSERVED_UNITS = PRESENTATION_UNITS + AUTHENTICATION_UNITS + ("sumi-clipboard-text.service", "sumi-clipboard-image.service")
 REQUIRED_PROGRAMS = ("qs", "hyprctl", "kitty", "thunar", "awww", "wpctl", "brightnessctl", "cliphist", "wl-paste", "hyprlock", "papers", "loupe", "satty", "hyprsunset", "qt6ct", "cava", "blueman-manager", "wf-recorder", "slurp")
 PROFILE_SWITCH_START = "-- >>> SUMI PROFILE SWITCH START"
 PROFILE_SWITCH_END = "-- <<< SUMI PROFILE SWITCH END"
@@ -384,7 +384,7 @@ def ensure_original(home: Path, state_dir: Path, *, dry_run: bool = False) -> Pa
                     verify_snapshot(addition)
         return original
     timestamped = state_dir / "backups" / ("original-" + _stamp())
-    capture_snapshot(home, timestamped, paths=(*MANAGED_PATHS, "Wallpapa"), services=service_state(dry_run=dry_run), immutable=True)
+    capture_snapshot(home, timestamped, paths=MANAGED_PATHS, services=service_state(dry_run=dry_run), immutable=True)
     _capture_desktop_state(timestamped, dry_run=dry_run)
     # A stable, atomic alias keeps recovery commands simple without hiding the
     # timestamped immutable backup's actual location.

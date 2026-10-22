@@ -5,8 +5,6 @@ import Quickshell.Io
 import Quickshell.Hyprland
 import "config"
 import "services" as S
-import "ThursdayNative" as ThursdayNative
-import "CodexStatusModule" as CodexStatusModule
 
 Scope {
     id: desktopRoot
@@ -74,7 +72,6 @@ Scope {
     readonly property bool barVisible: Settings.barHiddenMode ? held : !manuallyHidden
     Binding { target: S.Spectrum; property: "displayEnabled"; value: desktopRoot.barVisible }
     readonly property bool preview: Quickshell.env("SUMI_PREVIEW") === "1"
-    readonly property var codexStatus: codexLoader.item
     function resolveScreen(preferred) {
         if (preferred && Quickshell.screens.indexOf(preferred) >= 0) return preferred;
         const focused = Hyprland.focusedMonitor;
@@ -93,8 +90,6 @@ Scope {
     function openSettings(section, screen) { settingsSection = section || ""; open("settings", screen); }
     function toggle(name, screen) { if (panel === name && activeScreen === resolveScreen(screen)) close(); else open(name, screen); }
     function close() { if (nativeDialogOpen) return; panel = ""; settingsSection = ""; }
-    function thursdayToggle() { if (nativeDialogOpen) return; close(); S.Desktop.action("ipc", ["thursday", "toggle"]); }
-    function codexToggle(screen) { if (nativeDialogOpen) return; close(); if (codexLoader.item) codexLoader.item.toggleForScreen(screen); }
     IpcHandler {
         target: "sumi"
         function ping(): string { return "pong"; }
@@ -121,23 +116,6 @@ Scope {
     }
     IpcHandler { target: "settings"; function toggle(): void { desktopRoot.toggle("settings", null); } }
     IpcHandler { target: "clipboard"; function toggle(): void { desktopRoot.toggle("clipboard", null); } }
-    // Native assistant integration begins.
-    LazyLoader {
-        id: thursdayLoader
-        active: !desktopRoot.preview
-        component: ThursdayNative.Thursday {
-            id: thursday
-            repoRoot: ""
-            theme: Theme
-            // The integration also receives its backend's local preference.
-            // Re-apply the desktop preference without editing external code.
-            onReducedMotionChanged: if (reducedMotion !== Theme.effectiveReducedMotion) Qt.callLater(() => { thursday.reducedMotion = Theme.effectiveReducedMotion; })
-            Connections { target: Theme; function onEffectiveReducedMotionChanged() { thursday.reducedMotion = Theme.effectiveReducedMotion; } }
-            Component.onCompleted: reducedMotion = Theme.effectiveReducedMotion
-        }
-    }
-    LazyLoader { id: codexLoader; active: !desktopRoot.preview; component: CodexStatusModule.CodexStatus { theme: Theme; reducedMotion: Theme.effectiveReducedMotion } }
-    // Native assistant integration ends.
     Variants { model: Quickshell.screens; Bar { app: desktopRoot } }
     Variants { model: Quickshell.screens; Overlay { app: desktopRoot } }
     DesktopWidgets { id: widgetSurface; modelData: desktopRoot.widgetScreen; app: desktopRoot }

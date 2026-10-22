@@ -59,10 +59,10 @@ def main() -> None:
         ''')
         names = [
             'arch', 'arrow-right', 'battery', 'battery-charging', 'bell', 'bell-off',
-            'bluetooth', 'bluetooth-off', 'calendar', 'chatgpt', 'chevron-down', 'chevron-up',
+            'bluetooth', 'bluetooth-off', 'calendar', 'chevron-down', 'chevron-up',
             'circle-help', 'code', 'grid', 'more-horizontal', 'music', 'pause', 'play',
             'settings', 'sparkles', 'terminal', 'volume', 'volume-x', 'wifi', 'wifi-off',
-            'apps', 'assistant', 'codex', 'unknown',
+            'apps', 'unknown',
         ]
         source = '''import QtQuick
         import QtTest
@@ -158,8 +158,6 @@ def main() -> None:
             def icon_tile(name):
                 index = names.index(name)
                 return crop((index % 8) * 90 + 33, (index // 8) * 72 + 10, 24, 24)
-            assert ImageChops.difference(icon_tile('codex'), icon_tile('chatgpt')).getbbox() is None, 'Codex must render the ChatGPT mark'
-            assert ImageChops.difference(icon_tile('chatgpt'), icon_tile('unknown')).getbbox() is not None, 'ChatGPT mark rendered the fallback icon'
             compact = crop(20, 310, 28, 36)
             points = [(x, y) for y in range(compact.height) for x in range(compact.width)
                       if compact.getpixel((x, y))[1] > compact.getpixel((x, y))[0] * 1.4 and compact.getpixel((x, y))[1] > compact.getpixel((x, y))[2] * 1.1]

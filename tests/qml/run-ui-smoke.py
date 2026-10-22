@@ -60,10 +60,6 @@ def main() -> None:
         # The dedicated widget harness exercises its real content and layout.
         # This runner replaces the older native wrappers for panel lifecycle QA.
         source = source.replace("    DesktopWidgets { id: widgetSurface; modelData: desktopRoot.widgetScreen; app: desktopRoot }\n", "    QtObject { id: widgetSurface; property bool visible: false; property bool idle: false; property bool occluded: false; property bool moving: false; property var geometry: ({}) }\n")
-        source = re.sub(r'^import "(?:ThursdayNative|CodexStatusModule)"[^\n]*\n', "", source, flags=re.M)
-        source = re.sub(r"^    // Native assistant integration begins\..*?^    // Native assistant integration ends\.\n", "    QtObject { id: codexLoader; readonly property var item: null }\n", source, flags=re.M | re.S)
-        source = re.sub(r"^    LazyLoader \{ id: thursdayLoader;[^\n]*\n", "", source, flags=re.M)
-        source = re.sub(r"^    LazyLoader \{ id: codexLoader;[^\n]*\n", "    QtObject { id: codexLoader; readonly property var item: null }\n", source, flags=re.M)
         test = '''
     property int smokePhase: 0
     property bool smokeAppearanceChecked: false
@@ -91,8 +87,6 @@ def main() -> None:
                     desktopRoot.toggle("appearance", null);
                     desktopRoot.close();
                     desktopRoot.open("launcher", null);
-                    desktopRoot.thursdayToggle();
-                    desktopRoot.codexToggle(null);
                     if (desktopRoot.panel !== "appearance" || !desktopRoot.nativeDialogOpen) {
                         console.error("SUMI_NATIVE_DIALOG_HANDOFF_FAILED"); Qt.exit(5); return;
                     }

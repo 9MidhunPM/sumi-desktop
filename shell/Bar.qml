@@ -11,7 +11,6 @@ import Quickshell.Wayland
 import "config"
 import "services" as S
 import "components" as C
-import "CodexStatusModule/StatusFormat.js" as CodexFormat
 
 // Three translucent islands leave the wallpaper visible. Five persistent
 // workspaces show one dot per window; occupied extras appear on demand.
@@ -51,14 +50,6 @@ PanelWindow {
             windowCount: windows.length};
     }
     readonly property var trayItems: SystemTray.items.values
-    readonly property var codexController: app.codexStatus || null
-    readonly property var codexWeeklyRemaining: codexController ? CodexFormat.weekly(codexController.usage) : null
-    readonly property bool codexQuotaFresh: !!codexController && codexController.usageFresh === true
-    readonly property string codexQuotaText: codexWeeklyRemaining === null ? "—"
-        : CodexFormat.percent(codexWeeklyRemaining) + (codexQuotaFresh ? "" : " stale")
-    readonly property string codexQuotaTooltip: "Codex · Weekly limit remaining: "
-        + (codexWeeklyRemaining === null ? "unavailable" : CodexFormat.percent(codexWeeklyRemaining))
-        + (codexQuotaFresh ? "" : codexController && codexController.online ? " · stale" : " · offline")
     readonly property int inlineTrayCount: Math.min(trayItems.length, width >= 1800 ? 3 : width >= 1400 ? 1 : 0)
     readonly property real centerRoom: Math.max(0, width - 2 * Math.max(leftIsland.width, rightIsland.width) - (compact ? 32 : 56))
     property int spectrumConsumer: 0
@@ -82,6 +73,7 @@ PanelWindow {
         if ((secondary || item.onlyMenu) && item.hasMenu) item.display(bar, bar.width - rightIsland.width, bar.height + 8);
         else if (!secondary) item.activate();
     }
+
 
     Item {
         objectName: "barContent"
@@ -165,20 +157,6 @@ PanelWindow {
                 id: rightRow
                 anchors.centerIn: parent
                 spacing: 4
-                C.ActionButton { objectName: "barThursday"; visible: bar.width >= 1100; iconName: "assistant"; iconSize: 21; quiet: true; padding: 6; implicitWidth: 34; implicitHeight: 28; tooltip: "Thursday · Super+C"; onClicked: app.thursdayToggle() }
-                C.ActionButton {
-                    objectName: "barCodex"
-                    visible: bar.width >= 1100
-                    iconName: "codex"; iconSize: 21; iconSpacing: 6
-                    text: bar.codexQuotaText
-                    textColor: bar.codexQuotaFresh ? Theme.accentBlue : Theme.textSoft
-                    quiet: true; padding: 6
-                    leftPadding: 8; rightPadding: 8
-                    implicitWidth: contentItem.implicitWidth + 16; implicitHeight: 28
-                    tooltip: bar.codexQuotaTooltip
-                    onClicked: app.codexToggle(bar.screen)
-                }
-                Item { visible: bar.width >= 1100; implicitWidth: 12; implicitHeight: 24; Rectangle { anchors.centerIn: parent; width: 1; height: 14; color: Theme.borderSoft } }
                 Repeater {
                     model: bar.trayItems.slice(0, bar.inlineTrayCount)
                     C.ActionButton {

@@ -20,20 +20,9 @@ ShellRoot {
         property bool barVisible: true
         property string panel: ""
         property var notificationScreen: screenInfo
-        property var codexStatus: null
-        property int codexClicks: 0
-        property var lastCodexScreen: null
         function toggle(name, screen) { panel = name; }
         function openSettings(section, screen) { panel = "settings"; }
         function close() { panel = ""; }
-        function thursdayToggle() {}
-        function codexToggle(screen) { codexClicks++; lastCodexScreen = screen; }
-    }
-    QtObject {
-        id: fixtureCodex
-        property bool online: true
-        property bool usageFresh: false
-        property var usage: ({state: "unavailable", buckets: []})
     }
     Bar { id: bar; app: fakeApp; modelData: screenInfo }
     NotificationToasts { id: toasts; app: fakeApp }
@@ -262,37 +251,6 @@ ShellRoot {
             assertTrue(!item.objectName.startsWith("workspaceAppIcon"), "Workspaces show numbers and window dots without app icons");
             for (const child of item.children) noWorkspaceAppIcons(child);
         }
-        function checkCodexQuota(button) {
-            function window(minutes, remaining) { return {label: minutes === 10080 ? "Weekly" : "5h", durationMinutes: minutes, remainingPercent: remaining}; }
-            function bucket(id, windows) { return {id: id, windows: windows}; }
-            const cases = [
-                {label: "controller absent", controller: false, fresh: false, buckets: [], expected: "—"},
-                {label: "fresh weekly remaining", controller: true, fresh: true, buckets: [bucket("primary", [window(300, 91), window(10080, 37)]), bucket("secondary", [window(10080, 82)])], expected: "37%"},
-                {label: "stale weekly remaining", controller: true, fresh: false, buckets: [bucket("primary", [window(10080, 37), window(300, 91)])], expected: "37% stale"},
-                {label: "unavailable usage", controller: true, fresh: false, buckets: [], expected: "—"},
-                {label: "zero remaining is known", controller: true, fresh: true, buckets: [bucket("primary", [window(10080, 0)])], expected: "0%"},
-                {label: "full remaining is known", controller: true, fresh: true, buckets: [bucket("primary", [window(10080, 100)])], expected: "100%"},
-                {label: "weekly null stays unknown", controller: true, fresh: true, buckets: [bucket("primary", [window(10080, null), window(300, 74)])], expected: "—"},
-                {label: "five hour window is not weekly", controller: true, fresh: true, buckets: [bucket("primary", [window(300, 74)])], expected: "—"},
-                {label: "secondary quota is not borrowed", controller: true, fresh: true, buckets: [bucket("primary", [window(300, 74)]), bucket("secondary", [window(10080, 82)])], expected: "—"}
-            ];
-            for (const sample of cases) {
-                fixtureCodex.usage = {state: sample.fresh ? "fresh" : sample.buckets.length ? "stale" : "unavailable", buckets: sample.buckets};
-                fixtureCodex.usageFresh = sample.fresh;
-                fakeApp.codexStatus = sample.controller ? fixtureCodex : null;
-                for (const width of [1280, 1920]) {
-                    bar.width = width - 32; wait(40);
-                    assertTrue(button.text === sample.expected, sample.label + " renders " + sample.expected + ", received " + button.text);
-                    assertTrue(button.visible && button.mapToItem(bar.contentItem, 0, 0).x >= bar.smokeRightEdge, "Quota stays on the right island at " + width);
-                    assertTrue(button.contentItem.width >= button.contentItem.implicitWidth - 0.5, "Quota and stale suffix fit without elision at " + width);
-                    checkClock(width);
-                }
-            }
-            const before = fakeApp.codexClicks;
-            mouseClick(button, button.width / 2, button.height / 2);
-            assertTrue(fakeApp.codexClicks === before + 1 && fakeApp.lastCodexScreen === bar.screen, "Codex quota click opens status on this bar's screen");
-            fakeApp.codexStatus = null; wait(30);
-        }
         function checkTrayActions() {
             let activations = 0;
             let menus = 0;
@@ -404,12 +362,6 @@ ShellRoot {
                 noWorkspaceAppIcons(bar.smokeLeftIsland);
                 if ([600, 1280, 1920].indexOf(width) >= 0) grabImage(bar.contentItem).save("/tmp/sumi-bar-" + width + ".png");
             }
-            const thursdayButton = findChild(bar.contentItem, "barThursday");
-            const codexButton = findChild(bar.contentItem, "barCodex");
-            assertTrue(thursdayButton && codexButton, "Both assistants have bar controls");
-            for (const button of [thursdayButton, codexButton])
-                assertTrue(button.visible && button.mapToItem(bar.contentItem, 0, 0).x >= bar.smokeRightEdge, "Assistant controls belong to the right island");
-            checkCodexQuota(codexButton);
             checkStatusControls();
             const workspaceOverflow = findChild(bar.contentItem, "workspaceOverflow");
             assertTrue(workspaceOverflow.text === "" && workspaceOverflow.iconName === "more-horizontal", "Workspace overflow never shows a +count badge");
@@ -537,7 +489,6 @@ def main() -> None:
             header = image.read_bytes()[:24]
             if header[:8] != b"\x89PNG\r\n\x1a\n" or struct.unpack(">II", header[16:24]) != (width - 32, 34):
                 raise SystemExit(f"Invalid offscreen bar render: {image}")
-        print("PASS:34px bar/32px islands; exact digit center at600/960/1280/1920 and during1:01/12:59 animations; responsive twenty-bar spectrum left/title right containment, full-width samples, normal/empty/long titles, clock/media click routes; centered workspace numbers and exact window dots; five stable workspaces/occupied8; no app icons; scratchpad excluded; Codex primary weekly quota fresh/stale/unknown/0/100 and click route; assistants right; no +count; tray original colors; playback/FFT; tray actions/URLs; toast lifecycle")
         print("Offscreen renders: /tmp/sumi-bar-600.png /tmp/sumi-bar-1280.png /tmp/sumi-bar-1920.png")
         print("Native layer placement and popup menu grabs require compositor validation")
 

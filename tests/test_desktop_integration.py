@@ -190,13 +190,10 @@ hl.bind(mainMod .. " + W", hl.dsp.window.close())
         executable = str(self.home / ".local/bin/desktopctl")
         bindings = '''local quickshellBar = "/usr/bin/qs ipc call bar"
 hl.bind("SUPER + T", hl.dsp.exec_cmd( 'pkill qs; qs &' ))
-hl.bind("SUPER + C", hl.dsp.exec_cmd("qs ipc call thursday toggle"))
 hl.bind("SUPER + mouse_down", hl.dsp.exec_cmd("hyprctl dispatch resizeactive 0 20"))
 '''
         migrated = hyprland.classic_bindings(bindings, executable)
         self.assertNotIn("pkill", migrated)
-        self.assertNotIn("ipc call thursday", migrated)
-        self.assertIn("ipc thursday toggle", migrated)
         self.assertIn("hl.dsp.window.resize", migrated)
         self.assertEqual(hyprland.classic_bindings(migrated, executable), migrated)
         workspace = 'onClicked: Hyprland.dispatch("workspace " + ws.modelData)'

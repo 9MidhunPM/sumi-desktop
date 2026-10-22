@@ -12,7 +12,7 @@ Item {
     property bool preserveDetail: false
     readonly property bool ready: renderer.loaded
     readonly property string resolvedName: {
-        const aliases = { apps: "grid", assistant: "sparkles", codex: "chatgpt" };
+        const aliases = { apps: "grid" };
         const candidate = aliases[name] || name;
         const names = ["arch", "chatgpt", "grid", "sparkles", "terminal", "code", "bell", "bell-off",
             "wifi", "wifi-off", "bluetooth", "bluetooth-off", "volume", "volume-x",

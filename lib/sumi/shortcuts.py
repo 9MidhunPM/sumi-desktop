@@ -19,8 +19,6 @@ _ACTIONS = (
     ("SUPER + CTRL + V", "Clipboard history", ("ipc", "sumi", "toggle", "clipboard"), "ipc sumi toggle clipboard", "Shell"),
     ("SUPER + RETURN", "Terminal", ("action", "terminal"), "theme.terminal", "Applications"),
     ("SUPER + E", "Files", ("action", "files"), "theme.fileManager", "Applications"),
-    ("SUPER + C", "Thursday", ("ipc", "thursday", "toggle"), "ipc call thursday toggle", "Applications"),
-    ("ALT + SPACE", "Thursday", ("ipc", "thursday", "toggle"), "ipc call thursday toggle", "Applications"),
     ("SUPER + SHIFT + S", "Capture a region", ("action", "capture", "region"), "hyprshot", "System"),
     ("SUPER + CTRL + SHIFT + S", "Capture and annotate", ("action", "capture", "region", "annotate"), "action capture region annotate", "System"),
     ("SUPER + T", "Restart selected shell", ("restart",), "pkill qs", "System"),
@@ -40,7 +38,6 @@ def registry() -> dict:
         {"id": "focus", "keys": "Super + Arrow", "label": "Focus a window", "category": "Workspaces"},
         {"id": "move-window", "keys": "Super + Shift + Arrow", "label": "Move a window", "category": "Workspaces"},
         {"id": "lock", "keys": "Super + L", "label": "Lock session", "category": "System"},
-        {"id": "voice", "keys": "Hold Super + Alt", "label": "Thursday voice", "category": "Applications"},
     ])
     return {"version": 1, "shortcuts": items}
 
