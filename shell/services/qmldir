@@ -1,0 +1,15 @@
+singleton Audio Audio.qml
+singleton AppIcons AppIcons.qml
+singleton Battery Battery.qml
+singleton Bluetooth Bluetooth.qml
+singleton Clock Clock.qml
+singleton Desktop Desktop.qml
+singleton HyprlandActions HyprlandActions.qml
+singleton LauncherHistory LauncherHistory.qml
+ControllerRequest ControllerRequest.qml
+singleton Media Media.qml
+singleton Network Network.qml
+singleton Notifications Notifications.qml
+singleton Spectrum Spectrum.qml
+singleton Widgets Widgets.qml
+singleton WidgetMedia WidgetMedia.qml
