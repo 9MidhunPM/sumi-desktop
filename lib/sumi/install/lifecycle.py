@@ -82,3 +82,43 @@ def restore_previous(*, home: Path | None = None, dry_run: bool = False) -> dict
         raise InstallError("No usable previous Hyprland desktop was backed up. Uninstall Sumi to remove its owned files.")
     return _restore(layout, Path(installed["original"]), kind="previous-desktop", dry_run=dry_run)
 
+
+def uninstall(*, home: Path | None = None, dry_run: bool = False) -> dict:
+    layout = Layout.from_environment(home)
+    installed = _installed(layout)
+    unchanged, preserved = [], []
+    for path, expected in installed["artifacts"].items():
+        (unchanged if ownership.inventory(Path(path)) == expected else preserved).append(Path(path))
+    result = {"dry_run": dry_run, "removed_or_restored": [str(path) for path in unchanged],
+              "preserved_edited": [str(path) for path in preserved], "backups": str(layout.records / "backups"),
+              "user_data_preserved": True, "packages_removed": False}
+    # Verify every required backup before making the first mutation.
+    groups: dict[Path, list[Path]] = {}
+    for path in unchanged:
+        origin = Path(installed.get("origins", {}).get(str(path), installed["original"]))
+        record = ownership.checked_snapshot(layout, origin)
+        if str(path) not in record["paths"]:
+            raise InstallError(f"Missing original artifact backup for {path}; uninstall stopped")
+        groups.setdefault(origin, []).append(path)
+    if dry_run:
+        return result
+    with ownership.locked(layout):
+        if ownership.recover_pending(layout):
+            raise InstallError("Recovered an interrupted operation. Re-run uninstall to review the restored ownership state.")
+        safety = ownership.snapshot(layout, unchanged, kind="uninstall-safety")
+        ownership.json_write(layout.journal, {"version": 1, "snapshot": str(safety), "kind": "uninstall"})
+        try:
+            for backup, paths in groups.items():
+                ownership.restore_snapshot(layout, backup, paths=paths, restore_manifest=False)
+            ownership.json_write(layout.records / "last-uninstall.json", {**result, "safety_snapshot": str(safety)})
+            layout.manifest.unlink()
+            layout.journal.unlink()
+            ownership.sync_directory(layout.records)
+        except BaseException:
+            ownership.recover_pending(layout)
+            raise
+    result["uninstalled"] = True
+    result["notes"] = _reload_user_units() + ["Log out to stop the current Sumi session. Installed packages and system networking services were retained."]
+    if preserved:
+        result["notes"].append("Edited artifacts were preserved as whole files/directories. Review them and the backups before manual cleanup.")
+    return result
