@@ -1,0 +1,47 @@
+name: Bug report
+description: Report reproducible Sumi behavior with private data removed.
+title: "[Bug]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a security vulnerability, use SECURITY.md instead. Do not attach clipboard contents, notification history, credentials, private wallpapers, or full state directories.
+  - type: input
+    id: version
+    attributes:
+      label: Sumi version or commit
+      placeholder: v0.1.0 or git rev-parse --short HEAD
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Arch version, Hyprland and Quickshell versions, relevant hardware, login method, and whether XDG directories are customized.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Use a small example with synthetic data. Include whether this is a fresh install, an update, or an existing-config replacement.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Relevant diagnostic output
+      description: Paste only the relevant, redacted doctor or journal errors. State which checks ran and which were unavailable.
+      render: text
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or additional context
+      description: Use synthetic content and a distributable wallpaper; remove identifying details.

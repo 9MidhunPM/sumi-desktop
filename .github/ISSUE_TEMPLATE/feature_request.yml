@@ -1,0 +1,29 @@
+name: Feature request
+description: Describe a desktop problem and a proposed improvement.
+title: "[Feature]: "
+labels: []
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the task you are trying to complete and the current limitation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Include keyboard behavior, accessibility, or unavailable-hardware behavior where relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and scope
+      description: Mention existing tools or workarounds, new dependencies, and whether the change belongs in the public desktop or an optional personal integration.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Examples or references
+      description: Use public links and synthetic screenshots. Do not attach private configuration or unlicensed assets.
