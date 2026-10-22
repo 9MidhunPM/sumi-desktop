@@ -7,6 +7,8 @@ part of the managed configuration set.
 """
 from __future__ import annotations
 
+from .paths import config_path, data_root, managed_path, allowed_path, canonical_path
+
 import contextlib
 import datetime as dt
 import fcntl
@@ -64,11 +66,13 @@ def home_path() -> Path:
 
 
 def state_path(home: Path | None = None) -> Path:
-    return Path(os.environ.get("SUMI_STATE_DIR", str((home or home_path()) / ".local/state/sumi"))).expanduser()
+    from .statefiles import state_path as location
+    return location(home=home)
 
 
 def data_path(home: Path | None = None) -> Path:
-    return Path(os.environ.get("SUMI_DATA_DIR", str((home or home_path()) / ".local/share/sumi"))).expanduser()
+    from .statefiles import data_path as location
+    return location(home=home)
 
 
 def dry_mode() -> bool:
@@ -202,6 +206,7 @@ def capture_snapshot(home: Path, destination: Path, *, paths: Iterable[str] = MA
     staging = Path(tempfile.mkdtemp(prefix=".snapshot-", dir=destination.parent))
     os.chmod(staging, 0o700)
     manifest = {"version": 1, "created": _stamp(), "home": str(home), "immutable": immutable,
+                "roots": {"config": str(config_path(home)), "data": str(data_root(home))},
                 "paths": {}, "dependencies": {}, "services": services or {}}
     try:
         pending = list(dict.fromkeys(paths))
@@ -210,11 +215,11 @@ def capture_snapshot(home: Path, destination: Path, *, paths: Iterable[str] = MA
             if relative in manifest["paths"]:
                 continue
             relative_path = _safe_relative(relative)
-            source = home / relative_path
+            source = managed_path(home, relative_path)
             physical = source.parent.resolve() / source.name
-            if not physical.is_relative_to(home.resolve()):
+            if not allowed_path(home, physical):
                 raise ProfileError(f"Managed file has a parent outside the home directory: {source}")
-            location = str(physical.relative_to(home.resolve()))
+            location = canonical_path(home, physical)
             if not os.path.lexists(source):
                 manifest["paths"][relative] = {"exists": False, "physical": location}
                 continue
@@ -227,8 +232,8 @@ def capture_snapshot(home: Path, destination: Path, *, paths: Iterable[str] = MA
             for key, entry in inventory.items():
                 if entry["type"] == "symlink":
                     resolved = (source / key if key else source).resolve()
-                    if resolved.is_file() and resolved.is_relative_to(home.resolve()):
-                        alias = str(resolved.relative_to(home.resolve()))
+                    if resolved.is_file() and allowed_path(home, resolved):
+                        alias = canonical_path(home, resolved)
                         if alias not in manifest["paths"] and alias not in pending:
                             pending.append(alias)
             if relative == ".config/quickshell" and external_dependencies:
@@ -293,10 +298,13 @@ def restore_snapshot(snapshot: Path, home: Path, *, recover_dependencies: bool =
     """
     snapshot, home = Path(snapshot), Path(home).absolute()
     manifest = verify_snapshot(snapshot)
+    roots = manifest.get("roots")
+    if roots and roots != {"config": str(config_path(home)), "data": str(data_root(home))}:
+        raise ProfileError("XDG locations differ from the saved snapshot; restore with the original environment")
     resolved_targets = {}
     for relative, entry in manifest["paths"].items():
-        logical = home / _safe_relative(relative)
-        expected = home / _safe_relative(entry.get("physical", relative))
+        logical = managed_path(home, _safe_relative(relative))
+        expected = managed_path(home, _safe_relative(entry.get("physical", relative)))
         actual = logical.parent.resolve() / logical.name
         if actual != expected:
             raise ProfileError(f"Managed path has a changed symlink parent: {logical.parent}")
@@ -435,7 +443,7 @@ def _assert_unlocked(*, dry_run: bool = False) -> None:
 
 
 def shell_path(profile: str = "sumi", *, home: Path | None = None) -> Path:
-    return ROOT / "shell" if profile == "sumi" else (home or home_path()) / ".config/quickshell"
+    return ROOT / "shell" if profile == "sumi" else config_path(home or home_path()) / "quickshell"
 
 
 def ipc(target: str, method: str, args: list[str] | None = None, *, home: Path | None = None,
@@ -514,7 +522,7 @@ def _sumi_general(original: str, _executable: str = "") -> str:
 
 def _apply_sumi_surfaces(home: Path, *, dry_run: bool = False) -> bool:
     """Upgrade the current Sumi general file inside an already-held profile lock."""
-    path = home / ".config/hypr/config/general.lua"
+    path = config_path(home) / "hypr/config/general.lua"
     previous = path.read_text() if path.exists() else None
     mode = stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o644
     updated = _sumi_general(previous or "")
@@ -538,7 +546,7 @@ def _profile_switch_bindings(original: str, home: Path) -> str:
     start_count, end_count = original.count(PROFILE_SWITCH_START), original.count(PROFILE_SWITCH_END)
     if (start_count, end_count) not in {(0, 0), (1, 1)}:
         raise ProfileError("Shared profile shortcut markers are incomplete or duplicated")
-    helper = home / ".config/sumi/shared/profile-switch.lua"
+    helper = config_path(home) / "sumi/shared/profile-switch.lua"
     snippet = (PROFILE_SWITCH_START + "\ndo\n"
                + "    local shared = loadfile(" + json.dumps(str(helper)) + ")\n"
                + "    if shared then shared() end\nend\n" + PROFILE_SWITCH_END)
@@ -556,11 +564,11 @@ def _install_profile_switch(home: Path) -> None:
     Shared files live outside profile-managed roots. Only a marked import is
     added to current bindings after restoration; archived snapshots stay intact.
     """
-    bindings = home / ".config/hypr/config/keybinds.lua"
+    bindings = config_path(home) / "hypr/config/keybinds.lua"
     original = bindings.read_text() if bindings.exists() else ""
     updated = _profile_switch_bindings(original, home)
     executable = home / ".local/bin/desktopctl"
-    helper = home / ".config/sumi/shared/profile-switch.lua"
+    helper = config_path(home) / "sumi/shared/profile-switch.lua"
     helper_text = ('-- Shared by Classic and Sumi. Managed by desktopctl.\n'
                    + 'hl.bind("SUPER + CTRL + ALT + S", hl.dsp.exec_cmd('
                    + json.dumps(shlex.quote(str(executable)) + " profile toggle") + '))\n')
@@ -577,7 +585,7 @@ def _install_profile_switch(home: Path) -> None:
                + 'Terminal=false\nCategories=Settings;DesktopSettings;\n'
                'Keywords=desktop;profile;classic;sumi;switch;\n')
     atomic_write(helper, helper_text, mode=0o644)
-    atomic_write(home / ".local/share/applications/sumi-switch-desktop.desktop", desktop, mode=0o644)
+    atomic_write(data_root(home) / "applications/sumi-switch-desktop.desktop", desktop, mode=0o644)
     atomic_write(bindings, updated, mode=stat.S_IMODE(bindings.stat().st_mode) if bindings.exists() else 0o644)
 
 
@@ -590,35 +598,35 @@ def _generate_sumi(home: Path, baseline: Path, *, state_dir: Path | None = None)
         if relative not in manifest["paths"]:
             # A profile captured before this integration existed still has the
             # untouched current file. The immutable addition covers recovery.
-            path = home / relative
+            path = managed_path(home, relative)
         else:
             path = snapshot_object(baseline, relative, manifest=manifest)
         return path.read_text() if path.exists() else ""
     # Read the selected Classic snapshot, never the currently generated loader.
     bindings = baseline_text(".config/hypr/config/keybinds.lua")
     _, helper = shortcuts.render_bindings(bindings, executable)
-    atomic_write(home / ".config/sumi/generated/shortcuts.lua", helper, mode=0o644)
+    atomic_write(config_path(home) / "sumi/generated/shortcuts.lua", helper, mode=0o644)
     for name, transform in (("autostart.lua", _filter_autostart), ("keybinds.lua", _sumi_bindings), ("general.lua", _sumi_general)):
         relative = f".config/hypr/config/{name}"
         result = transform(baseline_text(relative), executable)
         if name == "general.lua":
             result = hyprland.motion_include(result, home)
-        path = home / relative
+        path = managed_path(home, relative)
         mode = stat.S_IMODE(path.stat().st_mode) if name == "general.lua" and path.exists() else 0o644
         atomic_write(path, result, mode=mode)
-    atomic_write(home / ".config/hypr/config/env.lua", hyprland.environment(baseline_text(".config/hypr/config/env.lua")), mode=0o644)
+    atomic_write(config_path(home) / "hypr/config/env.lua", hyprland.environment(baseline_text(".config/hypr/config/env.lua")), mode=0o644)
     for relative in (".config/hypr/hypridle.conf", ".config/hypr/scripts/safe-logout.sh"):
         original = baseline_text(relative)
         if original:
-            mode = stat.S_IMODE((home / relative).stat().st_mode) if (home / relative).exists() else 0o644
-            atomic_write(home / relative, hyprland.migrate_shell_commands(original), mode=mode)
+            mode = stat.S_IMODE((managed_path(home, relative)).stat().st_mode) if (managed_path(home, relative)).exists() else 0o644
+            atomic_write(managed_path(home, relative), hyprland.migrate_shell_commands(original), mode=mode)
     motion = _load(state_dir / "motion.json", {}).get("mode", "normal")
-    atomic_write(home / ".config/sumi/generated/motion.lua", hyprland.motion_lua(motion), mode=0o644)
+    atomic_write(config_path(home) / "sumi/generated/motion.lua", hyprland.motion_lua(motion), mode=0o644)
     override = "[D-BUS Service]\nName=org.freedesktop.Notifications\nExec=/usr/bin/false\n"
     # The vendor uses a different basename for the same bus name; override both.
     for name in ("org.erikreider.swaync.service", "org.freedesktop.Notifications.service"):
-        atomic_write(home / ".local/share/dbus-1/services" / name, override, mode=0o644)
-    unit = home / ".config/systemd/user/swaync.service"
+        atomic_write(data_root(home) / "dbus-1/services" / name, override, mode=0o644)
+    unit = config_path(home) / "systemd/user/swaync.service"
     _remove(unit)
     unit.parent.mkdir(parents=True, exist_ok=True)
     unit.symlink_to("/dev/null")
@@ -639,7 +647,7 @@ def _migrate_classic(home: Path) -> None:
         ".config/quickshell/Power.qml": lambda text: hyprland.classic_power_qml(text, executable),
     }
     for relative, transform in transforms.items():
-        path = home / relative
+        path = managed_path(home, relative)
         if path.exists():
             original = path.read_text()
             migrated = transform(original)
@@ -707,7 +715,7 @@ def _set_platform_environment(provider: str | None, *, dry_run: bool = False) ->
 
 
 def _thunar_actions(home: Path) -> None:
-    path = home / ".config/Thunar/uca.xml"
+    path = config_path(home) / "Thunar/uca.xml"
     try:
         root = ET.fromstring(path.read_text()) if path.exists() else ET.Element("actions")
     except ET.ParseError as exc:
@@ -742,7 +750,7 @@ def _application_defaults(home: Path, *, dry_run: bool = False) -> None:
         "thunar.desktop": ("inode/directory",),
     }
     for desktop, mime_types in choices.items():
-        command = ["env", f"XDG_CONFIG_HOME={home / '.config'}", f"XDG_DATA_HOME={home / '.local/share'}", "xdg-mime", "default", desktop, *mime_types]
+        command = ["env", f"XDG_CONFIG_HOME={config_path(home)}", f"XDG_DATA_HOME={data_root(home)}", "xdg-mime", "default", desktop, *mime_types]
         _run(command, dry_run=dry_run)
 
 
@@ -990,7 +998,7 @@ def _start_sumi(home: Path, state_dir: Path, *, dry_run: bool = False) -> None:
 
 def _stop_classic(home: Path, *, dry_run: bool = False) -> None:
     _run(["qs", "kill", "-p", str(shell_path("classic", home=home))], check=False, dry_run=dry_run)
-    _run(["eww", "--force-wayland", "--config", str(home / ".config/eww"), "kill"], check=False, dry_run=dry_run)
+    _run(["eww", "--force-wayland", "--config", str(config_path(home) / "eww"), "kill"], check=False, dry_run=dry_run)
     _run(["systemctl", "--user", "stop", "swaync.service"], check=False, dry_run=dry_run)
     # Only SwayNC owns this executable name. No unrelated Quickshell instance is killed.
     _run(["pkill", "-x", "swaync"], check=False, dry_run=dry_run)
@@ -998,9 +1006,9 @@ def _stop_classic(home: Path, *, dry_run: bool = False) -> None:
 
 def _start_classic(home: Path, services: dict, *, dry_run: bool = False) -> None:
     _service_restore(services, dry_run=dry_run)
-    if (home / ".config/quickshell/shell.qml").exists():
+    if (config_path(home) / "quickshell/shell.qml").exists():
         _run(["qs", "-p", str(shell_path("classic", home=home)), "-n", "-d"], dry_run=dry_run)
-    if (home / ".config/eww/eww.yuck").exists():
+    if (config_path(home) / "eww/eww.yuck").exists():
         _start_classic_eww(home, dry_run=dry_run)
     # Starting by the session bus restores whichever notification provider the
     # original configuration selected, including normal D-Bus autoactivation.
@@ -1013,7 +1021,7 @@ def _start_classic_eww(home: Path, *, dry_run: bool = False) -> None:
     """Start the scoped daemon without pipes retained by its double fork."""
     if dry_run or dry_mode():
         return
-    command = ["eww", "--force-wayland", "--config", str(home / ".config/eww")]
+    command = ["eww", "--force-wayland", "--config", str(config_path(home) / "eww")]
     log = state_path(home) / "classic-eww.log"
     log.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     # Eww 0.5 only redirects terminal descriptors when daemonizing. A captured
@@ -1145,7 +1153,7 @@ def install(*, home: Path | None = None, state_dir: Path | None = None,
         _capture_desktop_state(original, dry_run=dry_run) if not (original / "wallpaper.json").exists() else None
         executable = home / ".local/bin/desktopctl"
         atomic_write(executable, "#!/bin/sh\nexec " + shlex.quote(str(ROOT / "bin/desktopctl")) + ' "$@"\n', mode=0o755)
-        unit_dir = home / ".config/systemd/user"
+        unit_dir = config_path(home) / "systemd/user"
         for template in (ROOT / "systemd").glob("*.service"):
             content = template.read_text().replace("@DESKTOPCTL@", str(executable)).replace("@ROOT@", str(ROOT)).replace("@HOME@", str(home)).replace("@STATE@", str(state_dir)).replace("@DATA@", str(data_path(home)))
             atomic_write(unit_dir / template.name, content, mode=0o644)
@@ -1380,11 +1388,11 @@ def apply_motion(mode: str, *, home: Path | None = None, state_dir: Path | None 
             raise ProfileError("Recover the interrupted desktop transition before changing motion")
         if current["profile"] != "sumi":
             return {"mode": mode, "applied": False, "profile": current["profile"]}
-        path = home / ".config/sumi/generated/motion.lua"
+        path = config_path(home) / "sumi/generated/motion.lua"
         previous = path.read_text() if path.exists() else None
         state_file = state_dir / "motion.json"
         previous_state = state_file.read_text() if state_file.exists() else None
-        general = home / ".config/hypr/config/general.lua"
+        general = config_path(home) / "hypr/config/general.lua"
         previous_general = general.read_text() if general.exists() else None
         general_mode = stat.S_IMODE(general.stat().st_mode) if general.exists() else 0o644
         general_content = motion_include(previous_general or "", home)

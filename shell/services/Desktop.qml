@@ -6,7 +6,7 @@ import Quickshell.Io
 
 Singleton {
     id: root
-    readonly property string controller: Quickshell.env("SUMI_DESKTOPCTL") || (Quickshell.env("HOME") + "/.local/bin/desktopctl")
+    readonly property string controller: Quickshell.env("SUMI_DESKTOPCTL") || "desktopctl"
     readonly property bool preview: Quickshell.env("SUMI_PREVIEW") === "1"
     property string lastAction: ""
     property string lastError: ""

@@ -20,7 +20,7 @@ Singleton {
     function synchronize(): void {
         if (Settings.loading || Quickshell.env("SUMI_PREVIEW") === "1" || apply.running || appliedMode === mode) return;
         apply.requestedMode = mode;
-        apply.command = [Quickshell.env("SUMI_DESKTOPCTL") || Quickshell.env("HOME") + "/.local/bin/desktopctl", "motion", "apply", mode, "--json"];
+        apply.command = [Quickshell.env("SUMI_DESKTOPCTL") || "desktopctl", "motion", "apply", mode, "--json"];
         apply.running = true;
     }
     onModeChanged: { retryCount = 0; Qt.callLater(synchronize); }

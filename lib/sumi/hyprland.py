@@ -1,6 +1,8 @@
 """Generated Hyprland Lua integration; no compositor access during rendering."""
 from __future__ import annotations
 
+from .paths import config_path, data_root, managed_path, allowed_path, canonical_path
+
 import ast
 import json
 from pathlib import Path
@@ -57,7 +59,7 @@ def environment(original: str) -> str:
 def motion_include(original: str, home: Path) -> str:
     start, end = "-- >>> SUMI MOTION START", "-- <<< SUMI MOTION END"
     original = re.sub(re.escape(start) + r".*?" + re.escape(end) + r"\s*", "", original, flags=re.S)
-    return original.rstrip() + f'\n\n{start}\ndofile({json.dumps(str(home / ".config/sumi/generated/motion.lua"))})\n{end}\n'
+    return original.rstrip() + f'\n\n{start}\ndofile({json.dumps(str(config_path(home) / "sumi/generated/motion.lua"))})\n{end}\n'
 
 
 def motion_lua(mode: str) -> str:

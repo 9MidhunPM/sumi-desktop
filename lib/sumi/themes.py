@@ -5,6 +5,8 @@ The controller decides when to execute the returned reload commands.
 """
 from __future__ import annotations
 
+from .paths import config_path, data_root, managed_path, allowed_path, canonical_path
+
 import colorsys
 import copy
 import hashlib
@@ -145,7 +147,7 @@ def legacy_theme(identifier: str, text: str, wallpaper: str, thumbnail: str) -> 
     colors["textMain"] = _legible(colors["textMain"], colors["bgPanelStrong"], 7)
     colors["textSoft"] = _legible(colors["textSoft"], colors["bgPanelStrong"], 4.5)
     theme = _defaults(identifier, values.get("NAME", identifier), wallpaper, thumbnail, colors)
-    theme["legacy"] = {"wallpaper": values["WALLPAPER"], "manifest": f"assets/themes/legacy/{identifier}.theme"}
+    theme["legacy"] = {"wallpaper": values.get("WALLPAPER", ""), "manifest": f"assets/themes/legacy/{identifier}.theme"}
     theme["terminal"] = {key.removeprefix("KITTY_").lower(): value for key, value in values.items() if key.startswith("KITTY_")}
     return theme
 
@@ -679,26 +681,26 @@ def _qt6ct_scheme(colors: dict) -> str:
 def render_theme(theme: dict, *, home: Path, state_dir: Path) -> tuple[dict[Path, str], list[str]]:
     """Prepare all text files in memory; caller can review or transact the result."""
     home, state_dir = Path(home).resolve(), Path(state_dir).resolve()
-    generated = home / ".config/sumi/generated"
+    generated = config_path(home) / "sumi/generated"
     c = theme["colors"]
     files: dict[Path, str] = {}
     warnings = ["GTK4 applications follow their supported dark/accent preferences; reopening some applications may be required."]
-    ghostty = home / ".config/ghostty/config.ghostty"
-    if not ghostty.exists() and (home / ".config/ghostty/config").exists():
-        ghostty = home / ".config/ghostty/config"
+    ghostty = config_path(home) / "ghostty/config.ghostty"
+    if not ghostty.exists() and (config_path(home) / "ghostty/config").exists():
+        ghostty = config_path(home) / "ghostty/config"
     files[generated / "ghostty.conf"] = _ghostty(theme)
     files[ghostty] = _managed(_read(ghostty), f"config-file = {generated / 'ghostty.conf'}")
     files[generated / "kitty.conf"] = _kitty(theme)
-    kitty = home / ".config/kitty/kitty.conf"
+    kitty = config_path(home) / "kitty/kitty.conf"
     files[kitty] = _managed(_read(kitty), f"include {generated / 'kitty.conf'}\nauto_reload_config 0.1")
     files[generated / "gtk3.css"] = _gtk_css(c)
-    gtk = home / ".config/gtk-3.0/gtk.css"
+    gtk = config_path(home) / "gtk-3.0/gtk.css"
     # Sumi owns the stylesheet for its profile. Appending legacy definitions or
     # importing the old Thunar rules would override the selected palette. The
     # profile controller retains that original CSS in the Classic snapshot.
     files[gtk] = _managed("", f'@import url("{generated / "gtk3.css"}");', "/* >>> SUMI THEME START */", "/* <<< SUMI THEME END */")
     for version in ("3.0", "4.0"):
-        settings = home / f".config/gtk-{version}/settings.ini"
+        settings = config_path(home) / f"gtk-{version}/settings.ini"
         files[settings] = _ini_keys(_read(settings), "Settings", {
             "gtk-application-prefer-dark-theme": "1", "gtk-font-name": "Adwaita Sans 10",
             **({"gtk-theme-name": "Adwaita-dark"} if version == "3.0" else {}),
@@ -709,7 +711,7 @@ def render_theme(theme: dict, *, home: Path, state_dir: Path) -> tuple[dict[Path
         "bg_shadow": hypr_color(c['desktopBackground']),
     }.items()) + f"  window_rounding = {theme['windowRounding']},\n}}\n"
     files[generated / "hyprland.lua"] = lua
-    hypr_theme = home / ".config/hypr/config/theme.lua"
+    hypr_theme = config_path(home) / "hypr/config/theme.lua"
     if hypr_theme.exists():
         text = _read(hypr_theme)
         text = re.sub(r"-- >>> SUMI THEME START.*?-- <<< SUMI THEME END\s*", "", text, flags=re.S)
@@ -718,10 +720,10 @@ def render_theme(theme: dict, *, home: Path, state_dir: Path) -> tuple[dict[Path
             files[hypr_theme] = re.sub(r"\breturn\s+M\s*$", lambda _: override + "\nreturn M\n", text)
         else:
             warnings.append("Hyprland theme.lua has an unfamiliar layout; generated palette is available but was not included.")
-    lock = home / ".config/hypr/hyprlock.conf"
+    lock = config_path(home) / "hypr/hyprlock.conf"
     files[lock], files[generated / "hyprlock.conf"] = _hyprlock(_read(lock), theme, generated / "hyprlock.conf")
-    files[home / ".local/share/color-schemes/Sumi.colors"] = _qt_scheme(c)
-    kde = home / ".config/kdeglobals"
+    files[data_root(home) / "color-schemes/Sumi.colors"] = _qt_scheme(c)
+    kde = config_path(home) / "kdeglobals"
     files[kde] = _ini_keys(_read(kde), "General", {"ColorScheme": "Sumi"})
     # KDE uses inline Colors groups when present; update those managed keys too.
     for group in ("View", "Window", "Button", "Tooltip", "Complementary", "Selection"):
@@ -731,9 +733,9 @@ def render_theme(theme: dict, *, home: Path, state_dir: Path) -> tuple[dict[Path
             "DecorationFocus": ",".join(str(v) for v in rgba(c['accentBlue'])[:3]),
         }
         files[kde] = _ini_keys(files[kde], f"Colors:{group}", values)
-    files[home / ".config/qt6ct/colors/Sumi.conf"] = _qt6ct_scheme(c)
-    qt = home / ".config/qt6ct/qt6ct.conf"
-    files[qt] = _ini_keys(_read(qt), "Appearance", {"custom_palette": "true", "color_scheme_path": str(home / ".config/qt6ct/colors/Sumi.conf")})
+    files[config_path(home) / "qt6ct/colors/Sumi.conf"] = _qt6ct_scheme(c)
+    qt = config_path(home) / "qt6ct/qt6ct.conf"
+    files[qt] = _ini_keys(_read(qt), "Appearance", {"custom_palette": "true", "color_scheme_path": str(config_path(home) / "qt6ct/colors/Sumi.conf")})
     editor_colors = {"workbench.colorCustomizations": {
         "editor.background": opaque(c['bgPanel']), "editor.foreground": c['textMain'],
         "sideBar.background": opaque(c['bgPanelStrong']), "sideBar.foreground": c['textSoft'],
@@ -742,7 +744,7 @@ def render_theme(theme: dict, *, home: Path, state_dir: Path) -> tuple[dict[Path
     }}
     files[generated / "editor-colors.json"] = json.dumps(editor_colors, indent=2) + "\n"
     for app in ("Antigravity IDE", "Antigravity", "Code"):
-        settings = home / ".config" / app / "User/settings.json"
+        settings = config_path(home) / app / "User/settings.json"
         if settings.exists():
             try:
                 files[settings] = merge_jsonc(_read(settings), editor_colors)
@@ -754,8 +756,8 @@ def render_theme(theme: dict, *, home: Path, state_dir: Path) -> tuple[dict[Path
         f'vim.api.nvim_set_hl(0, "NormalFloat", {{ fg = "{c["textMain"]}", bg = "{opaque(c["bgPanelStrong"])}" }})',
         f'vim.api.nvim_set_hl(0, "FloatBorder", {{ fg = "{opaque(c["accentBlue"])}", bg = "{opaque(c["bgPanelStrong"])}" }})', '',
     ])
-    init_lua = home / ".config/nvim/init.lua"
-    init_vim = home / ".config/nvim/init.vim"
+    init_lua = config_path(home) / "nvim/init.lua"
+    init_vim = config_path(home) / "nvim/init.vim"
     if init_lua.exists():
         text = _read(init_lua)
         if re.search(r"^\s*return\b", text, re.M):
@@ -783,7 +785,7 @@ def _apply_resolved(theme: dict, *, home: Path, state_dir: Path, dry_run: bool, 
     changes, snapshots = [], []
     for logical, content in files.items():
         actual = logical.resolve()
-        if not (actual.is_relative_to(home) or actual.is_relative_to(state_dir)):
+        if not (allowed_path(home, actual) or actual.is_relative_to(state_dir)):
             raise ValueError(f"Config symlink points outside the requested home: {logical}")
         old = actual.read_bytes() if actual.exists() else None
         encoded = content.encode()

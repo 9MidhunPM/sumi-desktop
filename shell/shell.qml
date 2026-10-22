@@ -13,10 +13,10 @@ Scope {
     property bool nativeDialogOpen: false
     property int activationSerial: 0
     property var activeScreen: Quickshell.screens.length ? Quickshell.screens[0] : null
-    readonly property var widgetScreen: Quickshell.screens.find(s => s.name === "eDP-1")
-        || Quickshell.screens.find(s => s.name.startsWith("eDP-"))
-        || Quickshell.screens.find(s => s.name === "HDMI-A-1")
-        || Quickshell.screens.slice().sort((a, b) => a.name.localeCompare(b.name))[0] || null
+    // An optional output preference follows monitor names without assuming
+    // a laptop panel or connector ordering on someone else's hardware.
+    readonly property var widgetScreen: Quickshell.screens.find(s => s.name === Quickshell.env("SUMI_WIDGET_SCREEN"))
+        || Quickshell.screens[0] || null
     readonly property var notificationScreen: {
         const focused = Hyprland.focusedMonitor;
         return Quickshell.screens.find(s => focused && s.name === focused.name) || Quickshell.screens[0] || null;

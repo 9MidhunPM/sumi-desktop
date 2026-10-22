@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 from pathlib import Path
 import re
 import shlex
@@ -111,7 +112,7 @@ def _key(expression: str, aliases: dict) -> str | None:
     return " + ".join(sorted(modifiers, key=lambda value: order.get(value, 9)) + [key])
 
 
-def render_bindings(original: str, executable: str) -> tuple[str, str]:
+def render_bindings(original: str, executable: str, *, config_dir: Path | None = None) -> tuple[str, str]:
     if original.count(START) != original.count(END) or original.count(START) > 1:
         raise ValueError("Sumi shortcut markers are incomplete or duplicated")
     original = re.sub(re.escape(START) + r".*?" + re.escape(END) + r"\n?", "", original, flags=re.S)
@@ -141,8 +142,10 @@ def render_bindings(original: str, executable: str) -> tuple[str, str]:
         removals.append((begin, end))
     for begin, end in reversed(removals):
         original = original[:begin] + original[end:]
-    # executable normally lives in ~/.local/bin, so resolve the home explicitly.
-    helper = Path(executable).parent.parent.parent / ".config/sumi/generated/shortcuts.lua"
+    # Callers may supply the installation config root. XDG remains authoritative
+    # when the executable is outside the traditional ~/.local/bin location.
+    config_dir = config_dir or Path(os.environ.get("XDG_CONFIG_HOME", str(Path(executable).parent.parent.parent / ".config")))
+    helper = config_dir / "sumi/generated/shortcuts.lua"
     include = f'{START}\ndofile({json.dumps(str(helper))})\n{END}\n'
     lines = ["-- Generated from desktopctl shortcuts. Edit the registry, not this file."]
     for chord, _, argv, _, _ in _ACTIONS:
