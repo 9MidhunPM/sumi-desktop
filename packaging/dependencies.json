@@ -1,0 +1,255 @@
+{
+  "schema": 1,
+  "platform": {
+    "distribution": "arch",
+    "architecture": "x86_64",
+    "hyprland_minimum": "0.55.0",
+    "quickshell_minimum": "0.3.0"
+  },
+  "packages": [
+    {
+      "name": "python",
+      "repository": "core"
+    },
+    {
+      "name": "sudo",
+      "repository": "core"
+    },
+    {
+      "name": "systemd",
+      "repository": "core"
+    },
+    {
+      "name": "hyprland",
+      "repository": "extra"
+    },
+    {
+      "name": "quickshell",
+      "repository": "extra"
+    },
+    {
+      "name": "hyprlock",
+      "repository": "extra"
+    },
+    {
+      "name": "hypridle",
+      "repository": "extra"
+    },
+    {
+      "name": "hyprsunset",
+      "repository": "extra"
+    },
+    {
+      "name": "hyprpolkitagent",
+      "repository": "extra"
+    },
+    {
+      "name": "awww",
+      "repository": "extra"
+    },
+    {
+      "name": "qt6-declarative",
+      "repository": "extra"
+    },
+    {
+      "name": "qt6-svg",
+      "repository": "extra"
+    },
+    {
+      "name": "qt6-wayland",
+      "repository": "extra"
+    },
+    {
+      "name": "qt6ct",
+      "repository": "extra"
+    },
+    {
+      "name": "xdg-desktop-portal-hyprland",
+      "repository": "extra"
+    },
+    {
+      "name": "xdg-desktop-portal-gtk",
+      "repository": "extra"
+    },
+    {
+      "name": "xdg-utils",
+      "repository": "extra"
+    },
+    {
+      "name": "xdg-user-dirs",
+      "repository": "extra"
+    },
+    {
+      "name": "pipewire",
+      "repository": "extra"
+    },
+    {
+      "name": "pipewire-pulse",
+      "repository": "extra"
+    },
+    {
+      "name": "wireplumber",
+      "repository": "extra"
+    },
+    {
+      "name": "networkmanager",
+      "repository": "extra"
+    },
+    {
+      "name": "bluez",
+      "repository": "extra"
+    },
+    {
+      "name": "bluez-utils",
+      "repository": "extra"
+    },
+    {
+      "name": "blueman",
+      "repository": "extra"
+    },
+    {
+      "name": "brightnessctl",
+      "repository": "extra"
+    },
+    {
+      "name": "wl-clipboard",
+      "repository": "extra"
+    },
+    {
+      "name": "cliphist",
+      "repository": "extra"
+    },
+    {
+      "name": "grim",
+      "repository": "extra"
+    },
+    {
+      "name": "slurp",
+      "repository": "extra"
+    },
+    {
+      "name": "satty",
+      "repository": "extra"
+    },
+    {
+      "name": "wf-recorder",
+      "repository": "extra"
+    },
+    {
+      "name": "cava",
+      "repository": "extra"
+    },
+    {
+      "name": "libnotify",
+      "repository": "extra"
+    },
+    {
+      "name": "kitty",
+      "repository": "extra"
+    },
+    {
+      "name": "thunar",
+      "repository": "extra"
+    },
+    {
+      "name": "tumbler",
+      "repository": "extra"
+    },
+    {
+      "name": "gvfs",
+      "repository": "extra"
+    },
+    {
+      "name": "papers",
+      "repository": "extra"
+    },
+    {
+      "name": "loupe",
+      "repository": "extra"
+    },
+    {
+      "name": "firefox",
+      "repository": "extra"
+    },
+    {
+      "name": "inter-font",
+      "repository": "extra"
+    },
+    {
+      "name": "ttf-jetbrains-mono-nerd",
+      "repository": "extra"
+    },
+    {
+      "name": "noto-fonts",
+      "repository": "extra"
+    },
+    {
+      "name": "noto-fonts-emoji",
+      "repository": "extra"
+    },
+    {
+      "name": "breeze-icons",
+      "repository": "extra"
+    },
+    {
+      "name": "adwaita-fonts",
+      "repository": "extra"
+    },
+    {
+      "name": "python-pillow",
+      "repository": "extra"
+    },
+    {
+      "name": "python-gobject",
+      "repository": "extra"
+    },
+    {
+      "name": "hyprshot",
+      "repository": "extra"
+    },
+    {
+      "name": "playerctl",
+      "repository": "extra"
+    },
+    {
+      "name": "pavucontrol",
+      "repository": "extra"
+    },
+    {
+      "name": "power-profiles-daemon",
+      "repository": "extra"
+    }
+  ],
+  "capabilities": {
+    "required": {
+      "Hyprland": "hyprland",
+      "qs": "quickshell",
+      "awww": "awww",
+      "awww-daemon": "awww",
+      "hyprlock": "hyprlock",
+      "hypridle": "hypridle",
+      "wpctl": "wireplumber",
+      "nmcli": "networkmanager",
+      "wl-paste": "wl-clipboard",
+      "cliphist": "cliphist",
+      "kitty": "kitty",
+      "thunar": "thunar",
+      "xdg-open": "xdg-utils",
+      "hyprshot": "hyprshot",
+      "playerctl": "playerctl",
+      "powerprofilesctl": "power-profiles-daemon",
+      "pavucontrol": "pavucontrol"
+    },
+    "optional_hardware": {
+      "brightnessctl": "Backlight devices are optional",
+      "bluetoothctl": "Bluetooth adapters are optional",
+      "wpctl": "Audio devices are optional",
+      "battery": "Desktop machines may have no battery"
+    }
+  },
+  "sources": [
+    "https://archlinux.org/packages/",
+    "https://wiki.archlinux.org/title/Hyprland",
+    "https://wiki.hypr.land/Configuring/Start/"
+  ]
+}
