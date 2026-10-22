@@ -1,0 +1,10 @@
+[Unit]
+Description=Stop Sumi services when the compositor exits
+PartOf=sumi-session.target
+
+[Service]
+Type=simple
+ExecStart="@DESKTOPCTL@" session-watch
+Restart=on-failure
+RestartSec=2
+UMask=0077

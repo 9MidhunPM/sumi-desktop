@@ -1,0 +1,5 @@
+[Unit]
+Description=Sumi desktop session
+Wants=sumi-shell.service sumi-awww.service sumi-polkit.service sumi-idle.service sumi-session-watch.service
+After=graphical-session-pre.target
+# Started by Hyprland after importing the compositor environment, never at boot.

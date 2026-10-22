@@ -1,0 +1,10 @@
+[Unit]
+Description=Sumi authentication agent
+PartOf=sumi-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/polkit-kde-authentication-agent-1
+Restart=on-failure
+RestartSec=2
+UMask=0077

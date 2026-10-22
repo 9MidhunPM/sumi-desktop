@@ -1,0 +1,11 @@
+[Unit]
+Description=Sumi wallpaper renderer
+PartOf=sumi-session.target
+Before=sumi-shell.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/awww-daemon
+Restart=on-failure
+RestartSec=2
+UMask=0077

@@ -1,0 +1,11 @@
+[Unit]
+Description=Sumi image clipboard history
+After=sumi-shell.service
+PartOf=sumi-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/wl-paste --type image --watch /usr/bin/cliphist -max-items 100 store
+Restart=on-failure
+RestartSec=2
+UMask=0077

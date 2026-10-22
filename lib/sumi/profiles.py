@@ -976,6 +976,11 @@ def _stop_sumi(*, dry_run: bool = False) -> None:
 
 
 def _start_sumi(home: Path, state_dir: Path, *, dry_run: bool = False) -> None:
+    if profile_status(home=home, state_dir=state_dir).get("standalone"):
+        from . import session
+        session.start(home=home, state_dir=state_dir, dry_run=dry_run)
+        _wait_ready(home, state_dir, dry_run=dry_run)
+        return
     variables = [name for name in ("DISPLAY", "WAYLAND_DISPLAY", "XDG_CURRENT_DESKTOP", "HYPRLAND_INSTANCE_SIGNATURE", "XDG_SESSION_ID")
                  if os.environ.get(name)]
     if variables:
@@ -1417,6 +1422,11 @@ def apply_motion(mode: str, *, home: Path | None = None, state_dir: Path | None 
 
 def session_start(*, home: Path | None = None, state_dir: Path | None = None, dry_run: bool = False) -> dict:
     home, state_dir = home or home_path(), state_dir or state_path(home)
+    if profile_status(home=home, state_dir=state_dir).get("standalone"):
+        from . import session
+        if _load(state_dir / "transaction.json"):
+            restore_pending(home=home, state_dir=state_dir, dry_run=dry_run)
+        return session.start(home=home, state_dir=state_dir, dry_run=dry_run)
     _run(["systemctl", "--user", "import-environment", "DISPLAY", "WAYLAND_DISPLAY", "XDG_CURRENT_DESKTOP", "HYPRLAND_INSTANCE_SIGNATURE", "XDG_SESSION_ID"], dry_run=dry_run)
     if _load(state_dir / "transaction.json"):
         return restore_pending(home=home, state_dir=state_dir, dry_run=dry_run)

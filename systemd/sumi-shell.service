@@ -1,0 +1,23 @@
+[Unit]
+Description=Sumi Quickshell desktop
+After=sumi-awww.service
+PartOf=sumi-session.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart="@DESKTOPCTL@" start --foreground
+WorkingDirectory="@ROOT@"
+Environment="SUMI_HOME=@HOME@"
+Environment="SUMI_STATE_DIR=@STATE@"
+Environment="SUMI_DATA_DIR=@DATA@"
+Environment="XDG_CONFIG_HOME=@CONFIG@"
+Environment=SUMI_PREVIEW=0
+Restart=on-failure
+RestartSec=2
+KillMode=process
+# User applications and transient profile controllers must outlive the shell.
+TimeoutStopSec=10
+UMask=0077
+

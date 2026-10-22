@@ -72,6 +72,8 @@ def parser() -> argparse.ArgumentParser:
     motion_apply.add_argument("mode", choices=("normal", "battery", "reduced"))
     _json_flag(motion_apply)
     _json_flag(commands.add_parser("session-start", help=argparse.SUPPRESS))
+    _json_flag(commands.add_parser("session-stop", help=argparse.SUPPRESS))
+    commands.add_parser("session-watch", help=argparse.SUPPRESS)
     ipc = commands.add_parser("ipc", help="Call the selected profile's explicit Quickshell instance")
     ipc.add_argument("target")
     ipc.add_argument("method")
@@ -174,6 +176,9 @@ def main(argv: list[str] | None = None) -> int:
             result = profiles.restart(home=home, state_dir=state_dir)
         elif args.command == "session-start":
             result = profiles.session_start(home=home, state_dir=state_dir)
+        elif args.command in {"session-stop", "session-watch"}:
+            from . import session
+            result = session.stop() if args.command == "session-stop" else session.watch()
         elif args.command == "ipc":
             output = profiles.ipc(args.target, args.method, args.args, home=home, state_dir=state_dir)
             if output:
