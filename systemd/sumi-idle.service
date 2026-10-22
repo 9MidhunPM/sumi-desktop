@@ -1,0 +1,10 @@
+[Unit]
+Description=Sumi lock and idle policy
+PartOf=sumi-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/hypridle -c "@CONFIG@/hypr/hypridle.conf"
+Restart=on-failure
+RestartSec=2
+UMask=0077

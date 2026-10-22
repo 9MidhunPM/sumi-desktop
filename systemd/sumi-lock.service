@@ -1,0 +1,8 @@
+[Unit]
+Description=Sumi session lock
+PartOf=sumi-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/hyprlock --grace 0 --immediate-render -c "@CONFIG@/hypr/hyprlock.conf"
+UMask=0077
