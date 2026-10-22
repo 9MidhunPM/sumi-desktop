@@ -34,6 +34,9 @@ class SessionArtifactsTests(unittest.TestCase):
             idle = files[base / "settings/hypr/hypridle.conf"][0].decode()
             lock = next(line.split(" = ", 1)[1] for line in idle.splitlines() if "lock_cmd = " in line)
             self.assertEqual(shlex.split(lock), ["systemctl", "--user", "start", "sumi-lock.service"])
+            unit = files[base / "settings/systemd/user/sumi-shell.service"][0].decode()
+            working_directory = next(line for line in unit.splitlines() if line.startswith("WorkingDirectory="))
+            self.assertEqual(working_directory, "WorkingDirectory=" + str(base / "data/sumi/runtime"))
 
     def test_shell_metacharacters_are_literals(self):
         base = Path("/tmp/Sumi's $HOME %n; $(false)")
@@ -44,6 +47,7 @@ class SessionArtifactsTests(unittest.TestCase):
         unit = files[base / "settings/systemd/user/sumi-shell.service"][0].decode()
         self.assertIn("$$HOME %%n; $$(false)", unit)
         self.assertIn('Environment="SUMI_HOME=/tmp/Sumi\'s $HOME %%n; $(false)"', unit)
+        self.assertIn("WorkingDirectory=/tmp/Sumi's $HOME %%n; $(false)/data/sumi/runtime\n", unit)
 
     def test_paths_with_control_characters_are_rejected_before_writing(self):
         with self.assertRaisesRegex(ValueError, "control characters"):

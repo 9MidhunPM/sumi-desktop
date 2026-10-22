@@ -51,7 +51,7 @@ If the controller launcher is unavailable but your checkout is intact, run `./bi
 | Screen sharing is unavailable | Inspect `systemctl --user status xdg-desktop-portal.service xdg-desktop-portal-hyprland.service` and their journal. Log out and back in after installing or changing portal settings. |
 | A panel reports a failed desktop change | Read its error and inspect `desktopctl operation status latest`. A queued operation is not evidence that it completed. |
 
-The installer journals configuration replacement before touching destinations. If a setup or update was interrupted, the next real installation attempt recovers the pending file transaction before proceeding. A dry run reports the pending transaction without modifying it. For an interrupted desktop profile operation, `desktopctl restore pending` handles that separate recovery record. Preserve the original error output if recovery cannot complete.
+The installer journals configuration replacement before touching destinations. If a setup or update was interrupted, run `desktopctl restore pending` from a text console to recover the pending transaction. The next real installation attempt also recovers it before proceeding; a dry run only reports it. The same recovery command handles interrupted desktop profile operations. Preserve the original error output if recovery cannot complete.
 
 ## Restore the previous desktop
 

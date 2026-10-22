@@ -154,6 +154,20 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(wrapper.read_text(), "#!/bin/sh\necho previous\n")
         self.assertTrue(Path(installed["original"]).is_dir())
 
+    def test_replacement_does_not_import_dangling_legacy_hyprland_modules(self):
+        legacy = self.layout.config / "hypr/config/theme.lua"
+        legacy.parent.mkdir(parents=True)
+        legacy.write_text('local M = require("old_private_theme")\nreturn M\n')
+        lock = self.layout.config / "hypr/hyprlock.conf"
+        lock.write_text("source = old-private-lock.conf\n")
+        self.install()
+        self.assertFalse(legacy.exists())
+        self.assertNotIn("old-private-lock", lock.read_text())
+        self.assertIn("input-field", lock.read_text())
+        lifecycle.uninstall(home=self.home)
+        self.assertEqual(legacy.read_text(), 'local M = require("old_private_theme")\nreturn M\n')
+        self.assertEqual(lock.read_text(), "source = old-private-lock.conf\n")
+
     def test_repeated_install_refuses_without_update(self):
         self.install()
         before = ownership.inventory(self.base)

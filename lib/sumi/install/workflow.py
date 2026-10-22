@@ -36,6 +36,14 @@ def render_artifacts(source: Path, layout: Layout, *, update: bool = False) -> d
         if image.is_relative_to(source / "assets"):
             theme[field] = str(layout.runtime / "assets" / image.relative_to(source / "assets"))
     rendered, _warnings = themes.render_theme(theme, home=layout.home, state_dir=layout.state)
+    if not update:
+        # The full Hyprland directory is being replaced. Do not carry a legacy
+        # Lua module or lock-screen include whose sibling files were removed.
+        rendered.pop(layout.config / "hypr/config/theme.lua", None)
+        lock_path = layout.config / "hypr/hyprlock.conf"
+        generated_lock = layout.config / "sumi/generated/hyprlock.conf"
+        rendered[lock_path], rendered[generated_lock] = themes._hyprlock(
+            files[lock_path][0].decode(), theme, generated_lock)
     for path, content in rendered.items():
         files[path] = (content.encode(), 0o600)
     wrapper = "#!/bin/sh\nexport PYTHONDONTWRITEBYTECODE=1\nexec " + shlex.quote(str(layout.runtime / "bin/desktopctl")) + ' "$@"\n'

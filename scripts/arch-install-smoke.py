@@ -37,6 +37,8 @@ def main():
         assert len(json.loads(call([controller,'theme','list']))) == 25
         assert not list((base/'data/sumi/runtime').rglob('__pycache__'))
         call(['Hyprland','--verify-config','-c',base/'config/hypr/hyprland.lua'])
+        units=sorted((base/'config/systemd/user').glob('sumi-*'))
+        call(['systemd-analyze','--user','verify',*units])
         call([controller,'doctor','--check'])
         local=base/'config/hypr/local.lua';local.write_text('-- retained personal settings\n')
         call([moved/'install.sh','--update','--no-packages'],'Back up and use Sumi\n')

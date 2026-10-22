@@ -43,7 +43,13 @@ def render_unit(template: str, values: dict[str, str | Path]) -> str:
     for line in template.splitlines():
         command = line.startswith("Exec")
         for key, value in values.items():
-            line = line.replace("@" + key + "@", _unit_value(value, command=command))
+            if line.startswith("WorkingDirectory="):
+                # This directive consumes one raw path, not a quoted argv item.
+                _literal(value)
+                replacement = str(value).replace("%", "%%")
+            else:
+                replacement = _unit_value(value, command=command)
+            line = line.replace("@" + key + "@", replacement)
         if re.search(r"@[A-Z_]+@", line):
             raise ValueError("Unresolved service template placeholder")
         lines.append(line)

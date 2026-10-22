@@ -8,7 +8,7 @@ StartLimitBurst=5
 [Service]
 Type=simple
 ExecStart="@DESKTOPCTL@" start --foreground
-WorkingDirectory="@ROOT@"
+WorkingDirectory=@ROOT@
 Environment="SUMI_HOME=@HOME@"
 Environment="SUMI_STATE_DIR=@STATE@"
 Environment="SUMI_DATA_DIR=@DATA@"
