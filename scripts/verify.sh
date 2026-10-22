@@ -21,5 +21,6 @@ python3 tests/qml/run-controller-smoke.py
 python3 tests/qml/run-appearance-smoke.py
 python3 tests/qml/run-widget-editor-smoke.py
 python3 -m compileall -q lib
-bash -n scripts/install-apps.sh
+bash -n install.sh
+python3 scripts/check-assets.py
 printf '%s\n' 'All isolated checks passed. Native compositor validation is separate.'

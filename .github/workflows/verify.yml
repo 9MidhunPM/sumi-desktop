@@ -1,0 +1,51 @@
+name: Verify Sumi
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  arch:
+    runs-on: ubuntu-latest
+    container: archlinux:base
+    timeout-minutes: 25
+    steps:
+      - name: Bootstrap current Arch tools
+        run: pacman -Syu --noconfirm --needed python git sudo
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+      - name: Install declared official dependencies
+        run: |
+          python - <<'PY'
+          import json, subprocess
+          dependencies=json.load(open('packaging/dependencies.json'))
+          packages=[item['repository']+'/'+item['name'] for item in dependencies['packages']]
+          subprocess.run(['pacman','-Syu','--noconfirm','--needed',*packages,'gitleaks'],check=True)
+          PY
+      - name: Create an isolated normal user checkout
+        run: |
+          useradd -m -s /bin/bash sumi
+          cp -a . /home/sumi/public-checkout
+          chown -R sumi:sumi /home/sumi/public-checkout
+      - name: Python and QML suites
+        run: su sumi -c 'cd /home/sumi/public-checkout && bash scripts/verify.sh'
+      - name: Fresh Arch installation lifecycle
+        run: su sumi -c 'cd /home/sumi/public-checkout && python scripts/arch-install-smoke.py'
+      - name: Scan all history and release assets
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          gitleaks git --no-banner --redact --log-opts=--all .
+          python scripts/check-public.py
+          python scripts/check-assets.py
+      - name: Upload synthetic QML captures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: synthetic-qml-renders
+          path: |
+            /tmp/sumi-bar-*.png
+            /tmp/sumi-menu-*.png
+            /tmp/sumi-widgets-montage.jpg
+          if-no-files-found: ignore
