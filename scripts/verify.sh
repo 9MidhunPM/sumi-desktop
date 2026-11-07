@@ -5,6 +5,8 @@ export PYTHONPATH="$PWD/lib${PYTHONPATH:+:$PYTHONPATH}"
 python3 -m unittest discover -s tests -v
 python3 tests/qml/run-services-smoke.py
 python3 tests/qml/run-widget-services-smoke.py
+python3 tests/qml/run-island-events-smoke.py
+python3 tests/qml/run-island-media-smoke.py
 python3 tests/qml/run-ui-smoke.py
 python3 tests/qml/run-launcher-smoke.py
 python3 tests/qml/run-launcher-history-smoke.py

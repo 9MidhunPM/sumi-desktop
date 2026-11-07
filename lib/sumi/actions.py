@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import select
 from pathlib import Path
 import shutil
 import shlex
@@ -57,6 +58,70 @@ def brightness_percent() -> int:
     if not 0 <= percent <= 100 or maximum <= 0 or not 0 <= current <= maximum:
         raise RuntimeError("Display brightness returned an invalid value")
     return percent
+
+
+def brightness_device() -> Path:
+    """Select the same hardware as brightnessctl, never a keyboard LED."""
+    output = run(["brightnessctl", "-m"], capture_output=True, text=True).stdout.strip()
+    fields = output.split(",")
+    if len(output.splitlines()) != 1 or len(fields) != 5 or fields[1] != "backlight":
+        raise RuntimeError("Display brightness is unavailable")
+    name = fields[0]
+    if not name or name in {".", ".."} or "/" in name:
+        raise RuntimeError("Display brightness device is invalid")
+    return Path("/sys/class/backlight") / name
+
+
+def brightness_snapshot(device: Path) -> dict:
+    """Read actual hardware state, with a fallback for drivers lacking it."""
+    actual = device / "actual_brightness"
+    current = int((actual if actual.exists() else device / "brightness").read_text().strip())
+    maximum = int((device / "max_brightness").read_text().strip())
+    if maximum <= 0 or not 0 <= current <= maximum:
+        raise RuntimeError("Display brightness returned an invalid value")
+    return {"available": True, "percent": round(current * 100 / maximum)}
+
+
+def watch_brightness() -> None:
+    """Block on sysfs POLLPRI notifications; no repeated subprocess polling.
+
+    Backlight drivers notify actual_brightness when the existing hardware keys
+    or other software change it. Watching brightness too covers drivers whose
+    write notification arrives there. The timeout checks only device removal.
+    """
+    device = brightness_device()
+    descriptors = []
+    poller = select.poll()
+    try:
+        for filename in ("actual_brightness", "brightness"):
+            path = device / filename
+            if not path.exists():
+                continue
+            descriptor = os.open(path, os.O_RDONLY | os.O_CLOEXEC)
+            descriptors.append(descriptor)
+            os.read(descriptor, 128)  # Reading acknowledges pending sysfs changes.
+            poller.register(descriptor, select.POLLPRI | select.POLLERR)
+        if not descriptors:
+            raise RuntimeError("Display brightness is unavailable")
+        previous = brightness_snapshot(device)
+        print(json.dumps(previous), flush=True)
+        while device.exists():
+            events = poller.poll(10000)
+            if not events:
+                continue
+            for descriptor, flags in events:
+                if flags & (select.POLLHUP | select.POLLNVAL):
+                    raise RuntimeError("Display brightness device disconnected")
+                os.lseek(descriptor, 0, os.SEEK_SET)
+                os.read(descriptor, 128)
+            current = brightness_snapshot(device)
+            if current != previous:
+                print(json.dumps(current), flush=True)
+                previous = current
+        raise RuntimeError("Display brightness device disconnected")
+    finally:
+        for descriptor in descriptors:
+            os.close(descriptor)
 
 
 def night_light_state() -> dict:
@@ -316,9 +381,11 @@ def recording(operation: str):
         if operation == "status":
             return {"recording": active, "file": data.get("file") if active else None}
         if operation == "stop":
+            stopped = False
             if active:
                 try:
                     os.kill(int(data["pid"]), signal.SIGINT)
+                    stopped = True
                 except ProcessLookupError:
                     pass
                 deadline = time.monotonic() + 5
@@ -327,7 +394,7 @@ def recording(operation: str):
                         raise RuntimeError("Recording is still finishing; its tracking was retained. Try Stop again")
                     time.sleep(0.05)
             pidfile.unlink(missing_ok=True)
-            return {"recording": False, "file": data.get("file")}
+            return {"recording": False, "file": data.get("file"), "stopped": stopped}
         if active:
             raise RuntimeError("A Sumi recording is already running")
         pidfile.unlink(missing_ok=True)
@@ -470,6 +537,8 @@ def main(argv: list[str] | None = None) -> int:
         run(["brightnessctl", "set", f"{value}%"], stdout=subprocess.DEVNULL)
     elif command == "brightness-get":
         print(json.dumps({"percent": brightness_percent()}))
+    elif command == "brightness-watch":
+        watch_brightness()
     elif command == "power-profile" and args and args[0] in {"power-saver", "balanced", "performance"}:
         run(["powerprofilesctl", "set", args[0]])
     elif command == "night-light-get":

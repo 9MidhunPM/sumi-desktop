@@ -67,6 +67,12 @@ def worker(work: Path) -> None:
             wait_for(lambda: status()["history"][0]["summary"] == "Replacement summary")
             updated = status()
             assert updated["count"] == 1 and updated["history"][0]["actions"] == ["Updated action"], updated
+            call("qs", "ipc", "-p", str(config), "call", "notificationTest", "markEntryRead", str(first_id))
+            assert not status()["history"][0]["unread"], status()
+            call("qs", "ipc", "-p", str(config), "call", "notificationTest", "dismissPopup", str(first_id))
+            wait_for(lambda: status()["active"] == 0 and status()["liveCount"] == 0)
+            archived = status()
+            assert archived["count"] == 1 and not archived["history"][0]["actions"], archived
             call("qs", "ipc", "-p", str(config), "call", "notificationTest", "dnd", "true")
             notify("Silent history", actions="[]", timeout=200)
             wait_for(lambda: status()["count"] == 2)
@@ -138,9 +144,11 @@ ShellRoot {
     readonly property int count: S.Notifications.count
     IpcHandler {
         target: "notificationTest"
-        function status(): string { return JSON.stringify({generation: root.generation, count: S.Notifications.count, active: S.Notifications.active.length, history: S.Notifications.history, loaded: S.Notifications.historyLoaded, busy: S.Notifications.persistenceBusy, storageError: S.Notifications.storageError}); }
+        function status(): string { return JSON.stringify({generation: root.generation, count: S.Notifications.count, active: S.Notifications.active.length, liveCount: Object.keys(S.Notifications.live).length, history: S.Notifications.history, loaded: S.Notifications.historyLoaded, busy: S.Notifications.persistenceBusy, storageError: S.Notifications.storageError}); }
         function dnd(value: bool): void { C.Settings.setValue("dnd", value); }
         function clear(): void { S.Notifications.clear(); }
+        function dismissPopup(id: int): void { S.Notifications.dismissPopup(id); }
+        function markEntryRead(id: int): void { S.Notifications.markEntriesRead([id]); }
     }
 }
 ''')

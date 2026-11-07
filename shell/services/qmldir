@@ -13,3 +13,8 @@ singleton Notifications Notifications.qml
 singleton Spectrum Spectrum.qml
 singleton Widgets Widgets.qml
 singleton WidgetMedia WidgetMedia.qml
+singleton Brightness Brightness.qml
+singleton NightLight NightLight.qml
+singleton Recording Recording.qml
+singleton IslandEvents IslandEvents.qml
+singleton IslandMedia IslandMedia.qml

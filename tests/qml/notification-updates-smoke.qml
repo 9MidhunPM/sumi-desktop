@@ -71,6 +71,19 @@ ShellRoot {
                 transient.expire();
                 smoke.check(!S.Notifications.history.some(entry => entry.id === 43), "closed transient persisted");
                 smoke.check(S.Notifications.unread === 0, "transient left unread badge");
+                const archive = smoke.notification(45);
+                archive.transient = true;
+                S.Notifications.accept(archive);
+                const otherUnread = smoke.notification(46);
+                S.Notifications.accept(otherUnread);
+                S.Notifications.markEntriesRead([45]);
+                smoke.check(!S.Notifications.history.find(entry => entry.id === 45).unread
+                    && S.Notifications.history.find(entry => entry.id === 46).unread, "selective mark-read changed an unseen notification");
+                S.Notifications.dismissPopup(45);
+                const retained = S.Notifications.history.find(entry => entry.id === 45);
+                smoke.check(retained && !retained.popup && retained.actions.length === 0 && !S.Notifications.live[45], "popup dismissal did not retain an action-free archive");
+                S.Notifications.dismiss(46);
+                smoke.check(!S.Notifications.history.some(entry => entry.id === 46), "remove semantics changed after adding popup dismissal");
                 const timed = smoke.notification(44);
                 timed.expireTimeout = 50;
                 S.Notifications.accept(timed);

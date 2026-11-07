@@ -190,6 +190,16 @@ Singleton {
         root.history = root.history.filter(entry => entry.id !== id);
     }
 
+    // Close the native popup while retaining a readable, action-free archive.
+    // Explicit dismissal keeps even transient entries; natural expiry still
+    // follows the sender's transient lifecycle.
+    function dismissPopup(id: int): void {
+        root.history = root.history.map(entry => entry.id === id
+            ? Object.assign({}, entry, {popup: false, transient: false, actions: []}) : entry);
+        const notification = root.live[id];
+        if (notification) notification.dismiss();
+    }
+
     function clear(): void {
         for (const id of Object.keys(root.live)) root.live[id].dismiss();
         root.history = [];
@@ -198,6 +208,11 @@ Singleton {
     function invoke(id: int, actionIndex: int): void {
         const notification = root.live[id];
         if (notification && notification.actions[actionIndex]) notification.actions[actionIndex].invoke();
+    }
+
+    function markEntriesRead(ids: var): void {
+        root.history = root.history.map(entry => ids.indexOf(entry.id) >= 0
+            ? Object.assign({}, entry, {unread: false}) : entry);
     }
 
     function markRead(): void { root.history = root.history.map(entry => Object.assign({}, entry, {unread: false})); }
