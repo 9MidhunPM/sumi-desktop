@@ -13,6 +13,7 @@ python3 tests/qml/run-island-smoke.py
 python3 tests/qml/run-controls-smoke.py
 python3 tests/qml/run-capture-handoff-smoke.py
 python3 tests/qml/run-capture-controller-smoke.py
+python3 tests/qml/run-system-stats-smoke.py
 python3 tests/qml/run-island-dashboard-smoke.py
 python3 tests/qml/run-island-tabs-smoke.py
 python3 tests/qml/run-island-thursday-smoke.py

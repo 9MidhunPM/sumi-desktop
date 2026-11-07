@@ -16,16 +16,12 @@ Item {
     readonly property real topHeight: wide ? Math.min(192, major) : 172
     readonly property real sliderTop: wide ? 0 : topHeight + gap
     readonly property real actionsTop: wide ? topHeight + gap : sliderTop + 172 + gap
-    readonly property real footerTop: actionsTop + (wide ? 82 : 172) + gap
-    implicitHeight: footerTop + (wide ? 134 : 206)
+    readonly property real footerTop: actionsTop + (wide ? 82 : 176) + gap
+    implicitHeight: footerTop + 88
     signal settingsRequested(string section)
     signal captureRequested(bool annotate)
     signal recordingRequested()
 
-    function remaining() {
-        const seconds = Math.max(0, Math.ceil((app.focusRunning ? app.focusDeadline - now : app.focusRemaining) / 1000));
-        return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
-    }
     component CircleControl: Button {
         property string iconName: "wifi"
         property string title: ""
@@ -59,15 +55,6 @@ Item {
         focusPolicy: Qt.StrongFocus
         background: Rectangle { color: parent.down ? "#5b5b66" : parent.hovered ? "#45454f" : "transparent"; radius: 19; border.width: parent.visualFocus ? 2 : 0; border.color: "#ffffff" }
         contentItem: Icon { name: parent.iconName; size: 22; color: "#f8f8fb" }
-    }
-    component FooterButton: Button {
-        property bool selected: false
-        hoverEnabled: true
-        focusPolicy: Qt.StrongFocus
-        padding: 6
-        font.pixelSize: 11
-        background: Rectangle { radius: 15; color: parent.selected ? "#f6f6f8" : parent.down ? "#55555e" : "#35363e"; border.width: parent.visualFocus ? 2 : 0; border.color: "#ffffff" }
-        contentItem: Label { text: parent.text; color: parent.selected ? "#222229" : "#ededf2"; font: parent.font; horizontalAlignment: Text.AlignHCenter }
     }
 
     Rectangle {
@@ -139,59 +126,9 @@ Item {
         enabled: S.Audio.hasOutput
         onMoved: S.Audio.setVolume(value)
     }
-    IslandControlTile {
-        id: focusTile
-        objectName: "islandControlFocus"
-        x: 0; y: root.actionsTop
-        width: root.wide ? root.major : root.width
-        height: 82
-        title: "Focus"
-        subtitle: root.app.focusRunning ? root.remaining() + " remaining" : "Start a focused moment"
-        iconName: "moon"
-        selected: root.app.focusRunning
-        activeColor: "#534179"
-        glyphColor: root.app.focusRunning ? "#d0b6ff" : "#b799f3"
-        onClicked: { if (root.app.focusRunning) root.app.focusPause(); else root.app.focusStart(); }
-        onPressAndHold: root.app.focusReset(25)
-    }
-    IslandControlTile {
-        id: micTile
-        objectName: "islandControlMic"
-        x: root.wide ? root.major + root.gap : 0
-        y: root.actionsTop + (root.wide ? 0 : 94)
-        width: root.wide ? (root.major - root.gap) / 2 : (root.width - root.gap * 2) / 3
-        height: 78
-        iconName: S.Audio.sourceMuted ? "microphone-off" : "microphone"
-        title: S.Audio.sourceMuted ? "Mic off" : "Mic on"
-        enabled: S.Audio.hasInput
-        onClicked: S.Audio.toggleSourceMute()
-        onPressAndHold: root.settingsRequested("audio")
-    }
-    IslandControlTile {
-        id: captureTile
-        objectName: "islandControlCapture"
-        x: micTile.x + micTile.width + root.gap
-        y: micTile.y
-        width: micTile.width
-        height: 78
-        title: "Capture"
-        iconName: "camera"
-        onClicked: root.captureRequested(false)
-        onPressAndHold: root.captureRequested(true)
-    }
-    IslandControlTile {
-        objectName: "islandDashboardRecord"
-        x: root.wide ? (root.major + root.gap) * 2 : captureTile.x + captureTile.width + root.gap
-        y: micTile.y
-        width: root.wide ? root.major : micTile.width
-        height: root.wide ? 82 : 78
-        title: S.Recording.recording ? "Stop" : "Record"
-        subtitle: root.wide ? S.Recording.recording ? "Recording your screen" : "Select a region" : ""
-        iconName: S.Recording.recording ? "stop" : "record"
-        glyphColor: S.Recording.recording ? "#ff6b73" : "#f8f8fb"
-        enabled: S.Recording.ready && !S.Recording.busy
-        onClicked: { if (S.Recording.recording) S.Recording.stop(); else root.recordingRequested(); }
-    }
+    IslandSystemUsage { x: 0; y: root.actionsTop; width: root.wide ? root.major : (root.width - 12)/2; height: 82; metric: "cpu" }
+    IslandSystemUsage { x: root.wide ? root.major + 12 : (root.width + 12)/2; y: root.actionsTop; width: root.wide ? root.major : (root.width - 12)/2; height: 82; metric: "memory" }
+    IslandSystemUsage { x: root.wide ? (root.major + 12)*2 : 0; y: root.actionsTop + (root.wide ? 0 : 94); width: root.wide ? root.major : root.width; height: 82; metric: "storage" }
     Rectangle {
         x: 0; y: root.footerTop
         width: root.width
@@ -207,24 +144,6 @@ Item {
         }
         IslandPowerProfiles {
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 8 }
-        }
-    }
-    Grid {
-        x: 0; y: root.footerTop + 98
-        width: root.width
-        columns: root.wide ? 5 : 2
-        spacing: 6
-        Repeater {
-            model: ["Annotate", "Sound", "Wi-Fi", "Bluetooth", "More settings"]
-            FooterButton {
-                required property string modelData
-                required property int index
-                objectName: index === 4 ? "islandControlMore" : "islandControlDetail" + index
-                text: modelData
-                width: root.wide ? (root.width - 24) / 5 : (root.width - 6) / 2
-                height: 30
-                onClicked: { if (index === 0) root.captureRequested(true); else root.settingsRequested(["", "audio", "wifi", "bluetooth", ""][index]); }
-            }
         }
     }
 }

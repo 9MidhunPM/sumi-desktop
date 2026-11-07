@@ -16,6 +16,11 @@ from sumi.actions import search_files, clipboard, main, capture, recording
 
 
 class ActionsTests(unittest.TestCase):
+    def test_system_stats_watch_dispatches_to_the_shared_sampler(self):
+        with patch('sumi.system_stats.watch') as watch:
+            main(['system-stats-watch'])
+        watch.assert_called_once_with()
+
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory()
         self.addCleanup(self.folder.cleanup)

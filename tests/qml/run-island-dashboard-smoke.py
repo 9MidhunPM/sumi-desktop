@@ -43,8 +43,13 @@ ShellRoot {
                 wait(350);
                 check(dashboard.section === "home", "Expected dashboard.section");
                 check(!fakeApp.focusRunning, "initial focus false");
-                findChild(dashboard, "islandDashboardFocus").clicked();
-                check(fakeApp.focusRunning, "focus start works");
+                check(findChild(dashboard, "islandUsageValue-cpu").text === "27%", "Home shows observed CPU usage");
+                check(findChild(dashboard, "islandUsageValue-memory").text === "6.0 GB", "Home shows actual RAM consumption");
+                check(findChild(dashboard, "islandUsageValue-storage").text === "128 GB", "Home shows actual storage consumption");
+                S.SystemStats.cpuAvailable = false;
+                check(findChild(dashboard, "islandUsageValue-cpu").text === "Unavailable", "Unavailable CPU never appears as fake zero");
+                S.SystemStats.cpuAvailable = true;
+                check(findChild(dashboard, "islandDashboardFocus") === null && findChild(dashboard, "islandHomeRecord") === null, "Usage replaces prominent focus and record tiles");
                 findChild(dashboard, "islandTabInbox").clicked();
                 check(dashboard.section === "inbox", "Expected dashboard.section");
                 wait(350);
@@ -77,14 +82,13 @@ ShellRoot {
                 const origin = level.mapToItem(dashboard, 0, 0);
                 check(pixels.red(Math.floor(origin.x + level.width * .25), Math.floor(origin.y + level.height * .75)) > 200, "Vertical brightness fill renders white");
                 check(pixels.red(Math.floor(origin.x + level.width / 2), Math.floor(origin.y + level.height * .35)) < 100, "Vertical brightness track renders charcoal");
-                findChild(dashboard, "islandDashboardRecord").forceActiveFocus(Qt.OtherFocusReason);
-                wait(100);
-                check(findChild(dashboard, "islandControlsScroll").contentItem.contentY > 0, "Keyboard focus reveals lower controls");
-                const finalControl = findChild(dashboard, "islandControlMore");
+                check(findChild(dashboard, "islandDashboardRecord") === null && findChild(dashboard, "islandControlMore") === null && findChild(dashboard, "islandControlDetail0") === null, "Extra bottom tools are removed from the island");
+                const finalControl = findChild(dashboard, "islandPowerProfile-performance");
                 finalControl.forceActiveFocus(Qt.OtherFocusReason);
                 wait(100);
-                const finalY = finalControl.mapToItem(findChild(dashboard, "islandControlsScroll").contentItem, 0, 0).y;
-                check(finalY >= -1 && finalY + finalControl.height <= findChild(dashboard, "islandControlsScroll").height + 1, "Final narrow footer control is reachable");
+                const scrollViewport = findChild(dashboard, "islandControlsScroll");
+                const finalY = finalControl.mapToItem(scrollViewport.contentItem, 0, 0).y;
+                check(finalY >= -1 && finalY + finalControl.height <= scrollViewport.height + 1, "Final power-profile control remains reachable");
                 dashboard.width = 280;
                 dashboard.section = "home";
                 wait(250);
@@ -134,6 +138,22 @@ ShellRoot {
 '''
 
 STUBS = {
+    'SystemStats': '''property bool ready: true
+property bool cpuAvailable: true
+property bool memoryAvailable: true
+property bool storageAvailable: true
+property real cpuPercent: 27
+property real memoryUsed: 6442450944
+property real memoryTotal: 17179869184
+property real storageUsed: 137438953472
+property real storageTotal: 549755813888
+property real memoryPercent: 37.5
+property real storagePercent: 25
+property string error: ""
+function createConsumer() { return 1; }
+function setDemand(id, value) {}
+function releaseConsumer(id) {}
+''',
     'Notifications': '''property var history: [{id: 1, appName: "Fixture", summary: "A notification", body: "A body", time: new Date(), unread: true, actions: ["Reply"]}]
 readonly property int count: history.length
 readonly property int unread: history.filter(entry => entry.unread).length
@@ -231,7 +251,7 @@ def main():
         output = result.stdout + result.stderr
         if result.returncode or 'ISLAND_DASHBOARD_OK' not in output or any(message in output for message in ['TypeError:', 'ReferenceError:', 'Unable to assign [undefined]', 'Failed to load configuration', 'FAIL!']):
             raise SystemExit(output)
-        print('PASS: dashboard focus controls; tabs; visible-only unread handling; no incoming tab switching; inactive Inbox; narrow layout')
+        print('PASS: observed CPU/RAM/storage; unavailable truth; compact power controls; no bottom extras; tabs; visible-only unread handling; no incoming tab switching; inactive Inbox; narrow layout')
 
 
 if __name__ == '__main__':

@@ -600,6 +600,9 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"percent": brightness_percent()}))
     elif command == "brightness-watch":
         watch_brightness()
+    elif command == "system-stats-watch":
+        from .system_stats import watch
+        watch()
     elif command == "power-profile" and args and args[0] in {"power-saver", "balanced", "performance"}:
         run(["powerprofilesctl", "set", args[0]])
     elif command == "night-light-get":

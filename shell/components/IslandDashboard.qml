@@ -15,6 +15,10 @@ FocusScope {
     property bool active: false
     property double now: Date.now()
     property real mediaPosition: 0
+    property int statsConsumer: 0
+    function syncStatsDemand() { if (statsConsumer) S.SystemStats.setDemand(statsConsumer, active && (section === "home" || section === "controls")); }
+    Component.onCompleted: { statsConsumer = S.SystemStats.createConsumer(); syncStatsDemand(); }
+    Component.onDestruction: if (statsConsumer) S.SystemStats.releaseConsumer(statsConsumer)
     readonly property alias tabDeck: pagesDeck
     readonly property var thursdayBackend: typeof app.thursdayBackend === "undefined" ? null : app.thursdayBackend
     readonly property real preferredWidth: section === "media" ? 520 : section === "inbox" ? 560 : section === "home" ? 600 : 640
@@ -71,8 +75,8 @@ FocusScope {
         }
         if (ids.length) S.Notifications.markEntriesRead(ids);
     }
-    onActiveChanged: { if (active) refresh(); readVisible.restart(); }
-    onSectionChanged: { readVisible.restart(); }
+    onActiveChanged: { if (active) refresh(); readVisible.restart(); syncStatsDemand(); }
+    onSectionChanged: { readVisible.restart(); syncStatsDemand(); }
     onInboxEntriesChanged: readVisible.restart()
     Timer { id: readVisible; interval: 120; onTriggered: root.markVisibleEntries() }
     Connections {

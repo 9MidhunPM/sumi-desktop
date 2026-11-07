@@ -219,6 +219,8 @@ ShellRoot {
             S.IslandEvents.clear(); S.Notifications.live = ({}); S.Notifications.history = [];
             grabImage(island.contentItem).save("/tmp/sumi-island-controls.png");
             child("islandTabHome").clicked(); wait(220);
+            check(child("islandUsage-cpu") !== null, "Home exposes actual system usage in place of large task tiles");
+            check(child("islandDashboardFocus") === null, "Home no longer prioritizes focus controls");
             island.dismiss();
             for (const trigger of ["panel", "native", "hidden", "fullscreen", "idle", "output"]) {
                 island.leaveHover(); island.pin(); wait(20);

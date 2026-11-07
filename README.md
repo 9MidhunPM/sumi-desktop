@@ -110,3 +110,5 @@ are not bundled. Configured replies expand as plain text with a Thursday sender
 label, and speech uses the music position's single measured waveform.
 
 Region selection compacts the island while keeping its status visible. Escape cancels normally; stalled selectors time out, are reaped, and release the interface so capture can be retried.
+
+Home and Controls show live CPU utilization, used/total RAM, and used/total root storage. One shared observer runs only while those pages are visible; unavailable readings are shown honestly. The control page ends with compact battery and power profiles.

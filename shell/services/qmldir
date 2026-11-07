@@ -18,3 +18,4 @@ singleton NightLight NightLight.qml
 singleton Recording Recording.qml
 singleton IslandEvents IslandEvents.qml
 singleton IslandMedia IslandMedia.qml
+singleton SystemStats SystemStats.qml
