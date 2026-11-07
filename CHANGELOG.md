@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Add an outlined black dynamic island with adaptive Home, Inbox, Music, Controls, and optional Thursday pages.
+- Route desktop notifications, backlight changes, audio, connectivity, and battery thresholds through a prioritized preview stream.
+- Support short horizontal touchpad gestures across the entire island, keyboard tab switching, compact power profiles, and reduced/battery motion.
+- Show shared, visibility-driven CPU, RAM, and root-storage usage; remove the extra bottom action grid while retaining the full original right-side Quick Settings.
+- Add an independently implemented optional Thursday adapter with explicit environment configuration, streamed response text and sender labels, one measured speech waveform, and queued-audio lifecycle fixes. External companion code and credentials remain unbundled.
+- Keep pinned controls stationary during transient feedback and center the clock accurately during animated width changes.
+- Bound and reap region selectors, handle Escape as cancellation, keep compact island status visible during selection, and recover lost callbacks.
+- Preserve the public installer, XDG paths, recovery behavior, original three MIT landscape assets, and source-history privacy checks.
+
 ## 0.1.0 — 2026-10-22
 
 Initial standalone public release of Sumi Desktop.

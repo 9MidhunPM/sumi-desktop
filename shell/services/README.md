@@ -24,3 +24,12 @@ Bluetooth discovery and existing-device connections are native. Pairing launches
 The controller path is `SUMI_DESKTOPCTL` or `bin/desktopctl` beside the shell directory. Actions always use an argv array. The installer must create the state directory (`$XDG_STATE_HOME/sumi` by default) before settings are written.
 
 Run `python3 tests/qml/run-services-smoke.py` for offscreen checks. This tests defaults, loading/watching themes, invalid-theme recovery, settings persistence, notification sanitization/history/actions, and preview isolation. Sandbox tests cannot establish live DBus or PipeWire functionality; validate those in the host graphical session. Qt 6 lint is `/usr/lib/qt6/bin/qmllint`; upstream qmltypes currently emit warnings about opaque native models and singleton aliases, so the offscreen runtime test is also required.
+
+
+The island uses shared `Brightness`, `NightLight`, and `Recording` services so
+Quick Settings and compact controls observe the same state. `IslandEvents`
+prioritizes transient presentation without taking ownership of notification
+history or actions. `IslandMedia` selects meaningful playback while leaving
+paused native players resumable. `SystemStats` uses one controller observer only
+while a Home or Controls page requests it, and clears unavailable or stale data.
+The optional Thursday adapter is documented separately in `integrations/README.md`.
