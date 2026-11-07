@@ -29,7 +29,7 @@ AbstractButton {
         color: control.selected ? Qt.rgba(Theme.accentBlue.r, Theme.accentBlue.g, Theme.accentBlue.b, control.down ? 0.27 : control.hovered ? 0.23 : 0.17) : Qt.rgba(Theme.textMain.r, Theme.textMain.g, Theme.textMain.b, control.down ? 0.13 : control.hovered ? 0.10 : 0.055)
         border.width: control.visualFocus ? 2 : 0
         border.color: Theme.accentBlue
-        Behavior on color { ColorAnimation { duration: Theme.motionControl } }
+        Behavior on color { ColorAnimation { duration: control.down || control.selected ? 0 : Theme.motionControl } }
     }
     contentItem: ColumnLayout {
         spacing: 6

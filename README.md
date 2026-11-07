@@ -80,3 +80,31 @@ Remove `--dry-run` when you want rollback or uninstall to run. Updates retain a 
 [Release verification](docs/verification.md) separates Python tests, offscreen QML tests, fresh Arch installation, and native compositor checks. Physical hardware operations and a display-manager boot are separate from isolated GUI tests; this first release does not claim a full hardware certification matrix.
 
 See [the changelog](CHANGELOG.md), [contributing](CONTRIBUTING.md), and [security reporting](SECURITY.md). Report reproducible problems through the repository's issue forms, without attaching private state or backups.
+
+
+## Dynamic island
+
+The center island has an opaque black surface and a neutral gray border. Click
+it to open compact Home, Inbox, Music, Controls and Thursday pages. Two-finger
+horizontal scrolling works anywhere on the expanded island; a short gesture
+switches one tab. Ctrl+Tab and Ctrl+Shift+Tab provide keyboard navigation.
+Reduced-motion and battery settings also apply to its transitions.
+
+Notifications, brightness, volume, connectivity and battery alerts share a
+prioritized preview. Inbox keeps notification actions and marks visible entries
+read. Music supports player selection, playback and seeking. Controls provides
+brightness, audio, connectivity, DND, night light and compact power profiles.
+The right-side settings button still opens the full original Quick Settings.
+The battery button opens island Controls. Appearance switches between a floating
+island and an attached notch.
+
+Use `desktopctl ipc island toggle`, `desktopctl ipc island open inbox` (or
+`home`, `media`, `controls`, `thursday`), and `desktopctl ipc island close`.
+The launcher also includes a Dynamic island action.
+
+Thursday integration is optional. Without configuration, the desktop starts
+without that external project and its tab explains the unavailable state. See
+[Optional Thursday setup](shell/integrations/README.md) for environment settings
+and backend requirements. Thursday code, credentials and conversation history
+are not bundled. Configured replies expand as plain text with a Thursday sender
+label, and speech uses the music position's single measured waveform.

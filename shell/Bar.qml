@@ -6,14 +6,12 @@ import QtQuick.Layouts
 import QtQml.Models
 import Quickshell
 import Quickshell.Hyprland
-import Quickshell.Services.SystemTray
 import Quickshell.Wayland
 import "config"
 import "services" as S
 import "components" as C
 
-// Three translucent islands leave the wallpaper visible. Five persistent
-// workspaces show one dot per window; occupied extras appear on demand.
+// Quiet glass side controls frame the separate black dynamic island.
 PanelWindow {
     id: bar
     required property var modelData
@@ -49,31 +47,29 @@ PanelWindow {
             active: bar.activeWorkspaceId === id, occupied: windows.length > 0, urgent: !!workspace && workspace.urgent === true,
             windowCount: windows.length};
     }
-    readonly property var trayItems: SystemTray.items.values
-    readonly property int inlineTrayCount: Math.min(trayItems.length, width >= 1800 ? 3 : width >= 1400 ? 1 : 0)
     readonly property real centerRoom: Math.max(0, width - 2 * Math.max(leftIsland.width, rightIsland.width) - (compact ? 32 : 56))
-    property int spectrumConsumer: 0
-    readonly property bool visualizationWanted: app.barVisible && musicIsland.visible && musicIsland.expanded
-    onVisualizationWantedChanged: S.Spectrum.setDemand(spectrumConsumer, visualizationWanted)
-    Component.onCompleted: { spectrumConsumer = S.Spectrum.createConsumer(); S.Spectrum.setDemand(spectrumConsumer, visualizationWanted); }
-    Component.onDestruction: S.Spectrum.setDemand(spectrumConsumer, false)
+    mask: Region {
+        Region { x: leftIsland.x; y: leftIsland.y; width: bar.app.barVisible ? leftIsland.width : 0; height: leftIsland.height }
+        Region { x: rightIsland.x; y: rightIsland.y; width: bar.app.barVisible ? rightIsland.width : 0; height: rightIsland.height }
+    }
+    DynamicIsland {
+        id: centerIsland
+        modelData: bar.modelData
+        app: bar.app
+        centerRoom: bar.centerRoom
+    }
     Behavior on reveal {
         NumberAnimation {
-            duration: Theme.effectiveReducedMotion ? 0 : Theme.batteryMotion ? (bar.app.barVisible ? 140 : 110) : 180
+            duration: bar.app.barVisible ? Theme.motionEnter : Theme.motionExit
             easing.type: bar.app.barVisible ? Easing.OutCubic : Easing.InCubic
         }
     }
-    onVisibleChanged: if (!visible) { trayMenu.close(); workspaceMenu.close(); }
+    onVisibleChanged: if (!visible) workspaceMenu.close()
     Connections {
         target: bar.app
-        function onPanelChanged() { if (bar.app.panel !== "") { trayMenu.close(); workspaceMenu.close(); } }
-        function onBarVisibleChanged() { if (!bar.app.barVisible) { trayMenu.close(); workspaceMenu.close(); } }
+        function onPanelChanged() { if (bar.app.panel !== "") workspaceMenu.close(); }
+        function onBarVisibleChanged() { if (!bar.app.barVisible) workspaceMenu.close(); }
     }
-    function activateTray(item, secondary) {
-        if ((secondary || item.onlyMenu) && item.hasMenu) item.display(bar, bar.width - rightIsland.width, bar.height + 8);
-        else if (!secondary) item.activate();
-    }
-
 
     Item {
         objectName: "barContent"
@@ -86,25 +82,13 @@ PanelWindow {
             anchors.left: parent.left
             anchors.leftMargin: 0
             anchors.verticalCenter: parent.verticalCenter
-            width: leftRow.implicitWidth + (bar.compact ? 12 : 20)
+            width: leftRow.implicitWidth + (bar.compact ? 12 : 16)
             height: Theme.barHeight - 2
-            Rectangle { anchors.fill: parent; radius: height / 2; color: Theme.barBackground; border.width: 1; border.color: Theme.borderSoft }
+            C.Surface { anchors.fill: parent; radius: height / 2; color: Theme.barBackground }
             RowLayout {
                 id: leftRow
                 anchors.centerIn: parent
-                spacing: bar.compact ? 1 : 4
-                C.ActionButton {
-                    objectName: "barLauncher"
-                    iconName: "arch"; iconSize: 20
-                    text: ""
-                    textColor: Theme.accentBlue
-                    quiet: true; padding: 8
-                    implicitWidth: bar.compact ? 30 : 40
-                    implicitHeight: 28
-                    tooltip: "Command hub · Super+Space"
-                    onClicked: app.toggle("launcher", bar.screen)
-                }
-                Item { implicitWidth: bar.compact ? 5 : 12; implicitHeight: 24; Rectangle { anchors.centerIn: parent; width: 1; height: 14; color: Theme.borderSoft } }
+                spacing: 2
                 Repeater {
                     model: 5
                     C.WorkspaceButton {
@@ -133,111 +117,53 @@ PanelWindow {
                 }
             }
         }
-        C.MusicIsland {
-            id: musicIsland
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.verticalCenter: parent.verticalCenter
-            width: implicitWidth
-            height: Theme.barHeight - 2
-            compact: bar.width < 760
-            playing: S.Media.playing
-            expanded: playing && bar.centerRoom >= expandedWidth
-            onClockClicked: bar.app.toggle("calendar", bar.screen)
-            onMusicClicked: bar.app.toggle("media", bar.screen)
-        }
         Item {
             id: rightIsland
             anchors.right: parent.right
-            anchors.rightMargin: 0
             anchors.verticalCenter: parent.verticalCenter
-            width: rightRow.implicitWidth + (bar.compact ? 12 : 20)
+            width: rightRow.implicitWidth + 12
             height: Theme.barHeight - 2
-            Rectangle { anchors.fill: parent; radius: height / 2; color: Theme.barBackground; border.width: 1; border.color: Theme.borderSoft }
+            C.Surface { anchors.fill: parent; radius: height / 2; color: Theme.barBackground }
             RowLayout {
                 id: rightRow
                 anchors.centerIn: parent
-                spacing: 4
-                Repeater {
-                    model: bar.trayItems.slice(0, bar.inlineTrayCount)
-                    C.ActionButton {
-                        id: trayButton
-                        required property var modelData
-                        quiet: true; padding: 6
-                        implicitWidth: 34; implicitHeight: 28
-                        tooltip: modelData.tooltipTitle || modelData.title || "Tray application"
-                        onClicked: bar.activateTray(modelData, false)
-                        C.Icon { anchors.centerIn: parent; name: "apps"; size: 16; visible: trayImage.status !== Image.Ready; color: Theme.textSoft }
-                        Image { id: trayImage; anchors.centerIn: parent; source: trayButton.modelData.icon; width: 16; height: 16; sourceSize: Qt.size(32, 32); fillMode: Image.PreserveAspectFit; visible: status === Image.Ready }
-                        TapHandler { acceptedButtons: Qt.RightButton; onTapped: bar.activateTray(trayButton.modelData, true) }
-                    }
-                }
-                C.ActionButton {
-                    id: trayOverflow
-                    visible: bar.trayItems.length > bar.inlineTrayCount
-                    iconName: "more-horizontal"; iconSize: 17
-                    quiet: true; padding: 6; implicitWidth: 32; implicitHeight: 28
-                    tooltip: "Tray applications"
-                    onClicked: trayMenu.popup(trayOverflow, 0, trayOverflow.height + 12)
-                }
-                C.ActionButton {
-                    objectName: "barNotifications"
-                    iconName: Settings.dnd ? "bell-off" : "bell"; iconSize: 17
-                    quiet: true; padding: 8; implicitWidth: 36; implicitHeight: 28
-                    tooltip: "Notifications · Super+N"
-                    onClicked: app.toggle("notifications", bar.screen)
-                    Rectangle { anchors.right: parent.right; anchors.rightMargin: 6; anchors.top: parent.top; anchors.topMargin: 5; width: 5; height: 5; radius: 3; visible: S.Notifications.unread > 0; color: Theme.accentPink }
-                }
-                C.ActionButton { visible: bar.width >= 1400; iconName: S.Network.connected ? "wifi" : "wifi-off"; iconSize: 17; quiet: true; padding: 8; implicitWidth: 36; implicitHeight: 28; tooltip: S.Network.name || "Network"; onClicked: app.openSettings("wifi", bar.screen) }
-                C.ActionButton {
-                    objectName: "barBluetooth"
-                    visible: bar.width >= 1600; iconName: S.Bluetooth.enabled ? "bluetooth" : "bluetooth-off"; iconSize: 17; quiet: true; padding: 8; implicitWidth: 34; implicitHeight: 28; textColor: S.Bluetooth.enabled ? Theme.accentCyan : Theme.textSoft
-                    tooltip: "Bluetooth · right-click for Bluetooth manager"
-                    onClicked: app.openSettings("bluetooth", bar.screen)
-                    TapHandler { acceptedButtons: Qt.RightButton; onTapped: { bar.app.close(); S.Bluetooth.openManager(); } }
-                }
+                spacing: 2
                 C.ActionButton {
                     objectName: "barAudio"
-                    visible: bar.width >= 760; iconName: S.Audio.muted ? "volume-x" : "volume"; iconSize: 17; quiet: true; padding: 8; implicitWidth: 36; implicitHeight: 28
+                    iconName: S.Audio.muted ? "volume-x" : "volume"; iconSize: 16
+                    quiet: true; padding: 6; implicitWidth: 28; implicitHeight: 28
                     tooltip: "Audio · " + Math.round(S.Audio.volume * 100) + "% · right-click for sound mixer"
                     onClicked: app.openSettings("audio", bar.screen)
                     TapHandler { acceptedButtons: Qt.RightButton; onTapped: { bar.app.close(); S.Audio.openManager(); } }
                 }
                 C.ActionButton {
+                    objectName: "barWifi"
+                    iconName: S.Network.connected ? "wifi" : "wifi-off"; iconSize: 16
+                    quiet: true; padding: 6; implicitWidth: 28; implicitHeight: 28
+                    tooltip: S.Network.name || "Wi-Fi"
+                    onClicked: app.openSettings("wifi", bar.screen)
+                }
+                C.ActionButton {
                     id: batteryButton
                     objectName: "barBattery"
-                    visible: S.Battery.available && bar.width >= 760
+                    visible: S.Battery.available
                     text: Math.round(S.Battery.percent) + "%"
-                    iconName: S.Battery.charging ? "battery-charging" : "battery"; iconSize: 18
+                    iconName: S.Battery.charging ? "battery-charging" : "battery"; iconSize: 16
+                    iconSpacing: 5
                     textColor: S.Battery.percent < 20 ? Theme.accentWarn : Theme.textMain
-                    quiet: true; padding: 8; implicitWidth: batteryWidth.width + iconSize + iconSpacing + 16; implicitHeight: 28
-                    leftPadding: 8; rightPadding: 8
+                    quiet: true; padding: 6; implicitWidth: batteryWidth.width + iconSize + iconSpacing + 12; implicitHeight: 28
+                    leftPadding: 6; rightPadding: 6
                     TextMetrics { id: batteryWidth; font: batteryButton.font; text: "100%" }
-                    tooltip: "Battery · " + S.Battery.timeLabel
+                    tooltip: "Battery · " + Math.round(S.Battery.percent) + "% · " + S.Battery.timeLabel
+                    onClicked: app.openIsland("controls", bar.screen, true)
+                }
+                C.ActionButton {
+                    objectName: "barSettings"
+                    iconName: "settings"; iconSize: 16
+                    quiet: true; padding: 6; implicitWidth: 28; implicitHeight: 28
+                    tooltip: "Control center"
                     onClicked: app.toggle("settings", bar.screen)
                 }
-                C.ActionButton { objectName: "barSettings"; iconName: "settings"; iconSize: 17; quiet: true; padding: 8; implicitWidth: 38; implicitHeight: 28; tooltip: "Control center"; onClicked: app.toggle("settings", bar.screen) }
-            }
-        }
-        Menu {
-            id: trayMenu
-            popupType: Popup.Window
-            font.family: Theme.font
-            palette.text: Theme.textMain
-            palette.windowText: Theme.textMain
-            palette.highlight: Theme.bgPlaying
-            palette.highlightedText: Theme.textMain
-            background: C.Surface {}
-            Instantiator {
-                model: bar.trayItems.slice(bar.inlineTrayCount)
-                delegate: MenuItem {
-                    required property var modelData
-                    text: modelData.title || modelData.tooltipTitle || "Tray application"
-                    icon.source: modelData.icon
-                    icon.color: "transparent"
-                    onTriggered: bar.activateTray(modelData, false)
-                }
-                onObjectAdded: (index, object) => trayMenu.insertItem(index, object)
-                onObjectRemoved: (index, object) => trayMenu.removeItem(object)
             }
         }
         Menu {

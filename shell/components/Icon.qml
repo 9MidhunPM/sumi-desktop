@@ -12,11 +12,12 @@ Item {
     property bool preserveDetail: false
     readonly property bool ready: renderer.loaded
     readonly property string resolvedName: {
-        const aliases = { apps: "grid" };
+        const aliases = { apps: "grid", assistant: "sparkles" };
         const candidate = aliases[name] || name;
-        const names = ["arch", "chatgpt", "grid", "sparkles", "terminal", "code", "bell", "bell-off",
+        const names = ["arch",  "grid", "sparkles", "terminal", "code", "bell", "bell-off",
             "wifi", "wifi-off", "bluetooth", "bluetooth-off", "volume", "volume-x",
-            "battery", "battery-charging", "settings", "chevron-down", "chevron-up",
+            "leaf", "bolt", "battery", "battery-charging", "settings", "chevron-down", "chevron-up",
+            "sun", "moon", "microphone", "microphone-off", "camera", "record", "stop", "timer",
             "play", "pause", "music", "calendar", "arrow-right", "more-horizontal", "circle-help"];
         return names.indexOf(candidate) >= 0 ? candidate : "circle-help";
     }

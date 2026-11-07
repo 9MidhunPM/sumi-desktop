@@ -37,6 +37,7 @@ C.Surface {
     property bool fetchPending: false
     readonly property string requestKey: tab === "Files" ? "Files:" + search.text : tab === "Clipboard" ? "Clipboard:" + clipboardListRevision : ""
     property var actions: [
+        {historyId:"action:island",name:"Dynamic island",detail:"Controls, notifications and media",command:"ipc",args:["island","toggle"],icon:"󰒓"},
         {historyId:"action:appearance",name:"Appearance",detail:"Wallpapers, colors and desktop preferences",panel:"appearance",icon:"󰏘"},
         {historyId:"action:widgets",name:"Desktop widgets",detail:"Priorities, deadline and visible widgets",panel:"widgets",icon:"󰄬"},
         {historyId:"action:settings",name:"Quick settings",detail:"Network, sound and power",panel:"settings",icon:"󰒓"},
@@ -204,7 +205,7 @@ C.Surface {
         // Interactive desktop actions need the overlay released before they
         // begin. Ordinary launches stay visible until the controller accepts
         // them, so a failed application does not silently disappear.
-        if (command === "capture" || command === "lock") {
+        if (command === "capture" || command === "lock" || (command === "ipc" && args[0] === "island")) {
             app.close();
             S.Desktop.action(command, args, function(ok, value, error) {
                 if (ok && value.cancelled !== true) S.LauncherHistory.record(historyId, query);

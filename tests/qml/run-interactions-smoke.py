@@ -113,7 +113,19 @@ ShellRoot {
                 workspace.entry = {id: 2, name: "2", windowCount: 2, active: true, urgent: false};
                 mouseMove(tile, tile.width / 2, tile.height / 2);
                 wait(16);
-                if (panelAction.background.color !== Theme.accentBlue || panelQuick.background.color !== Theme.accentBlue || workspace.background.color.a < 0.17) failures.push("SELECTED_CUE_MISSING");
+                const workspaceDot = findChild(workspace, "workspaceDot2");
+                if (panelAction.background.color !== Theme.accentBlue || panelQuick.background.color !== Theme.accentBlue || !workspaceDot || workspaceDot.width !== 16 || workspaceDot.height !== 6 || workspaceDot.opacity !== 1 || workspace.background.color.a !== 0) failures.push("SELECTED_CUE_MISSING");
+                const workspaceWidth = workspace.width;
+                for (const count of [0, 1, 20]) {
+                    workspace.entry = {id: 2, name: "2", windowCount: count, active: false, urgent: false};
+                    wait(16);
+                    if (workspace.width !== workspaceWidth || workspaceDot.width !== 6 || workspaceDot.height !== 6) failures.push("WORKSPACE_DOT_GEOMETRY " + count);
+                    if (Math.abs(workspaceDot.opacity - (count ? 0.78 : 0.28)) > 0.01) failures.push("WORKSPACE_DOT_OCCUPANCY " + count);
+                    if (!workspace.Accessible.name.includes(count ? count + " window" : "empty")) failures.push("WORKSPACE_DOT_ACCESSIBILITY " + count);
+                }
+                workspace.entry = {id: 2, name: "2", windowCount: 1, active: false, urgent: true};
+                wait(16);
+                if (workspaceDot.color !== Theme.accentWarn || workspaceDot.opacity !== 1) failures.push("WORKSPACE_URGENCY_CUE");
                 grabImage(hoverBoard).save("/tmp/sumi-controls-panel-hover.png");
                 if (failures.length) { console.error("SUMI_INTERACTIONS_FAILED", failures.join("; ")); Qt.exit(1); }
                 else { console.info("SUMI_INTERACTIONS_OK"); Qt.quit(); }

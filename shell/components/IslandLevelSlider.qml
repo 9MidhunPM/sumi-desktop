@@ -1,0 +1,85 @@
+pragma ComponentBehavior: Bound
+import QtQuick
+import QtQuick.Controls
+
+Slider {
+    id: control
+    property string iconName: "sun"
+    property string label: "Brightness"
+    property bool toggleable: false
+    property bool muted: false
+    signal toggleRequested()
+    orientation: Qt.Vertical
+    from: 0
+    to: 1
+    stepSize: 0.01
+    padding: 0
+    focusPolicy: Qt.StrongFocus
+    Accessible.name: label
+    opacity: enabled ? 1 : 0.4
+    background: Item {
+        width: control.width
+        height: control.height
+        Canvas {
+            id: track
+            anchors.fill: parent
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+            Connections {
+                target: control
+                function onPositionChanged() { track.requestPaint(); }
+                function onVisualFocusChanged() { track.requestPaint(); }
+                function onPressedChanged() { track.requestPaint(); }
+            }
+            onPaint: {
+                const c = getContext("2d");
+                c.reset();
+                const r = Math.min(25, width / 2, height / 2);
+                c.beginPath(); c.moveTo(r, 0); c.lineTo(width-r, 0);
+                c.quadraticCurveTo(width,0,width,r); c.lineTo(width,height-r);
+                c.quadraticCurveTo(width,height,width-r,height); c.lineTo(r,height);
+                c.quadraticCurveTo(0,height,0,height-r); c.lineTo(0,r); c.quadraticCurveTo(0,0,r,0); c.closePath();
+                c.fillStyle = control.pressed ? "#36373d" : "#292a2f"; c.fill();
+                c.save(); c.clip();
+                c.fillStyle = "#f6f6f8";
+                c.fillRect(0,height*(1-control.position),width,height*control.position);
+                c.restore();
+                if (control.visualFocus) { c.lineWidth=3; c.strokeStyle="#ffffff"; c.stroke(); }
+            }
+        }
+        Label {
+            anchors { top: parent.top; horizontalCenter: parent.horizontalCenter; topMargin: 15 }
+            text: Math.round(control.value * 100) + "%"
+            font.pixelSize: 11
+            font.weight: Font.Medium
+            color: control.position > .85 ? "#393940" : "#d7d7dd"
+        }
+        Button {
+            anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: 8 }
+            width: 50; height: 48
+            visible: control.toggleable
+            Accessible.name: control.muted ? "Unmute sound" : "Mute sound"
+            focusPolicy: Qt.StrongFocus
+            background: Rectangle { color: "transparent"; radius: 20; border.width: parent.visualFocus ? 2 : 0; border.color: control.position > .25 ? "#33343b" : "#ffffff" }
+            contentItem: Item {}
+            onClicked: control.toggleRequested()
+        }
+        // Keep the glyph legible when the fill boundary passes through it:
+        // white on the track, and the same mask in charcoal over the white fill.
+        Item {
+            id: glyph
+            anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: 21 }
+            width: 26; height: 26
+            Icon { anchors.fill: parent; name: control.iconName; size: 26; color: "#f6f6f8" }
+            Item {
+                id: filledGlyph
+                y: Math.max(0, Math.min(glyph.height, 47 - control.height * control.position))
+                width: glyph.width
+                height: glyph.height - y
+                clip: true
+                Icon { x: 0; y: -filledGlyph.y; width: glyph.width; height: glyph.height; name: control.iconName; size: 26; color: "#53545b" }
+            }
+        }
+    }
+    handle: Item {}
+}

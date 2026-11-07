@@ -11,9 +11,9 @@ Singleton {
     readonly property string mode: Settings.reducedMotion ? "reduced" : battery ? "battery" : "normal"
     readonly property bool reduced: mode === "reduced"
     readonly property bool expressive: mode === "normal"
-    readonly property int enter: reduced ? 0 : battery ? 140 : 360
-    readonly property int exit: reduced ? 0 : battery ? 110 : 200
-    readonly property int control: reduced ? 0 : battery ? 80 : 180
+    readonly property int enter: reduced ? 0 : battery ? 120 : 160
+    readonly property int exit: reduced ? 0 : battery ? 80 : 100
+    readonly property int control: reduced ? 0 : battery ? 60 : 90
     property string appliedMode: ""
     property string error: ""
     property int retryCount: 0

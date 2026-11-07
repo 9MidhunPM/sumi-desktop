@@ -12,18 +12,18 @@ C.Surface {
     required property var app
     property string section: app.settingsSection || ""
     readonly property bool panelActive: visible && app.panel === "settings"
-    property real brightness: 0
-    property bool brightnessReady: false
-    property bool brightnessLoading: false
-    property int brightnessReadSerial: 0
-    property bool nightLight: false
-    property bool nightLightAvailable: false
-    property bool nightLightBusy: false
-    property int nightLightSerial: 0
-    property bool recording: false
-    property bool recordingReady: false
-    property bool recordingBusy: false
-    property string recordingFile: ""
+    readonly property real brightness: S.Brightness.percent
+    readonly property bool brightnessReady: S.Brightness.ready
+    readonly property bool brightnessLoading: S.Brightness.loading
+    readonly property bool brightnessWriting: S.Brightness.writing
+    readonly property bool brightnessWritePending: S.Brightness.writePending
+    readonly property bool nightLight: S.NightLight.active
+    readonly property bool nightLightAvailable: S.NightLight.available
+    readonly property bool nightLightBusy: S.NightLight.busy
+    readonly property bool recording: S.Recording.recording
+    readonly property bool recordingReady: S.Recording.ready
+    readonly property bool recordingBusy: S.Recording.busy
+    readonly property string recordingFile: S.Recording.file
     property string controlError: ""
     property var selectedNetwork: null
     readonly property string pageTitle: ({wifi: "Wi-Fi", bluetooth: "Bluetooth", audio: "Sound devices", capture: "Capture & record"})[section] || "Control center"
@@ -52,64 +52,13 @@ C.Surface {
     function focusDefault(): void { focusFirst(); }
     function openAudioManager(): void { root.app.close(); S.Audio.openManager(); }
     function openBluetoothManager(): void { root.app.close(); S.Bluetooth.openManager(); }
-    function readBrightness(): void {
-        const serial = ++root.brightnessReadSerial;
-        root.brightnessLoading = true;
-        root.brightnessReady = false;
-        S.Desktop.action("brightness-get", [], function(ok, result, error) {
-            if (serial !== root.brightnessReadSerial) return;
-            root.brightnessLoading = false;
-            root.brightnessReady = ok && typeof result.percent === "number" && isFinite(result.percent) && result.percent >= 0 && result.percent <= 100;
-            if (root.brightnessReady) root.brightness = result.percent;
-            else root.controlError = error || "Display brightness is unavailable.";
-        });
-    }
-    function readNightLight(): void {
-        const serial = ++root.nightLightSerial;
-        S.Desktop.action("night-light-get", [], function(ok, result, error) {
-            if (serial !== root.nightLightSerial) return;
-            root.nightLightAvailable = ok && result.available === true;
-            if (ok) root.nightLight = result.active === true;
-            else root.controlError = error || "Night light is unavailable.";
-        });
-    }
-    function toggleNightLight(): void {
-        if (!root.nightLightAvailable || root.nightLightBusy) return;
-        ++root.nightLightSerial;
-        root.nightLightBusy = true;
-        root.controlError = "";
-        S.Desktop.action("night-light", [], function(ok, result, error) {
-            root.nightLightBusy = false;
-            if (ok) {
-                root.nightLightAvailable = result.available === true;
-                root.nightLight = result.active === true;
-            } else {
-                root.controlError = error || "Could not change night light.";
-                root.readNightLight();
-            }
-        });
-    }
-    function refreshRecording(): void {
-        if (S.Desktop.preview || root.recordingBusy) return;
-        root.recordingReady = false;
-        root.recordingBusy = true;
-        S.Desktop.action("record", ["status"], function(ok, result, error) {
-            root.recordingBusy = false;
-            root.recordingReady = ok && typeof result.recording === "boolean";
-            if (root.recordingReady) { root.recording = result.recording; root.recordingFile = result.file || ""; }
-            else root.controlError = error || "Recording status is unavailable.";
-        });
-    }
-    function stopRecording(): void {
-        if (!root.recordingReady || !root.recording || root.recordingBusy) return;
-        root.recordingBusy = true;
-        root.controlError = "";
-        S.Desktop.action("record", ["stop"], function(ok, result, error) {
-            root.recordingBusy = false;
-            if (ok) { root.recording = result.recording === true; root.recordingFile = result.file || ""; }
-            else { root.controlError = error || "Could not stop recording."; root.refreshRecording(); }
-        });
-    }
+    function readBrightness(): void { S.Brightness.refresh(); }
+    function queueBrightness(value): void { S.Brightness.setPercent(value); }
+    function commitBrightness(): void { S.Brightness.commit(); }
+    function readNightLight(): void { S.NightLight.refresh(); }
+    function toggleNightLight(): void { S.NightLight.toggle(); }
+    function refreshRecording(): void { S.Recording.refresh(); }
+    function stopRecording(): void { S.Recording.stop(); }
     function activate(): void {
         root.controlError = "";
         section = root.app.settingsSection || "";
@@ -142,16 +91,9 @@ C.Surface {
         }
     }
 
-    Timer {
-        id: brightnessCommit
-        interval: 70
-        onTriggered: {
-            ++root.brightnessReadSerial;
-            S.Desktop.action("brightness", [root.brightness], function(ok, result, error) {
-                if (!ok) { root.controlError = error || "Could not change brightness."; root.readBrightness(); }
-            });
-        }
-    }
+    Connections { target: S.Brightness; function onErrorChanged() { if (S.Brightness.error) root.controlError = S.Brightness.error; } }
+    Connections { target: S.NightLight; function onErrorChanged() { if (S.NightLight.error) root.controlError = S.NightLight.error; } }
+    Connections { target: S.Recording; function onErrorChanged() { if (S.Recording.error) root.controlError = S.Recording.error; } }
 
     ColumnLayout {
         anchors.fill: parent
@@ -273,9 +215,9 @@ C.Surface {
                             Layout.fillWidth: true
                             C.Label { text: "󰃠"; font.pixelSize: 20; Layout.preferredWidth: 40; horizontalAlignment: Text.AlignHCenter }
                             C.Label { text: "Brightness"; font.weight: Font.Medium; Layout.fillWidth: true }
-                            C.Label { text: root.brightnessLoading ? "Loading…" : root.brightnessReady ? Math.round(root.brightness) + "%" : "Unavailable"; color: Theme.textSoft; font.pixelSize: 12 }
+                            C.Label { text: root.brightnessReady ? Math.round(root.brightness) + "%" : root.brightnessLoading ? "Loading…" : "Unavailable"; color: Theme.textSoft; font.pixelSize: 12 }
                         }
-                        C.QuickSlider { objectName: "settingsBrightness"; label: "Display brightness"; Layout.fillWidth: true; from: 0.01; enabled: root.brightnessReady; value: root.brightness / 100; onMoved: { root.brightness = Math.round(value * 100); brightnessCommit.restart(); } }
+                        C.QuickSlider { objectName: "settingsBrightness"; label: "Display brightness"; Layout.fillWidth: true; from: 0.01; enabled: root.brightnessReady; value: root.brightness / 100; onMoved: root.queueBrightness(value * 100) }
                     }
 
                     ColumnLayout {
@@ -443,8 +385,8 @@ C.Surface {
                     Layout.fillWidth: true
                     spacing: 8
                     C.Label { text: "Screenshots"; font.weight: Font.DemiBold; Layout.fillWidth: true }
-                    C.QuickDeviceRow { id: captureRegion; text: "Capture a region"; subtitle: "Select an area of your screen"; glyph: "󰄀"; Layout.fillWidth: true; onClicked: { root.app.close(); S.Desktop.action("capture", ["region"]); } }
-                    C.QuickDeviceRow { text: "Capture & annotate"; subtitle: "Draw, highlight and crop in Satty"; glyph: "󰏫"; Layout.fillWidth: true; onClicked: { root.app.close(); S.Desktop.action("capture", ["region", "annotate"]); } }
+                    C.QuickDeviceRow { id: captureRegion; text: "Capture a region"; subtitle: "Select an area of your screen"; glyph: "󰄀"; Layout.fillWidth: true; onClicked: { if (typeof root.app.selectCapture === "function") root.app.selectCapture(false, false); else { root.app.close(); S.Desktop.action("capture", ["region"]); } } }
+                    C.QuickDeviceRow { text: "Capture & annotate"; subtitle: "Draw, highlight and crop in Satty"; glyph: "󰏫"; Layout.fillWidth: true; onClicked: { if (typeof root.app.selectCapture === "function") root.app.selectCapture(true, false); else { root.app.close(); S.Desktop.action("capture", ["region", "annotate"]); } } }
                     Item { Layout.preferredHeight: 4 }
                     RowLayout {
                         Layout.fillWidth: true
@@ -452,7 +394,7 @@ C.Surface {
                         C.QuickButton { text: "Refresh"; compact: true; quiet: true; enabled: !root.recordingBusy; onClicked: root.refreshRecording() }
                     }
                     C.Label { text: root.recordingBusy ? "Checking recording…" : !root.recordingReady ? "Recording status unavailable" : root.recording ? "Recording in progress" : "Ready to record"; color: root.recording ? Theme.accentWarn : Theme.textSoft; Layout.fillWidth: true }
-                    C.QuickDeviceRow { objectName: "settingsRecordStart"; visible: !root.recording; enabled: root.recordingReady && !root.recordingBusy; text: "Record a region"; subtitle: "Select an area to start recording"; glyph: "󰑋"; Layout.fillWidth: true; onClicked: { root.app.close(); S.Desktop.action("record", ["start"]); } }
+                    C.QuickDeviceRow { objectName: "settingsRecordStart"; visible: !root.recording; enabled: root.recordingReady && !root.recordingBusy; text: "Record a region"; subtitle: "Select an area to start recording"; glyph: "󰑋"; Layout.fillWidth: true; onClicked: { if (typeof root.app.selectCapture === "function") root.app.selectCapture(false, true); else { root.app.close(); Qt.callLater(() => S.Recording.start()); } } }
                     C.QuickDeviceRow { objectName: "settingsRecordStop"; visible: root.recording; enabled: root.recordingReady && !root.recordingBusy; text: "Stop recording"; subtitle: "Save the current recording"; glyph: "󰓛"; Layout.fillWidth: true; onClicked: root.stopRecording() }
                 }
             }

@@ -7,3 +7,5 @@ Original, manually drawn interface SVGs on a 24 × 24 viewbox, with 1.8-unit rou
 Use `Icon { name: "wifi"; size: 20; color: Theme.textMain }` or `ActionButton { iconName: "wifi"; text: "Network" }`. Aliases: `apps` → `grid`. An empty name draws nothing; an unknown name draws `circle-help`.
 
 The small Canvas.Image texture is repainted only when its asset, size, or color changes. Its source-in tint also works with Qt's software renderer, without shader effects or Qt5 compatibility modules.
+
+Island controls also use Lucide brightness, moon, microphone, camera, recording, stop, timer, leaf and lightning icons, following the same attribution and license above.

@@ -26,7 +26,7 @@ Button {
     activeFocusOnTab: true
     opacity: enabled ? 1 : 0.4
     scale: Theme.effectiveReducedMotion ? 1 : down ? 0.97 : 1
-    Behavior on scale { NumberAnimation { duration: Theme.motionControl; easing.type: Easing.OutCubic } }
+    Behavior on scale { NumberAnimation { duration: root.down ? 0 : Theme.motionControl; easing.type: Easing.OutCubic } }
     background: Rectangle {
         radius: 10
         color: root.selected ? Theme.accentBlue
@@ -35,7 +35,7 @@ Button {
             : Qt.rgba(Theme.textMain.r, Theme.textMain.g, Theme.textMain.b, root.hovered ? 0.09 : 0.05)
         border.width: root.visualFocus ? 2 : root.quiet || root.selected ? 0 : 1
         border.color: root.visualFocus ? Theme.accentBlue : Theme.borderSoft
-        Behavior on color { ColorAnimation { duration: Theme.motionControl } }
+        Behavior on color { ColorAnimation { duration: root.down ? 0 : Theme.motionControl } }
     }
     contentItem: Item {
         implicitWidth: contentRow.implicitWidth

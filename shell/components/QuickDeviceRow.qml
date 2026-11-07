@@ -21,7 +21,7 @@ AbstractButton {
         color: control.selected ? Qt.rgba(Theme.accentBlue.r, Theme.accentBlue.g, Theme.accentBlue.b, 0.14) : control.down || control.hovered ? Qt.rgba(Theme.textMain.r, Theme.textMain.g, Theme.textMain.b, 0.07) : "transparent"
         border.width: control.visualFocus ? 2 : 0
         border.color: Theme.accentBlue
-        Behavior on color { ColorAnimation { duration: Theme.motionControl } }
+        Behavior on color { ColorAnimation { duration: control.down || control.selected ? 0 : Theme.motionControl } }
     }
     contentItem: RowLayout {
         spacing: 12

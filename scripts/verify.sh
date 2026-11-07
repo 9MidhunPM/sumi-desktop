@@ -7,6 +7,15 @@ python3 tests/qml/run-services-smoke.py
 python3 tests/qml/run-widget-services-smoke.py
 python3 tests/qml/run-island-events-smoke.py
 python3 tests/qml/run-island-media-smoke.py
+python3 tests/qml/run-thursday-adapter-smoke.py
+python3 tests/qml/run-artwork-smoke.py
+python3 tests/qml/run-island-smoke.py
+python3 tests/qml/run-controls-smoke.py
+python3 tests/qml/run-island-dashboard-smoke.py
+python3 tests/qml/run-island-tabs-smoke.py
+python3 tests/qml/run-island-thursday-smoke.py
+python3 tests/qml/run-island-assistant-output-smoke.py
+python3 tests/qml/run-island-now-playing-smoke.py
 python3 tests/qml/run-ui-smoke.py
 python3 tests/qml/run-launcher-smoke.py
 python3 tests/qml/run-launcher-history-smoke.py

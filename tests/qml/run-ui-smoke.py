@@ -9,6 +9,7 @@ layer-shell geometry and keyboard ownership still require a host-session QA.
 """
 
 import os
+import json
 from pathlib import Path
 import re
 import shutil
@@ -27,9 +28,12 @@ def main() -> None:
         for filename in ("Bar.qml", "Overlay.qml", "NotificationToasts.qml"):
             path = config / filename
             source = path.read_text().replace("PanelWindow {", "Window {", 1)
+            source = re.sub(r"    mask: Region \{.*?^    \}\n", "", source, flags=re.M | re.S)
             source = re.sub(r"^    (screen:|anchors \{|margins \{|exclusiveZone:|exclusionMode:|mask:|WlrLayershell\.).*\n", "", source, flags=re.M)
             source = re.sub(r"^    implicit(Width|Height):", lambda match: "    " + match[1].lower() + ":", source, flags=re.M)
             source = source.replace("app.activeScreen === screen", "app.activeScreen === modelData")
+            if filename == "Bar.qml":
+                source = re.sub(r"    DynamicIsland \{.*?^    \}\n", "", source, flags=re.M | re.S)
             if filename in ("Bar.qml", "Overlay.qml"):
                 source = source.replace("    color: \"transparent\"", "    width: 1440\n" + ("    height: 900\n" if filename == "Overlay.qml" else "") + "    color: \"transparent\"", 1)
             if filename == "Overlay.qml":
@@ -44,7 +48,7 @@ def main() -> None:
                 if (overlay.app.panel === "appearance") {
                     const metrics = {themeCount: page.item.themeCount, galleryWidth: page.item.galleryWidth, previewWidth: page.item.previewWidth};
                     overlay.app.smokeAppearanceMetrics = JSON.stringify(metrics);
-                    if (metrics.themeCount >= 22 && metrics.galleryWidth > 200 && metrics.previewWidth <= 260 && metrics.previewWidth > 0) {
+                    if (metrics.themeCount >= __CATALOG_COUNT__ && metrics.galleryWidth > 200 && metrics.previewWidth <= 260 && metrics.previewWidth > 0) {
                         overlay.app.smokeAppearanceChecked = true;
                         console.info("SUMI_APPEARANCE_LAYOUT_OK", JSON.stringify(metrics));
                     }
@@ -53,6 +57,7 @@ def main() -> None:
         }
     }
 '''
+                probe = probe.replace("__CATALOG_COUNT__", str(len(json.loads((repo / "assets/themes/catalog.json").read_text())["themes"])))
                 source = source[:source.rfind("}")] + probe + "}\n"
             path.write_text(source)
         path = config / "shell.qml"
@@ -122,7 +127,7 @@ def main() -> None:
         if "SUMI_APPEARANCE_LAYOUT_OK" not in output:
             raise SystemExit(f"Appearance catalog and gallery dimensions were not verified\n{output}")
         print("PASS: all 12 panel views instantiate; service bindings; panel navigation; focus start/pause/reset")
-        print("PASS: Appearance loads at least 22 themes; gallery remains wider than 200px; preview stays within 260px")
+        print("PASS: Appearance loads its bundled catalog; gallery remains wider than 200px; preview stays within 260px")
         print("Native PanelWindow wrappers replaced only in temporary test copy; compositor QA remains required")
 
 

@@ -54,17 +54,24 @@ ShellRoot {
                 until(() => root.persisted.fullMotion === full && root.persisted.reducedMotion === reduced,
                       "Saved motion preference full=" + full + " reduced=" + reduced);
                 check(Settings.fullMotion === full && Settings.reducedMotion === reduced, "File watcher preserves the selected mode");
-                check(root.persisted.barHiddenMode && root.persisted.dnd, "Motion writes preserve unrelated settings");
+                check(root.persisted.barHiddenMode && root.persisted.dnd && root.persisted.islandNotch === false, "Motion writes preserve unrelated settings and notch selection");
                 check(Settings.error === "", "Settings writes stay healthy");
             }
             function test_policy() {
                 until(() => !Settings.loading, "Settings loaded");
+                if (Quickshell.env("SUMI_MOTION_PHASE") === "invalid") {
+                    check(Settings.islandNotch, "Invalid notch setting keeps the notch default");
+                    console.info("SUMI_MOTION_POLICY_INVALID_OK");
+                    Qt.quit();
+                    return;
+                }
                 if (Quickshell.env("SUMI_MOTION_PHASE") === "reload") {
+                    check(!Settings.islandNotch, "Explicit floating selection survived a fresh process");
                     check(Settings.fullMotion && !Settings.reducedMotion, "Expressive override survived a fresh process");
                     Up.UPower.onBattery = true;
                     Up.PowerProfiles.profile = Up.PowerProfile.PowerSaver;
                     check(!Motion.battery, "Saved override still bypasses both battery signals");
-                    policy("normal", 360, 200, 180);
+                    policy("normal", 160, 100, 90);
                     persisted(true, false);
                     console.info("SUMI_MOTION_POLICY_RELOAD_OK");
                     Qt.quit();
@@ -73,33 +80,36 @@ ShellRoot {
 
                 check(!Settings.fullMotion && !Settings.reducedMotion, "Legacy settings default to adaptive motion");
                 check(Settings.barHiddenMode && Settings.dnd, "Legacy settings load normally");
+                check(Settings.islandNotch, "Legacy settings default to the notch");
+                Settings.toggle("islandNotch");
+                until(() => root.persisted.islandNotch === false, "Explicit floating selection persists atomically");
                 Up.UPower.onBattery = false;
                 Up.PowerProfiles.profile = Up.PowerProfile.Balanced;
                 check(!Motion.battery, "AC balanced is not battery motion");
-                policy("normal", 360, 200, 180);
+                policy("normal", 160, 100, 90);
                 Up.UPower.onBattery = true;
                 check(Motion.battery, "Physical battery enables adaptive saving");
-                policy("battery", 140, 110, 80);
+                policy("battery", 120, 80, 60);
                 Up.UPower.onBattery = false;
                 Up.PowerProfiles.profile = Up.PowerProfile.PowerSaver;
                 check(Motion.battery, "Power saver enables adaptive saving even on AC");
-                policy("battery", 140, 110, 80);
+                policy("battery", 120, 80, 60);
                 Settings.fullMotion = true;
                 check(!Motion.battery, "Explicit expressive overrides power saver");
-                policy("normal", 360, 200, 180);
+                policy("normal", 160, 100, 90);
                 Up.UPower.onBattery = true;
                 check(!Motion.battery, "Explicit expressive overrides physical battery");
-                policy("normal", 360, 200, 180);
+                policy("normal", 160, 100, 90);
                 Settings.reducedMotion = true;
                 policy("reduced", 0, 0, 0);
                 Settings.fullMotion = false;
                 policy("reduced", 0, 0, 0);
                 Settings.reducedMotion = false;
-                policy("battery", 140, 110, 80);
+                policy("battery", 120, 80, 60);
 
                 Settings.cycleMotion();
                 check(Settings.fullMotion && !Settings.reducedMotion, "Adaptive cycles to expressive");
-                policy("normal", 360, 200, 180);
+                policy("normal", 160, 100, 90);
                 persisted(true, false);
                 Settings.cycleMotion();
                 check(!Settings.fullMotion && Settings.reducedMotion, "Expressive cycles to reduced");
@@ -107,10 +117,10 @@ ShellRoot {
                 persisted(false, true);
                 Settings.cycleMotion();
                 check(!Settings.fullMotion && !Settings.reducedMotion, "Reduced cycles to adaptive");
-                policy("battery", 140, 110, 80);
+                policy("battery", 120, 80, 60);
                 persisted(false, false);
                 Settings.setValue("fullMotion", true);
-                policy("normal", 360, 200, 180);
+                policy("normal", 160, 100, 90);
                 persisted(true, false);
                 console.info("SUMI_MOTION_POLICY_MATRIX_OK");
                 Qt.quit();
@@ -163,7 +173,11 @@ print('{}')
                            QT_QPA_PLATFORM='offscreen', QT_QUICK_BACKEND='software',
                            QT_LOGGING_TO_CONSOLE='1', QT_FORCE_STDERR_LOGGING='1', XDG_RUNTIME_DIR=str(runtime),
                            DBUS_SESSION_BUS_ADDRESS='unix:path=' + str(work / 'absent-bus'))
-        for phase in ('matrix', 'reload'):
+        for phase in ('matrix', 'reload', 'invalid'):
+            if phase == 'invalid':
+                invalid = json.loads(settings.read_text())
+                invalid['islandNotch'] = 'yes'
+                settings.write_text(json.dumps(invalid))
             environment['SUMI_MOTION_PHASE'] = phase
             result = subprocess.run(['qs', '-p', str(shell), '-n'], env=environment, capture_output=True, text=True, timeout=15)
             output = result.stdout + result.stderr
@@ -174,7 +188,7 @@ print('{}')
         assert persisted['fullMotion'] is True and persisted['reducedMotion'] is False, persisted
         applied = [json.loads(line)[2] for line in (state / 'applied.jsonl').read_text().splitlines()]
         assert set(applied) == {'normal', 'battery', 'reduced'} and applied[-1] == 'normal', applied
-        print('PASS motion policy: AC/battery/power saver; expressive override; reduced priority; durations; full cycle; real settings persistence and fresh-process reload')
+        print('PASS motion policy: AC/battery/power saver; expressive override; reduced priority; durations; full cycle; real settings persistence, notch roundtrip/legacy/invalid values, and fresh-process reload')
 
 
 if __name__ == '__main__':

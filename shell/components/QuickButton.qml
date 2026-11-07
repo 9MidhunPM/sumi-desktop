@@ -31,7 +31,7 @@ AbstractButton {
             : Qt.rgba(Theme.textMain.r, Theme.textMain.g, Theme.textMain.b, control.hovered ? 0.09 : 0.05)
         border.width: control.visualFocus ? 2 : 0
         border.color: Theme.accentBlue
-        Behavior on color { ColorAnimation { duration: Theme.motionControl } }
+        Behavior on color { ColorAnimation { duration: control.down || control.selected ? 0 : Theme.motionControl } }
     }
     contentItem: RowLayout {
         id: contentRow

@@ -8,6 +8,7 @@ Singleton {
     id: root
     readonly property string stateDir: Quickshell.env("SUMI_STATE_DIR") || ((Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/sumi")
     property bool barHiddenMode: false
+    property bool islandNotch: true
     property bool reducedMotion: false
     property bool fullMotion: false
     property bool dnd: false
@@ -15,7 +16,7 @@ Singleton {
     property bool loading: true
 
     function setValue(key: string, value: bool): void {
-        if (["barHiddenMode", "reducedMotion", "fullMotion", "dnd"].indexOf(key) < 0)
+        if (["barHiddenMode", "islandNotch", "reducedMotion", "fullMotion", "dnd"].indexOf(key) < 0)
             return;
         root[key] = value;
         save();
@@ -35,13 +36,13 @@ Singleton {
     function save(): void {
         if (Quickshell.env("SUMI_PREVIEW") === "1")
             return;
-        settingsFile.setText(JSON.stringify({version: 1, barHiddenMode: root.barHiddenMode, reducedMotion: root.reducedMotion, fullMotion: root.fullMotion, dnd: root.dnd}, null, 2) + "\n");
+        settingsFile.setText(JSON.stringify({version: 1, barHiddenMode: root.barHiddenMode, islandNotch: root.islandNotch, reducedMotion: root.reducedMotion, fullMotion: root.fullMotion, dnd: root.dnd}, null, 2) + "\n");
     }
 
     function load(): void {
         try {
             const settings = JSON.parse(settingsFile.text());
-            for (const key of ["barHiddenMode", "reducedMotion", "fullMotion", "dnd"])
+            for (const key of ["barHiddenMode", "islandNotch", "reducedMotion", "fullMotion", "dnd"])
                 if (typeof settings[key] === "boolean") root[key] = settings[key];
             root.error = "";
         } catch (error) {

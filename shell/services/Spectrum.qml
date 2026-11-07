@@ -8,11 +8,12 @@ import "../config"
 Singleton {
     id: root
     property bool displayEnabled: true
+    property bool playbackActive: Media.playing
     property int consumerSerial: 0
     property var consumers: ({})
     readonly property bool hasVisibleConsumer: Object.keys(consumers).length > 0
     property var samples: []
-    readonly property bool active: displayEnabled && hasVisibleConsumer && Media.playing && Motion.expressive && !Desktop.preview
+    readonly property bool active: displayEnabled && hasVisibleConsumer && playbackActive && Motion.expressive && !Desktop.preview
     onActiveChanged: if (!active) samples = []
 
     function createConsumer(): int { return ++consumerSerial; }
