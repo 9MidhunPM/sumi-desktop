@@ -32,8 +32,9 @@ PanelWindow {
     property var monitor: Hyprland.monitors.values.find(candidate => candidate && modelData && candidate.name === modelData.name) || null
     readonly property bool fullscreen: !!(monitor && monitor.activeWorkspace && monitor.activeWorkspace.hasFullscreen)
     property bool idle: idleMonitor.isIdle
+    readonly property bool selectingCapture: typeof app.captureSelecting !== "undefined" && app.captureSelecting
     readonly property bool canOpen: !!modelData && !idle && !app.nativeDialogOpen && app.panel === ""
-    readonly property bool eligible: !!modelData && (app.barVisible || pinned) && (!fullscreen || pinned || criticalHere)
+    readonly property bool eligible: !!modelData && (app.barVisible || pinned) && (!fullscreen || pinned || criticalHere || selectingCapture)
     property string section: "home"
     readonly property bool availableForInteraction: eligible && !idle && !app.nativeDialogOpen && app.panel === ""
     readonly property bool expanded: peek || pinned || automaticPreview || assistantOutputHere
@@ -61,7 +62,7 @@ PanelWindow {
     readonly property var speechSamples: effectsActive && !!assistant && assistant.speaking
         ? SpeechLevels.reading(assistant.audioEnvelope, assistant.playbackPosition, true, 20).bars.map(value => Math.min(100, Math.sqrt(value) * 240)) : []
     readonly property bool assistantActive: !!assistant && (assistant.voiceActive || assistant.sendPending || assistant.busy || assistant.taskActive || assistant.speaking || assistant.confirmations.length > 0)
-    readonly property string activity: eventHere ? "event" : assistantActive || assistantOutputHere ? "thursday" : S.Recording.recording ? "recording" : app.focusRunning ? "focus" : S.IslandMedia.playing ? "media" : "idle"
+    readonly property string activity: selectingCapture ? "capture" : eventHere ? "event" : assistantActive || assistantOutputHere ? "thursday" : S.Recording.recording ? "recording" : app.focusRunning ? "focus" : S.IslandMedia.playing ? "media" : "idle"
     readonly property real minimumClockWidth: clockMetric.width + 2 * (periodMetric.width + 18)
     readonly property real compactWidth: Math.min(expandedWidth, Math.max(minimumClockWidth, Math.min(centerRoom, activity === "idle" ? 176 : 320)))
     property real bodyWidth: expanded ? expandedWidth : compactWidth
@@ -73,7 +74,7 @@ PanelWindow {
     readonly property real inputWidth: availableForInteraction ? bodyWidth : 0
     readonly property real inputHeight: availableForInteraction ? bodyHeight : 0
     readonly property alias visual: content
-    visible: eligible && !app.nativeDialogOpen && app.panel === ""
+    visible: eligible && (!app.nativeDialogOpen || selectingCapture) && app.panel === ""
 
     TextMetrics { id: clockMetric; font.family: Theme.fontMono; font.pixelSize: root.clockPixelSize; font.weight: Font.DemiBold; text: S.Clock.time }
     TextMetrics { id: periodMetric; font.family: Theme.font; font.pixelSize: root.periodPixelSize; font.weight: Font.Bold; text: S.Clock.period }
@@ -142,7 +143,7 @@ PanelWindow {
         focusGrab.active = false;
         pinned = false; peek = false;
         suppressed = hovered;
-        if (!eligible || idle) {
+        if (!eligible || idle || app.nativeDialogOpen) {
             settling = true;
             bodyWidth = Qt.binding(() => root.expanded ? root.expandedWidth : root.compactWidth);
             bodyHeight = Qt.binding(() => root.pinned ? Math.min(root.height, content.preferredHeight) : root.automaticPreview ? Math.min(root.height, root.notificationHere ? 236 : 174) : root.assistantOutputHere ? Math.min(root.height, content.assistantPreferredHeight) : root.peek ? Math.min(root.height, root.notch ? 222 : 216) : root.notch ? 40 : 36);

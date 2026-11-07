@@ -108,3 +108,5 @@ without that external project and its tab explains the unavailable state. See
 and backend requirements. Thursday code, credentials and conversation history
 are not bundled. Configured replies expand as plain text with a Thursday sender
 label, and speech uses the music position's single measured waveform.
+
+Region selection compacts the island while keeping its status visible. Escape cancels normally; stalled selectors time out, are reaped, and release the interface so capture can be retried.

@@ -49,6 +49,12 @@ class CaptureProcessBoundaryTests(unittest.TestCase):
         self.gate = self.root / "finish-editing"
         self.worker_log = self.root / "worker.log"
         helpers = {
+            "slurp": "print('10,20 30x40')\n",
+            "grim": """import os, sys
+from pathlib import Path
+sys.stdout.buffer.write(Path(os.environ['SUMI_TEST_CAPTURE']).read_bytes())
+sys.exit(int(os.environ.get('SUMI_TEST_CAPTURE_EXIT', '1')))
+""",
             "hyprshot": """import os, sys
 from pathlib import Path
 sys.stdout.buffer.write(Path(os.environ['SUMI_TEST_CAPTURE']).read_bytes())

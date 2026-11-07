@@ -13,6 +13,7 @@ Scope {
     property string panel: ""
     property string settingsSection: ""
     property bool nativeDialogOpen: false
+    property bool captureSelecting: false
     property int activationSerial: 0
     property var islandWindows: []
     readonly property var thursdayBackend: thursdayLoader.item
@@ -113,24 +114,45 @@ Scope {
     function selectCapture(annotate, record) {
         if (nativeDialogOpen) return;
         close();
+        captureSelecting = true;
         nativeDialogOpen = true;
+        selectorDelay.generation += 1;
         selectorDelay.annotate = annotate;
         selectorDelay.record = record;
         selectorDelay.restart();
     }
+    function finishCapture(generation, error) {
+        if (!captureSelecting || generation !== selectorDelay.generation) return;
+        captureSelecting = false;
+        nativeDialogOpen = false;
+        if (error) Qt.callLater(() => S.IslandEvents.show("error", error, 0, 8000));
+    }
+    function releaseCompletedCapture() {
+        if (captureSelecting && !selectorDelay.running && S.Desktop.pendingCount === 0 && !S.Recording.busy)
+            finishCapture(selectorDelay.generation, "");
+    }
+    Connections {
+        target: S.Desktop
+        function onPendingCountChanged() { Qt.callLater(desktopRoot.releaseCompletedCapture); }
+    }
+    Connections {
+        target: S.Recording
+        function onBusyChanged() { Qt.callLater(desktopRoot.releaseCompletedCapture); }
+    }
     Timer {
         id: selectorDelay
-        // Let the compositor present the hidden overlay before slurp starts.
+        // Compact the dashboard and release its input before slurp starts.
         interval: 80
         property bool annotate: false
         property bool record: false
+        property int generation: 0
         onTriggered: {
-            const done = function(ok, result, error) {
-                desktopRoot.nativeDialogOpen = false;
-                if (!ok && error) Qt.callLater(() => S.IslandEvents.show("error", error, 0, 8000));
-            };
-            if (record) S.Recording.start(done);
-            else S.Desktop.action("capture", annotate ? ["region", "annotate"] : ["region"], done);
+            const token = generation;
+            const done = function(ok, result, error) { desktopRoot.finishCapture(token, ok ? "" : error); };
+            try {
+                if (record) S.Recording.start(done);
+                else S.Desktop.action("capture", annotate ? ["region", "annotate"] : ["region"], done);
+            } catch (error) { desktopRoot.finishCapture(token, String(error)); }
         }
     }
     property var activeScreen: Quickshell.screens.length ? Quickshell.screens[0] : null
@@ -263,7 +285,7 @@ Scope {
         function open(name: string): void { desktopRoot.open(name, null); }
         function toggle(name: string): void { desktopRoot.toggle(name, null); }
         function close(): void { desktopRoot.close(); }
-        function status(): string { return JSON.stringify({panel: desktopRoot.panel, theme: Theme.id, preview: desktopRoot.preview, barVisible: desktopRoot.barVisible, applications: DesktopEntries.applications.values.length, notifications: S.Notifications.count, notificationPopups: S.Notifications.active.length, unread: S.Notifications.unread, dnd: Settings.dnd, wifi: S.Network.name, bluetoothEnabled: S.Bluetooth.enabled, volume: S.Audio.volume, muted: S.Audio.muted, battery: S.Battery.percent}); }
+        function status(): string { return JSON.stringify({panel: desktopRoot.panel, theme: Theme.id, preview: desktopRoot.preview, barVisible: desktopRoot.barVisible, nativeDialogOpen: desktopRoot.nativeDialogOpen, captureSelecting: desktopRoot.captureSelecting, recording: S.Recording.recording, recordingBusy: S.Recording.busy, applications: DesktopEntries.applications.values.length, notifications: S.Notifications.count, notificationPopups: S.Notifications.active.length, unread: S.Notifications.unread, dnd: Settings.dnd, wifi: S.Network.name, bluetoothEnabled: S.Bluetooth.enabled, volume: S.Audio.volume, muted: S.Audio.muted, battery: S.Battery.percent}); }
     }
     IpcHandler {
         target: "bar"

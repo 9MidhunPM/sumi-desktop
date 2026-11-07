@@ -26,6 +26,16 @@ class ScreenshotCaptureTests(unittest.TestCase):
         binaries.mkdir()
         (self.root / 'image.png').write_bytes(PNG)
         programs = {
+            'slurp': '''import os, sys
+if os.environ.get('CAPTURE_SELECTION_CANCEL'):
+    sys.exit(1)
+print('10,20 30x40')
+''',
+            'grim': '''import os, sys, time
+from pathlib import Path
+time.sleep(.12)
+sys.stdout.buffer.write((Path(os.environ['CAPTURE_FIXTURE']) / 'image.png').read_bytes())
+''',
             # Model the installed Hyprshot's background capture and foreground
             # cleanup exit. The child retains stdout until capture completes.
             'hyprshot': '''import os, subprocess, sys
@@ -102,7 +112,7 @@ while not (root / 'release').exists() and time.monotonic() < deadline:
 
     def test_background_capture_is_saved_and_clipboard_owner_survives(self):
         controller = Path(__file__).resolve().parents[1] / 'bin/desktopctl'
-        completed = subprocess.run([sys.executable, str(controller), 'action', 'capture', 'region'], capture_output=True, text=True, timeout=5)
+        completed = subprocess.run([sys.executable, str(controller), 'action', 'capture', 'window'], capture_output=True, text=True, timeout=5)
         self.assertEqual(completed.returncode, 0, completed.stderr)
         result = json.loads(completed.stdout)
         saved = list((self.root / 'Pictures/Screenshots').glob('*.png'))
@@ -118,6 +128,14 @@ while not (root / 'release').exists() and time.monotonic() < deadline:
         while not (self.root / 'pasted.png').exists() and time.monotonic() < deadline:
             time.sleep(.02)
         self.assertEqual((self.root / 'pasted.png').read_bytes(), PNG)
+
+    def test_region_escape_never_saves_or_copies(self):
+        with patch.dict(os.environ, CAPTURE_SELECTION_CANCEL='1'):
+            result = capture(['region'])
+        self.assertEqual(result, {'saved': False, 'copied': False, 'cancelled': True})
+        self.assertEqual(list((self.root / 'Pictures/Screenshots').iterdir()), [])
+        self.assertFalse((self.root / 'copied.png').exists())
+        self.assertFalse((self.root / 'clipboard.pid').exists())
 
     def test_clipboard_failure_keeps_saved_image_and_reports_partial_failure(self):
         with patch.dict(os.environ, CAPTURE_COPY_FAILURE='1'):

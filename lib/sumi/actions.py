@@ -316,6 +316,61 @@ def clipboard(argv: list[str]):
         raise ValueError("Unknown clipboard action")
 
 
+def select_region(timeout: float = 60) -> str | None:
+    """Own one bounded selector and reap it on cancellation or interruption.
+
+    Install handlers before Popen: a signal arriving during its assignment is
+    remembered until the returned child can be safely terminated and reaped.
+    No process-name matching or unrelated selector is involved.
+    """
+    process = None
+    interrupted = None
+    cleaning = False
+    previous_handlers = {}
+
+    def interrupt_selection(signum, _frame):
+        nonlocal interrupted
+        interrupted = signum
+        if process is not None and not cleaning:
+            raise SystemExit(128 + signum)
+
+    try:
+        for signum in (signal.SIGTERM, signal.SIGINT):
+            previous_handlers[signum] = signal.signal(signum, interrupt_selection)
+        process = subprocess.Popen(["slurp"], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                   stdin=subprocess.DEVNULL, text=True, start_new_session=True)
+        if interrupted is not None:
+            raise SystemExit(128 + interrupted)
+        try:
+            stdout, stderr = process.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired as error:
+            raise RuntimeError("Region selection timed out. Try again or press Esc to cancel.") from error
+        if process.returncode == 0:
+            return stdout.strip() or None
+        if process.returncode == 1 and not stderr.strip():
+            return None  # slurp reports an ordinary Escape cancellation as 1.
+        raise RuntimeError(stderr.strip() or "Region selection failed.")
+    finally:
+        cleaning = True
+        try:
+            if process is not None and process.poll() is None:
+                try:
+                    process.terminate()
+                except ProcessLookupError:
+                    pass
+                try:
+                    process.communicate(timeout=1)
+                except subprocess.TimeoutExpired:
+                    try:
+                        process.kill()
+                    except ProcessLookupError:
+                        pass
+                    process.communicate(timeout=1)
+        finally:
+            for signum, previous in previous_handlers.items():
+                signal.signal(signum, previous)
+
+
 def capture(argv: list[str]):
     mode = argv[0] if argv else "region"
     if mode not in {"region", "window", "output"}:
@@ -328,7 +383,13 @@ def capture(argv: list[str]):
     # Hyprshot can exit before its background grim process finishes. Reading
     # its raw pipe waits for that child's complete image; placing Hyprshot in
     # a Type=exec unit instead kills the child when the main script exits.
-    capture_result = subprocess.run(["hyprshot", "-s", "-m", mode, "--raw"], capture_output=True)
+    if mode == "region":
+        geometry = select_region()
+        if geometry is None:
+            return {"saved": False, "copied": False, "cancelled": True}
+        capture_result = subprocess.run(["grim", "-g", geometry, "-"], capture_output=True, timeout=15)
+    else:
+        capture_result = subprocess.run(["hyprshot", "-s", "-m", mode, "--raw"], capture_output=True)
     image = capture_result.stdout
     # Some packaged versions return 1 from picker cleanup after a valid PNG.
     if not image.startswith(b"\x89PNG\r\n\x1a\n") or not image.endswith(b"\x00\x00\x00\x00IEND\xaeB`\x82"):
@@ -398,7 +459,7 @@ def recording(operation: str):
         if active:
             raise RuntimeError("A Sumi recording is already running")
         pidfile.unlink(missing_ok=True)
-        geometry = run(["slurp"], capture_output=True, text=True).stdout.strip()
+        geometry = select_region()
         if not geometry:
             return {"recording": False, "cancelled": True}
         destination = user_directory("VIDEOS", "Videos") / "Recordings"

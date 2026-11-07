@@ -25,6 +25,117 @@ class ActionsTests(unittest.TestCase):
         environment.start()
         self.addCleanup(environment.stop)
 
+    def make_selector(self):
+        selector = self.root / "slurp"
+        selector.write_text('''#!/usr/bin/env python3
+import os
+from pathlib import Path
+import signal
+import sys
+import time
+mode = os.environ.get("SUMI_TEST_SELECTOR_MODE", "success")
+if mode == "hang-ignore":
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+Path(os.environ["SUMI_TEST_SELECTOR_PID"]).write_text(str(os.getpid()))
+if mode == "escape":
+    raise SystemExit(1)
+if mode == "error":
+    print("Synthetic selector error", file=sys.stderr)
+    raise SystemExit(2)
+if mode.startswith("hang"):
+    time.sleep(30)
+print("0,0 100x100")
+''')
+        selector.chmod(0o755)
+        return {"PATH": str(self.root) + os.pathsep + os.environ["PATH"],
+                "SUMI_TEST_SELECTOR_PID": str(self.root / "selector.pid")}
+
+    def test_region_selector_success_escape_and_actual_errors(self):
+        environment = self.make_selector()
+        with patch.dict(os.environ, environment):
+            self.assertEqual(actions.select_region(), "0,0 100x100")
+            with patch.dict(os.environ, SUMI_TEST_SELECTOR_MODE="escape"):
+                self.assertIsNone(actions.select_region())
+            with patch.dict(os.environ, SUMI_TEST_SELECTOR_MODE="error"):
+                with self.assertRaisesRegex(RuntimeError, "Synthetic selector error"):
+                    actions.select_region()
+
+    def test_region_selector_timeout_reaps_only_its_owned_child_and_restores_handlers(self):
+        environment = self.make_selector()
+        environment["SUMI_TEST_SELECTOR_MODE"] = "hang-ignore"
+        previous = {signum: signal.getsignal(signum) for signum in (signal.SIGTERM, signal.SIGINT)}
+        with patch.dict(os.environ, environment):
+            with self.assertRaisesRegex(RuntimeError, "selection timed out"):
+                actions.select_region(timeout=.2)
+        child = int((self.root / "selector.pid").read_text())
+        self.assertFalse(Path(f"/proc/{child}").exists(), "Timed-out selector must be reaped, including kill fallback")
+        for signum, handler in previous.items():
+            self.assertIs(signal.getsignal(signum), handler)
+
+    def test_parent_interruption_during_selection_reaps_its_selector(self):
+        environment = self.make_selector()
+        environment["SUMI_TEST_SELECTOR_MODE"] = "hang"
+        environment["PYTHONPATH"] = str(Path(actions.__file__).resolve().parents[1])
+        driver = self.root / "selector-driver.py"
+        driver.write_text("from sumi.actions import select_region\nselect_region(timeout=20)\n")
+        for signum in (signal.SIGTERM, signal.SIGINT):
+            with self.subTest(signum=signum):
+                pidfile = self.root / "selector.pid"
+                pidfile.unlink(missing_ok=True)
+                controller = subprocess.Popen([sys.executable, str(driver)], env={**os.environ, **environment},
+                                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                child = None
+                try:
+                    deadline = time.monotonic() + 4
+                    while not pidfile.exists() or not pidfile.read_text():
+                        if controller.poll() is not None:
+                            self.fail("Synthetic selector did not start: " + repr(controller.communicate()))
+                        if time.monotonic() >= deadline:
+                            self.fail("Synthetic selector did not start before its fixture deadline")
+                        time.sleep(.01)
+                    child = int(pidfile.read_text())
+                    controller.send_signal(signum)
+                    controller.communicate(timeout=4)
+                    self.assertEqual(controller.returncode, 128 + signum)
+                    self.assertFalse(Path(f"/proc/{child}").exists(), "Parent interruption must reap the owned selector")
+                finally:
+                    if controller.poll() is None:
+                        controller.kill()
+                    controller.communicate(timeout=4)
+                    if child and Path(f"/proc/{child}").exists():
+                        arguments = Path(f"/proc/{child}/cmdline").read_bytes().split(b"\0")
+                        if os.fsencode(self.root / "slurp") in arguments:
+                            os.kill(child, signal.SIGKILL)
+
+    def test_signal_during_selector_popen_assignment_still_cleans_the_returned_child(self):
+        environment = self.make_selector()
+        environment["SUMI_TEST_SELECTOR_MODE"] = "hang"
+        real_popen = subprocess.Popen
+        children = []
+
+        def interrupted_launch(*args, **kwargs):
+            child = real_popen(*args, **kwargs)
+            children.append(child)
+            os.kill(os.getpid(), signal.SIGTERM)
+            return child
+
+        with patch.dict(os.environ, environment), patch("sumi.actions.subprocess.Popen", side_effect=interrupted_launch):
+            with self.assertRaises(SystemExit) as result:
+                actions.select_region()
+        self.assertEqual(result.exception.code, 128 + signal.SIGTERM)
+        self.assertIsNotNone(children[0].returncode)
+        self.assertFalse(Path(f"/proc/{children[0].pid}").exists())
+
+    def test_region_capture_uses_the_owned_selector_once_and_grim_for_that_geometry(self):
+        image = b'\x89PNG\r\n\x1a\n' + b'image data' + b'\x00\x00\x00\x00IEND\xaeB`\x82'
+        with patch('sumi.actions.Path.home', return_value=self.root), patch('sumi.actions.select_region', return_value='0,0 100x100') as select, patch('sumi.actions.subprocess.run', return_value=subprocess.CompletedProcess([], 0, image, b'')) as run, patch('sumi.actions.spawn'), patch('sumi.actions.shutil.which', return_value=None):
+            self.assertTrue(capture(['region'])['saved'])
+        select.assert_called_once_with()
+        run.assert_called_once_with(['grim', '-g', '0,0 100x100', '-'], capture_output=True, timeout=15)
+        with patch('sumi.actions.select_region', return_value=None), patch('sumi.actions.subprocess.run') as run:
+            self.assertTrue(capture(['region'])['cancelled'])
+        run.assert_not_called()
+
     def test_annotation_accepts_complete_png_despite_hyprshot_cleanup_failure(self):
         image = b'\x89PNG\r\n\x1a\n' + b'image data' + b'\x00\x00\x00\x00IEND\xaeB`\x82'
         with patch('sumi.actions.Path.home', return_value=self.root), patch('sumi.actions.shutil.which', return_value='/usr/bin/satty'), patch('sumi.actions.subprocess.run', return_value=subprocess.CompletedProcess([], 1, image, b'')), patch('sumi.actions.spawn') as launch:
@@ -42,7 +153,7 @@ class ActionsTests(unittest.TestCase):
         self.assertFalse(Path(arguments[4]).exists(), 'Only Satty Save should create the output')
 
     def test_annotation_rejects_cancelled_or_incomplete_capture(self):
-        with patch('sumi.actions.Path.home', return_value=self.root), patch('sumi.actions.shutil.which', return_value='/usr/bin/satty'), patch('sumi.actions.subprocess.run', return_value=subprocess.CompletedProcess([], 1, b'\x89PNG\r\n\x1a\n', b'')), patch('sumi.actions.spawn') as call:
+        with patch('sumi.actions.Path.home', return_value=self.root), patch('sumi.actions.select_region', return_value='0,0 100x100'), patch('sumi.actions.shutil.which', return_value='/usr/bin/satty'), patch('sumi.actions.subprocess.run', return_value=subprocess.CompletedProcess([], 1, b'\x89PNG\r\n\x1a\n', b'')), patch('sumi.actions.spawn') as call:
             with self.assertRaisesRegex(RuntimeError, 'cancelled'):
                 capture(['region', 'annotate'])
             call.assert_not_called()
@@ -183,7 +294,7 @@ output.write_bytes(captured.read_bytes())
         process = Mock(pid=77777)
         process.poll.return_value = None
         process.wait.side_effect = subprocess.TimeoutExpired('wf-recorder', .35)
-        with tempfile.TemporaryDirectory() as folder, patch.dict(os.environ, XDG_RUNTIME_DIR=folder), patch('sumi.actions.Path.home', return_value=Path(folder)), patch('sumi.actions.run', return_value=Mock(stdout='0,0 100x100')), patch('sumi.actions.subprocess.Popen', return_value=process), patch('sumi.actions._recorder_running', side_effect=lambda data: data.get('pid') == 77777):
+        with tempfile.TemporaryDirectory() as folder, patch.dict(os.environ, XDG_RUNTIME_DIR=folder), patch('sumi.actions.Path.home', return_value=Path(folder)), patch('sumi.actions.select_region', return_value='0,0 100x100'), patch('sumi.actions.subprocess.Popen', return_value=process), patch('sumi.actions._recorder_running', side_effect=lambda data: data.get('pid') == 77777):
             pidfile = Path(folder) / 'sumi' / 'recorder.json'
             pidfile.parent.mkdir()
             pidfile.write_text(json.dumps({'pid': 999999999, 'file': '/tmp/old.mp4'}))
@@ -268,8 +379,8 @@ output.write_bytes(captured.read_bytes())
         def select(*args, **kwargs):
             with self.assertRaisesRegex(RuntimeError, 'already running'):
                 recording('start')
-            return Mock(stdout='')
-        with patch('sumi.actions.run', side_effect=select), patch('sumi.actions.subprocess.Popen') as spawn:
+            return None
+        with patch('sumi.actions.select_region', side_effect=select), patch('sumi.actions.subprocess.Popen') as spawn:
             self.assertTrue(recording('start')['cancelled'])
         spawn.assert_not_called()
 
@@ -277,7 +388,7 @@ output.write_bytes(captured.read_bytes())
         process = Mock(pid=77777)
         process.poll.return_value = 1
         process.wait.return_value = 1
-        with patch('sumi.actions.Path.home', return_value=self.root), patch('sumi.actions.run', return_value=Mock(stdout='0,0 100x100')), patch('sumi.actions.subprocess.Popen', return_value=process):
+        with patch('sumi.actions.Path.home', return_value=self.root), patch('sumi.actions.select_region', return_value='0,0 100x100'), patch('sumi.actions.subprocess.Popen', return_value=process):
             with self.assertRaisesRegex(RuntimeError, 'failed to start'):
                 recording('start')
         self.assertFalse((self.root / 'runtime/sumi/recorder.json').exists())
@@ -291,7 +402,7 @@ output.write_bytes(captured.read_bytes())
         process = Mock(pid=77777)
         process.poll.return_value = None
         process.wait.side_effect = [subprocess.TimeoutExpired('wf-recorder', .35), 0]
-        with patch('sumi.actions.Path.home', return_value=self.root), patch('sumi.actions.run', return_value=Mock(stdout='0,0 100x100')), patch('sumi.actions.subprocess.Popen', return_value=process), patch('sumi.actions._recorder_running', side_effect=lambda data: data.get('pid') == 77777), patch('sumi.actions.atomic_write', side_effect=fail_tracking):
+        with patch('sumi.actions.Path.home', return_value=self.root), patch('sumi.actions.select_region', return_value='0,0 100x100'), patch('sumi.actions.subprocess.Popen', return_value=process), patch('sumi.actions._recorder_running', side_effect=lambda data: data.get('pid') == 77777), patch('sumi.actions.atomic_write', side_effect=fail_tracking):
             with self.assertRaisesRegex(OSError, 'disk full'):
                 recording('start')
         process.send_signal.assert_called_once()
@@ -307,7 +418,7 @@ output.write_bytes(captured.read_bytes())
             return 0
         process.wait.side_effect = interrupted_wait
         previous = signal.getsignal(signal.SIGTERM)
-        with patch('sumi.actions.Path.home', return_value=self.root), patch('sumi.actions.run', return_value=Mock(stdout='0,0 100x100')), patch('sumi.actions.subprocess.Popen', return_value=process):
+        with patch('sumi.actions.Path.home', return_value=self.root), patch('sumi.actions.select_region', return_value='0,0 100x100'), patch('sumi.actions.subprocess.Popen', return_value=process):
             with self.assertRaises(KeyboardInterrupt):
                 recording('start')
         process.send_signal.assert_called_once_with(signal.SIGINT)
@@ -345,7 +456,7 @@ def observed_wait(process, timeout=None):
     if timeout == .35:
         (work / "readiness-entered").write_text("ready")
     return original_wait(process, timeout=timeout)
-with patch("sumi.actions.run", return_value=Mock(stdout="0,0 100x100")), patch("sumi.actions.Path.home", return_value=work), patch.object(subprocess.Popen, "wait", observed_wait):
+with patch("sumi.actions.select_region", return_value="0,0 100x100"), patch("sumi.actions.Path.home", return_value=work), patch.object(subprocess.Popen, "wait", observed_wait):
     actions.recording("start")
 ''')
         environment = dict(os.environ, PATH=str(self.root) + os.pathsep + os.environ['PATH'],
