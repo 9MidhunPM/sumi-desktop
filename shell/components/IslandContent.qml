@@ -435,12 +435,6 @@ FocusScope {
             }
         }
 
-        Rectangle {
-            x: header.x + header.width - 10; y: root.headerInset + 6
-            width: 5; height: 5; radius: 2.5
-            visible: root.criticalAttention || root.unread > 0
-            color: root.criticalAttention ? Theme.accentWarn : "#d4d4d8"
-        }
         IslandNotificationPreview {
             x: 20; y: root.headerHeight + 8
             width: Math.max(0, parent.width - 40)
@@ -449,7 +443,7 @@ FocusScope {
             active: root.interactive && visible
             entry: root.notification
             onOpenRequested: root.sectionRequested("inbox")
-            onDismissRequested: root.eventDismissRequested()
+            onDismissRequested: { if (root.notification) S.Notifications.dismiss(root.notification.id); }
         }
         Item {
             x: 22; y: root.headerHeight + 14

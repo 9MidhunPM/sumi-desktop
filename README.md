@@ -91,7 +91,10 @@ switches one tab. Ctrl+Tab and Ctrl+Shift+Tab provide keyboard navigation.
 Reduced-motion and battery settings also apply to its transitions.
 
 Notifications, brightness, volume, connectivity and battery alerts share a
-prioritized preview. Inbox keeps notification actions and marks visible entries
+prioritized preview. Notifications show no unread indicator dot. Dismiss a card
+from the preview, Home or Inbox to remove it, or use Inbox to clear all and mark
+all read. All sender actions are available directly in the island, and long
+previews scroll while keeping dismissal visible. Inbox marks visible entries
 read. Music supports player selection, playback and seeking. Controls provides
 brightness, audio, connectivity, DND, night light and compact power profiles.
 The right-side settings button still opens the full original Quick Settings.

@@ -189,7 +189,7 @@ FocusScope {
                             entry: modelData
                             active: root.active && root.section === "home"
                             onOpenRequested: root.sectionRequested("inbox")
-                            onDismissRequested: S.Notifications.dismissPopup(modelData.id)
+                            onDismissRequested: S.Notifications.dismiss(modelData.id)
                         }
                     }
                 }
@@ -199,16 +199,17 @@ FocusScope {
                 spacing: 8
                 Rectangle {
                     Layout.fillWidth: true; Layout.minimumWidth: 0
-                    implicitHeight: 46
+                    implicitHeight: inboxTools.implicitHeight + 16
                     radius: 21
                     color: "#202126"
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: 8
+                    Flow {
+                        id: inboxTools
+                        x: 8; y: 8; width: parent.width - 16
                         spacing: 5
-                        Caption { text: S.Notifications.unread + " unread"; Layout.fillWidth: true; Layout.minimumWidth: 0 }
-                        IslandPreviewButton { text: S.Notifications.dnd ? "DND on" : "DND off"; quiet: true; selected: S.Notifications.dnd; implicitHeight: 30; font.pixelSize: 11; onClicked: S.Notifications.toggleDnd() }
-                        IslandPreviewButton { text: "History ›"; tooltip: "Full notification history"; quiet: true; implicitHeight: 30; font.pixelSize: 11; onClicked: root.openPanelRequested("notifications") }
+                        Caption { text: S.Notifications.unread + " unread"; width: 62; height: 30; verticalAlignment: Text.AlignVCenter }
+                        IslandPreviewButton { objectName: "islandInboxDnd"; text: S.Notifications.dnd ? "DND on" : "DND off"; quiet: true; selected: S.Notifications.dnd; implicitHeight: 30; font.pixelSize: 11; onClicked: S.Notifications.toggleDnd() }
+                        IslandPreviewButton { objectName: "islandInboxRead"; text: "Mark read"; tooltip: "Mark all notifications read"; enabled: S.Notifications.unread > 0; quiet: true; implicitHeight: 30; font.pixelSize: 11; leftPadding: 7; rightPadding: 7; onClicked: S.Notifications.markRead() }
+                        IslandPreviewButton { objectName: "islandInboxClear"; text: "Clear all"; tooltip: "Dismiss all notifications"; enabled: S.Notifications.count > 0; quiet: true; implicitHeight: 30; font.pixelSize: 11; leftPadding: 7; rightPadding: 7; onClicked: S.Notifications.clear() }
                     }
                 }
                 Rectangle {
@@ -244,7 +245,7 @@ FocusScope {
                             entry: notificationRow.entry
                             active: root.active && root.section === "inbox"
                             onOpenRequested: root.openPanelRequested("notifications")
-                            onDismissRequested: S.Notifications.dismissPopup(notificationRow.entry.id)
+                            onDismissRequested: S.Notifications.dismiss(notificationRow.entry.id)
                         }
                     }
                 }

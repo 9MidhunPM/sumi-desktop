@@ -21,6 +21,14 @@ ShellRoot {
         function focusPause() { focusRunning = false; }
         function focusReset(minutes) { focusRunning = false; focusRemaining = minutes * 60000; }
     }
+    Component {
+        id: compactPreview
+        IslandNotificationPreview {
+            property int dismissals: 0
+            width: 280; height: 180
+            onDismissRequested: dismissals++
+        }
+    }
     FloatingWindow {
         id: window
         visible: true
@@ -50,10 +58,64 @@ ShellRoot {
                 check(findChild(dashboard, "islandUsageValue-cpu").text === "Unavailable", "Unavailable CPU never appears as fake zero");
                 S.SystemStats.cpuAvailable = true;
                 check(findChild(dashboard, "islandDashboardFocus") === null && findChild(dashboard, "islandHomeRecord") === null, "Usage replaces prominent focus and record tiles");
+                const preview = compactPreview.createObject(window.contentItem, {entry: {
+                    id: 99, appName: "Long fixture", summary: "A long message",
+                    body: Array(18).fill("A line of notification content.").join(" "), time: new Date(),
+                    actions: ["First", "Second", "Third", "Last action"]
+                }});
+                wait(100);
+                const previewScroll = findChild(preview, "islandNotificationScroll");
+                const lastPreviewAction = findChild(preview, "islandNotificationAction3");
+                lastPreviewAction.forceActiveFocus(Qt.TabFocusReason);
+                wait(100);
+                const lastY = lastPreviewAction.mapToItem(previewScroll, 0, 0).y;
+                check(previewScroll.contentItem.contentY > 0 && lastY >= -1 && lastY + lastPreviewAction.height <= previewScroll.height + 1, "Keyboard focus reveals a sender action after a long message");
+                const previewDismiss = findChild(preview, "islandNotificationDismiss");
+                const dismissY = previewDismiss.mapToItem(preview, 0, 0).y;
+                check(dismissY >= 0 && dismissY + previewDismiss.height <= preview.height, "Dismiss stays in the fixed preview header");
+                previewDismiss.clicked();
+                check(preview.dismissals === 1, "Compact preview dismiss control responds");
+                preview.destroy();
+                const homeContent = findChild(dashboard, "islandHomeSummary").parent;
+                const fourthAction = findChild(homeContent, "islandNotificationAction3");
+                check(fourthAction !== null && fourthAction.text === "Fourth action", "All sender actions are available on Home");
+                fourthAction.clicked();
+                check(S.Notifications.invokedId === 1 && S.Notifications.invokedIndex === 3, "Fourth action preserves native action index");
+                dashboard.anchors.fill = null; dashboard.width = 280; dashboard.height = 488;
+                wait(100);
+                for (let i = 0; i < 4; i++) {
+                    const action = findChild(homeContent, "islandNotificationAction" + i);
+                    check(action.x >= 0 && action.x + action.width <= action.parent.width + 1, "Wrapped notification action fits narrow card");
+                }
+                findChild(homeContent, "islandNotificationDismiss").clicked();
+                check(S.Notifications.count === 0, "Home dismiss removes notification from island");
+                S.Notifications.history = [{id: 11, appName: "Fixture", summary: "Inbox dismissal", body: "Body", time: new Date(), unread: true, actions: []}];
+                dashboard.width = 608;
                 findChild(dashboard, "islandTabInbox").clicked();
                 check(dashboard.section === "inbox", "Expected dashboard.section");
                 wait(350);
                 check(S.Notifications.unread === 0, "Expected S.Notifications.unread");
+                const inboxList = findChild(dashboard, "islandInboxList");
+                const inboxDismiss = findChild(inboxList, "islandNotificationDismiss");
+                check(inboxDismiss !== null, "Inbox provides a dismiss button");
+                inboxDismiss.clicked();
+                check(S.Notifications.count === 0, "Inbox dismiss removes notification from island");
+                check(!findChild(dashboard, "islandInboxClear").enabled && !findChild(dashboard, "islandInboxRead").enabled, "Empty Inbox disables bulk controls");
+                const dndButton = findChild(dashboard, "islandInboxDnd");
+                dndButton.clicked();
+                check(S.Notifications.dnd, "Inbox enables do not disturb");
+                dndButton.clicked();
+                check(!S.Notifications.dnd, "Inbox disables do not disturb");
+                S.Notifications.history = [
+                    {id: 12, appName: "Fixture", summary: "Read me", body: "", time: new Date(), unread: true, actions: []},
+                    {id: 13, appName: "Other", summary: "Read me too", body: "", time: new Date(), unread: true, actions: []}
+                ];
+                check(findChild(dashboard, "islandInboxRead").enabled, "Unread entries enable mark all read");
+                findChild(dashboard, "islandInboxRead").clicked();
+                check(S.Notifications.unread === 0 && S.Notifications.count === 2, "Mark all read preserves history");
+                findChild(dashboard, "islandInboxClear").clicked();
+                check(S.Notifications.count === 0, "Clear all removes all island notifications");
+                dashboard.active = true;
                 S.Notifications.history = [{id: 2, appName: "Other app", summary: "New message", body: "Keep the selected page", time: new Date(), unread: true, actions: []}];
                 dashboard.section = "controls";
                 wait(350);
@@ -154,14 +216,19 @@ function createConsumer() { return 1; }
 function setDemand(id, value) {}
 function releaseConsumer(id) {}
 ''',
-    'Notifications': '''property var history: [{id: 1, appName: "Fixture", summary: "A notification", body: "A body", time: new Date(), unread: true, actions: ["Reply"]}]
+    'Notifications': '''property var history: [{id: 1, appName: "Fixture", summary: "A notification", body: "A body", time: new Date(), unread: true, actions: ["Reply", "Open", "A long third action", "Fourth action"]}]
 readonly property int count: history.length
 readonly property int unread: history.filter(entry => entry.unread).length
 property bool dnd: false
 function toggleDnd() { dnd = !dnd; }
 function markEntriesRead(ids) { history = history.map(entry => Object.assign({}, entry, {unread: ids.indexOf(entry.id) >= 0 ? false : entry.unread})); }
 function dismissPopup(id) { history = history.map(entry => entry.id === id ? Object.assign({}, entry, {actions: []}) : entry); }
-function invoke(id, index) {}
+function dismiss(id) { history = history.filter(entry => entry.id !== id); }
+function markRead() { history = history.map(entry => Object.assign({}, entry, {unread: false})); }
+function clear() { history = []; }
+property int invokedId: -1
+property int invokedIndex: -1
+function invoke(id, index) { invokedId = id; invokedIndex = index; }
 ''',
     'Brightness': '''property real percent: 42
 property bool ready: true
@@ -251,7 +318,7 @@ def main():
         output = result.stdout + result.stderr
         if result.returncode or 'ISLAND_DASHBOARD_OK' not in output or any(message in output for message in ['TypeError:', 'ReferenceError:', 'Unable to assign [undefined]', 'Failed to load configuration', 'FAIL!']):
             raise SystemExit(output)
-        print('PASS: observed CPU/RAM/storage; unavailable truth; compact power controls; no bottom extras; tabs; visible-only unread handling; no incoming tab switching; inactive Inbox; narrow layout')
+        print('PASS: observed CPU/RAM/storage; unavailable truth; compact power controls; no bottom extras; tabs; visible-only unread handling; no incoming tab switching; Home/Inbox dismissal; all action routing; clear/read/DND; inactive Inbox; narrow layout')
 
 
 if __name__ == '__main__':
