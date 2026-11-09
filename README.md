@@ -88,7 +88,9 @@ The center island has an opaque black surface and a neutral gray border. Click
 it to open compact Home, Inbox, Music, Controls and Thursday pages. Two-finger
 horizontal scrolling works anywhere on the expanded island; a short gesture
 switches one tab. Ctrl+Tab and Ctrl+Shift+Tab provide keyboard navigation.
-Reduced-motion and battery settings also apply to its transitions.
+Reduced-motion and battery settings also apply to its transitions. The Calendar
+button on Home opens a separate month view inside the island, with previous/next
+month, Today and Back to Home controls. Calendar adds no tab or slide destination.
 
 Notifications, brightness, volume, connectivity and battery alerts share a
 prioritized preview. Notifications show no unread indicator dot. Dismiss a card

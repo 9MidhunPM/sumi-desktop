@@ -19,11 +19,11 @@ FocusScope {
     function syncStatsDemand() { if (statsConsumer) S.SystemStats.setDemand(statsConsumer, active && (section === "home" || section === "controls")); }
     Component.onCompleted: { statsConsumer = S.SystemStats.createConsumer(); syncStatsDemand(); }
     Component.onDestruction: if (statsConsumer) S.SystemStats.releaseConsumer(statsConsumer)
-    readonly property alias tabDeck: pagesDeck
+    readonly property var tabDeck: section === "calendar" ? null : pagesDeck
     readonly property var thursdayBackend: typeof app.thursdayBackend === "undefined" ? null : app.thursdayBackend
-    readonly property real preferredWidth: section === "media" ? 520 : section === "inbox" ? 560 : section === "home" ? 600 : 640
+    readonly property real preferredWidth: section === "media" ? 520 : section === "inbox" ? 560 : section === "home" || section === "calendar" ? 600 : 640
     readonly property real preferredHeight: section === "controls" ? 52 + controlsScroll.contentHeight : section === "thursday" ? 500 : Math.max(220, 52 + (
-        section === "home" ? homeScroll.contentHeight : section === "media" ? mediaScroll.contentHeight
+        section === "calendar" ? calendarScroll.contentHeight : section === "home" ? homeScroll.contentHeight : section === "media" ? mediaScroll.contentHeight
         : 54 + (S.Notifications.count ? Math.max(100, inbox.contentHeight) : 88)))
     readonly property var inboxEntries: {
         const entries = S.Notifications.history.slice().sort((a, b) => String(a.appName).localeCompare(String(b.appName)) || new Date(b.time).getTime() - new Date(a.time).getTime());
@@ -50,7 +50,7 @@ FocusScope {
         if (!active || section === "thursday" || !root.Window.window) return;
         const item = root.Window.window.activeFocusItem;
         if (!item) return;
-        const viewport = section === "inbox" ? inbox : (section === "home" ? homeScroll : section === "media" ? mediaScroll : section === "thursday" ? thursdayPage : controlsScroll).contentItem;
+        const viewport = section === "inbox" ? inbox : (section === "calendar" ? calendarScroll : section === "home" ? homeScroll : section === "media" ? mediaScroll : section === "thursday" ? thursdayPage : controlsScroll).contentItem;
         if (!viewport || !belongsTo(item, viewport.contentItem)) return;
         const point = item.mapToItem(viewport.contentItem, 0, 0);
         if (point.y < viewport.contentY + 8) viewport.contentY = Math.max(0, point.y - 8);
@@ -62,6 +62,7 @@ FocusScope {
         function onActiveFocusItemChanged() { Qt.callLater(root.revealFocused); }
     }
     function focusDefault() {
+        if (section === "calendar") { calendarBack.forceActiveFocus(Qt.OtherFocusReason); return; }
         const tab = section === "thursday" ? thursdayTab : section === "controls" ? controlsTab : section === "media" ? mediaTab : section === "inbox" ? inboxTab : homeTab;
         tab.forceActiveFocus(Qt.OtherFocusReason);
     }
@@ -76,7 +77,7 @@ FocusScope {
         if (ids.length) S.Notifications.markEntriesRead(ids);
     }
     onActiveChanged: { if (active) refresh(); readVisible.restart(); syncStatsDemand(); }
-    onSectionChanged: { readVisible.restart(); syncStatsDemand(); }
+    onSectionChanged: { readVisible.restart(); syncStatsDemand(); if (active) Qt.callLater(root.focusDefault); }
     onInboxEntriesChanged: readVisible.restart()
     Timer { id: readVisible; interval: 120; onTriggered: root.markVisibleEntries() }
     Connections {
@@ -85,7 +86,8 @@ FocusScope {
     }
     Keys.onPressed: event => {
         if ((event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) && (event.modifiers & Qt.ControlModifier)) {
-            pagesDeck.navigate(event.modifiers & Qt.ShiftModifier ? -1 : 1);
+            if (root.section === "calendar") root.sectionRequested(event.modifiers & Qt.ShiftModifier ? "thursday" : "inbox");
+            else pagesDeck.navigate(event.modifiers & Qt.ShiftModifier ? -1 : 1);
             event.accepted = true;
         }
     }
@@ -140,7 +142,7 @@ FocusScope {
                 anchors.fill: parent
                 anchors.margins: 3
                 spacing: 2
-            TabButton { id: homeTab; objectName: "islandTabHome"; text: root.width < 420 ? "" : "Home"; iconName: root.width < 420 ? "grid" : ""; tooltip: "Home"; quiet: true; selected: root.section === "home"; onClicked: root.sectionRequested("home") }
+            TabButton { id: homeTab; objectName: "islandTabHome"; text: root.width < 420 ? "" : "Home"; iconName: root.width < 420 ? "grid" : ""; tooltip: "Home"; quiet: true; selected: root.section === "home" || root.section === "calendar"; onClicked: root.sectionRequested("home") }
             TabButton { id: inboxTab; objectName: "islandTabInbox"; text: root.width < 420 ? "" : "Inbox" + (S.Notifications.unread ? " · " + S.Notifications.unread : ""); iconName: root.width < 420 ? "bell" : ""; tooltip: "Inbox"; quiet: true; selected: root.section === "inbox"; onClicked: root.sectionRequested("inbox") }
             TabButton { id: mediaTab; objectName: "islandTabMedia"; text: root.width < 420 ? "" : "Music"; iconName: root.width < 420 ? "music" : ""; tooltip: "Music"; quiet: true; selected: root.section === "media"; onClicked: root.sectionRequested("media") }
             TabButton { id: controlsTab; objectName: "islandTabControls"; text: root.width < 420 ? "" : "Controls"; iconName: root.width < 420 ? "settings" : ""; tooltip: "Controls"; quiet: true; selected: root.section === "controls"; onClicked: root.sectionRequested("controls") }
@@ -151,7 +153,9 @@ FocusScope {
         IslandTabDeck {
             id: pagesDeck
             objectName: "islandTabDeck"
-            active: root.active
+            active: root.active && root.section !== "calendar"
+            visible: root.section !== "calendar"
+            enabled: visible
             gestureEnabled: false
             onIndexRequested: index => root.sectionRequested(["home", "inbox", "media", "controls", "thursday"][index])
             Layout.fillWidth: true; Layout.minimumWidth: 0
@@ -171,6 +175,7 @@ FocusScope {
                         Layout.preferredHeight: implicitHeight
                         app: root.app
                         now: root.now
+                        onCalendarRequested: root.sectionRequested("calendar")
                         onControlsRequested: root.sectionRequested("controls")
                         onCaptureRequested: root.captureRequested(false)
                         onRecordingRequested: root.recordingRequested()
@@ -294,11 +299,41 @@ FocusScope {
                 onFullChatRequested: root.thursdayFullChatRequested()
             }
         }
+        ScrollView {
+            id: calendarScroll
+            objectName: "islandCalendarArea"
+            Layout.fillWidth: true; Layout.minimumWidth: 0
+            Layout.fillHeight: true
+            visible: root.section === "calendar"
+            enabled: visible
+            clip: true
+            contentWidth: availableWidth
+            ColumnLayout {
+                width: calendarScroll.availableWidth
+                spacing: 10
+                RowLayout {
+                    Layout.fillWidth: true
+                    IslandButton {
+                        id: calendarBack
+                        objectName: "islandCalendarBack"
+                        text: "‹ Home"; tooltip: "Back to Home"; quiet: true
+                        onClicked: root.sectionRequested("home")
+                    }
+                    Label { text: "Calendar"; color: "#ffffff"; font.pixelSize: 15; font.weight: Font.DemiBold; Layout.fillWidth: true }
+                }
+                IslandCalendar {
+                    objectName: "islandMonthView"
+                    Layout.fillWidth: true; Layout.minimumWidth: 0
+                    Layout.preferredHeight: implicitHeight
+                    today: new Date(root.now)
+                }
+            }
+        }
     }
     IslandTabGesture {
         anchors.fill: parent
         z: 1000
-        deck: pagesDeck
+        deck: root.tabDeck
         active: root.active
     }
 }

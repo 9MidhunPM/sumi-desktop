@@ -9,7 +9,17 @@ Item {
     readonly property bool wide: width >= 390
     readonly property real unit: wide ? (width - 24) / 3 : (width - 12) / 2
     readonly property real usageHeight: wide ? 82 : 176
-    implicitHeight: usageHeight + 72
+    implicitHeight: usageHeight + 120
+    IslandPreviewButton {
+        id: calendarButton
+        objectName: "islandHomeCalendar"
+        y: root.usageHeight + 82
+        width: root.width; height: 38
+        iconName: "calendar"; iconSize: 16
+        text: "Calendar"; tooltip: "Open calendar in island"
+        onClicked: root.calendarRequested()
+    }
+    signal calendarRequested()
     signal controlsRequested()
     signal captureRequested()
     signal recordingRequested()

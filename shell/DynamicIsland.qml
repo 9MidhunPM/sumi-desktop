@@ -117,7 +117,7 @@ PanelWindow {
     }
     function pin(requestedSection = "controls") {
         if (!canOpen) return;
-        section = ["home", "inbox", "media", "controls", "thursday"].indexOf(requestedSection) >= 0 ? requestedSection : "home";
+        section = ["home", "inbox", "media", "controls", "thursday", "calendar"].indexOf(requestedSection) >= 0 ? requestedSection : "home";
         if (typeof app.dismissIslands === "function") app.dismissIslands(root);
         returnApplication = Hyprland.activeToplevel ? Hyprland.activeToplevel.address : lastApplication;
         returnWorkspace = monitor && monitor.activeWorkspace ? monitor.activeWorkspace.id || 0 : 0;
@@ -256,7 +256,7 @@ PanelWindow {
         onHeaderClicked: root.togglePin()
         onDismissRequested: root.dismiss(true)
         onHoverChanged: hovered => { if (hovered) root.enterHover(); else root.leaveHover(); }
-        onCalendarRequested: root.openPanel("calendar")
+        onCalendarRequested: root.selectSection("calendar")
         onMediaRequested: root.openPanel("media")
         onFocusRequested: root.openPanel("pomodoro")
     }
