@@ -22,7 +22,7 @@ jobs:
           import json, subprocess
           dependencies=json.load(open('packaging/dependencies.json'))
           packages=[item['repository']+'/'+item['name'] for item in dependencies['packages']]
-          subprocess.run(['pacman','-Syu','--noconfirm','--needed',*packages,'gitleaks'],check=True)
+          subprocess.run(['pacman','-Syu','--noconfirm','--needed',*packages,'gitleaks','gcc'],check=True)
           PY
       - name: Create an isolated normal user checkout
         run: |
