@@ -94,7 +94,7 @@ appearance and settings shortcuts enter the matching island page directly.
 Controls uses the earlier compact layout: a grouped set of connectivity,
 Do Not Disturb and night-light toggles sits beside music and vertical brightness
 and volume controls. CPU, memory and storage usage and battery power profiles
-appear below. Hold Wi-Fi or Bluetooth to open its device page. Use Search in the
+appear below. Select Wi-Fi or Bluetooth to open its device page. Use Search in the
 island header to reach other desktop tools.
 
 Notifications, music, Wi-Fi, Bluetooth, sound devices, capture, calendar, focus,

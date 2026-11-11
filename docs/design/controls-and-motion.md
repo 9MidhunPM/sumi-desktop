@@ -3,7 +3,7 @@
 Sumi opens its contextual Controls workspace from the island clock. Its compact
 layout groups Wi-Fi, Bluetooth, Do Not Disturb and night-light controls beside
 music and vertical brightness and volume sliders. CPU, memory and storage usage
-and battery power profiles appear below. Hold Wi-Fi or Bluetooth to open its
+and battery power profiles appear below. Select Wi-Fi or Bluetooth to open its
 device page; use Search in the header to reach other desktop tools. Current island
 navigation remains available, and the clock stays in a stable position as the
 workspace changes.
