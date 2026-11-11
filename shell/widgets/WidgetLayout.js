@@ -38,8 +38,8 @@ function layout(scene, width, height, override, flags) {
     const active = keys.filter(key => enabled(flags, key));
     const compact = !!design.compact || width < 1100 || height < 720;
     const sizes = compact
-        ? {clock: [300, 112], spotify: [300, 130], priorities: [300, 154], deadline: [300, 104]}
-        : {clock: [420, 150], spotify: [420, 160], priorities: [320, 168], deadline: [320, 104]};
+        ? {clock: [450, 168], spotify: [440, 176], priorities: [300, 154], deadline: [300, 104]}
+        : {clock: [630, 225], spotify: [520, 216], priorities: [320, 168], deadline: [320, 104]};
     const margin = Math.min(width * 0.04, width < 900 ? 24 : 48);
     const top = Math.min(80, Math.max(52, height * 0.09));
     const bottom = Math.min(32, Math.max(16, height * 0.03));
@@ -51,7 +51,11 @@ function layout(scene, width, height, override, flags) {
     const explicit = ["left", "right", "split"].indexOf(override) >= 0;
     const widest = Math.max.apply(null, active.map(key => sizes[key][0]).concat([1]));
     const singleHeight = active.reduce((sum, key) => sum + sizes[key][1], 0) + Math.max(0, active.length - 1) * gap;
-    const twoColumns = mode === "split" && areaWidth >= (compact ? 600 : 740) + gap;
+    const leftKeys = active.filter(key => key === "clock" || key === "spotify");
+    const rightKeys = active.filter(key => key === "priorities" || key === "deadline");
+    const columnWidth = entries => Math.max.apply(null, entries.map(key => sizes[key][0]).concat([0]));
+    const twoColumns = mode === "split" && leftKeys.length > 0 && rightKeys.length > 0
+        && areaWidth >= columnWidth(leftKeys) + columnWidth(rightKeys) + gap;
     const pairHeight = Math.max(
         active.filter(key => key === "clock" || key === "spotify").reduce((sum, key) => sum + sizes[key][1] + gap, 0) - gap,
         active.filter(key => key === "priorities" || key === "deadline").reduce((sum, key) => sum + sizes[key][1] + gap, 0) - gap,

@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import os
+import json
 from pathlib import Path
 import re
 import signal
 import stat
 import subprocess
+import time
 import uuid
 
 
@@ -29,6 +31,14 @@ def _cleanup(root_fd: int, session_fd: int, identifier: str) -> None:
     # or a recursively traversed tree. The user's saved output is separate.
     try:
         os.unlink("capture.png", dir_fd=session_fd)
+    except FileNotFoundError:
+        pass
+    try:
+        os.unlink("owner.json", dir_fd=session_fd)
+    except FileNotFoundError:
+        pass
+    try:
+        os.unlink(".owner.json", dir_fd=session_fd)
     except FileNotFoundError:
         pass
     try:
@@ -65,6 +75,51 @@ def launch(image: bytes, output: Path, launcher) -> dict:
         os.close(root_fd)
 
 
+def _process_start(pid: int) -> str | None:
+    try:
+        return Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[19]
+    except (OSError, IndexError):
+        return None
+
+
+def status(identifier: str) -> dict:
+    """Report only the lifecycle of this user's owned annotation session."""
+    if not re.fullmatch(r"[a-f0-9]{32}", identifier):
+        raise ValueError("Invalid annotation session")
+    try:
+        _, root_fd = _directory(create=False)
+    except FileNotFoundError:
+        return {"active": False}
+    try:
+        try:
+            descriptor = os.open(identifier, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=root_fd)
+        except FileNotFoundError:
+            return {"active": False}
+        try:
+            info = os.fstat(descriptor)
+            if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) & 0o077:
+                raise ValueError("Annotation session is not private to this user")
+            try:
+                receipt = os.open("owner.json", os.O_RDONLY | os.O_NOFOLLOW, dir_fd=descriptor)
+            except FileNotFoundError:
+                # Registration can finish before the worker starts. A missing
+                # worker after this grace period cannot own desktop focus.
+                active = time.time() - info.st_mtime < 15
+            else:
+                with os.fdopen(receipt) as stream:
+                    owner = json.load(stream)
+                pid = int(owner["pid"])
+                start = owner.get("start")
+                active = pid > 0 and isinstance(start, str) and bool(start) and _process_start(pid) == start
+            if not active:
+                _cleanup(root_fd, descriptor, identifier)
+            return {"active": active}
+        finally:
+            os.close(descriptor)
+    finally:
+        os.close(root_fd)
+
+
 def session(identifier: str, output: str) -> None:
     """Run the editor for one owned input, cleaning it when that editor exits."""
     if not re.fullmatch(r"[a-f0-9]{32}", identifier):
@@ -96,6 +151,11 @@ def session(identifier: str, output: str) -> None:
         finally:
             os.close(descriptor)
         owned = True
+        owner_fd = os.open(".owner.json", os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                           0o600, dir_fd=session_fd)
+        with os.fdopen(owner_fd, "w") as owner:
+            json.dump({"pid": os.getpid(), "start": _process_start(os.getpid())}, owner)
+        os.rename(".owner.json", "owner.json", src_dir_fd=session_fd, dst_dir_fd=session_fd)
         captured = directory / identifier / "capture.png"
         destination = Path(output)
         if not destination.is_absolute() or destination.resolve() == captured.resolve():

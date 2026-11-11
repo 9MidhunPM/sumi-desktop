@@ -76,9 +76,11 @@ ShellRoot {
         function assertCardContrast(theme) {
             const panel = card("spotify");
             const bg = panel.panelColor;
-            const composite = Qt.rgba(bg.r*bg.a+1-bg.a, bg.g*bg.a+1-bg.a, bg.b*bg.a+1-bg.a, 1);
+            const sheen = Theme.glassHighlight.a;
+            const composite = Qt.rgba((bg.r*bg.a+1-bg.a)*(1-sheen)+sheen,
+                (bg.g*bg.a+1-bg.a)*(1-sheen)+sheen, (bg.b*bg.a+1-bg.a)*(1-sheen)+sheen, 1);
             const b = luminance(composite);
-            for (const color of [panel.mainText,panel.secondaryText,panel.warningText]) {
+            for (const color of [panel.mainText,panel.secondaryText,panel.warningText,Theme.accentBlue,Theme.accentCyan,Theme.accentPink]) {
                 const f = luminance(color);
                 check((Math.max(f,b)+0.05)/(Math.min(f,b)+0.05) >= 4.5, theme.id + " card text readable over white wallpaper detail");
             }
@@ -120,6 +122,36 @@ ShellRoot {
             check(findChild(widgets.contentItem, "desktopDeadlineValue").text === "3d 7h left", "Deadline has real minute-derived value");
             check(findChild(widgets.contentItem, "desktopPriority2").checked, "Priority completion is rendered");
             check(S.WidgetMedia.displayActive && S.WidgetMedia.progressActive, "Visible desktop has one progress consumer");
+            const play = findChild(widgets.contentItem, "desktopSpotifyPlay");
+            const previous = findChild(widgets.contentItem, "desktopSpotifyPrevious");
+            const next = findChild(widgets.contentItem, "desktopSpotifyNext");
+            const title = findChild(widgets.contentItem, "desktopSpotifyTitle");
+            check(play.iconName === "pause" && play.width === play.height, "Playing uses a round pause control");
+            spotify.isPlaying = false; wait(1);
+            check(play.iconName === "play" && !S.WidgetMedia.progressActive, "Paused state offers play and releases progress demand");
+            spotify.canGoPrevious = false; spotify.canGoNext = false; spotify.canTogglePlaying = false; wait(1);
+            check(!previous.enabled && !next.enabled && !play.enabled, "Unsupported player controls remain disabled");
+            spotify.canGoPrevious = true; spotify.canGoNext = true; spotify.canTogglePlaying = true;
+            spotify.isPlaying = true;
+            spotify.trackTitle = "A very long Spotify track title that needs two lines and must stay clear of playback controls";
+            spotify.trackArtist = "An artist with an unusually long display name"; wait(1);
+            check(title.maximumLineCount === 2 && title.width > 0 && title.height > 0, "Long metadata has a bounded two-line title");
+            check(title.y + title.height <= findChild(widgets.contentItem, "desktopSpotifyArtist").y, "Title cannot overlap artist or controls");
+            spotify.trackTitle = "A quiet place to begin"; spotify.trackArtist = "Your soundtrack";
+            spotify.trackArtUrl = ""; wait(1);
+            check(findChild(widgets.contentItem, "desktopSpotifyArtworkFallback").visible, "Missing artwork retains an explicit music fallback");
+            spotify.trackArtUrl = Qt.resolvedUrl("fixture-art.svg");
+            spotify.position = 300; wait(1);
+            const progress = findChild(widgets.contentItem, "desktopSpotifyProgress");
+            const fill = findChild(widgets.contentItem, "desktopSpotifyProgressFill");
+            check(Math.abs(fill.width - progress.width) < 0.1, "Progress clamps safely at track duration");
+            spotify.position = 92;
+            const normal = Layout.layout({layout: {compact: false}}, 2304, 1440, "split", data.enabled);
+            const small = Layout.layout({layout: {compact: true}}, 2304, 1440, "split", data.enabled);
+            check(normal.clock.width === 630 && normal.clock.height === 225, "Normal clock reserves 1.5 times its former footprint");
+            check(small.clock.width === 450 && small.clock.height === 168, "Compact clock retains the enlarged design");
+            check(normal.spotify.width === 520 && normal.spotify.height === 216 && small.spotify.width === 440 && small.spotify.height === 176, "Wide player reserves enlarged artwork and controls");
+
             findChild(widgets.contentItem, "desktopPrioritiesEdit").clicked();
             check(fakeApp.lastPanel === "widgets", "The edit control opens the existing overlay route");
             check(widgets.smokeMask.regions.length === 4, "Pointer mask contains only the four card regions");
@@ -135,6 +167,11 @@ ShellRoot {
                     for (const mode of ["curated","left","right","split"]) {
                         setMode(mode); wait(1);
                         bounds(theme.id + " " + size + " " + mode);
+                        check(!card("clock").surface, "Clock keeps floating directly on wallpaper");
+                        const digit = findChild(widgets.contentItem, "desktopClockDigit0");
+                        check(digit.font.pixelSize === (widgets.compact ? 93 : 129), "Clock digits use the enlarged size");
+                        check(findChild(widgets.contentItem, "desktopSpotifyAlbum").width === (widgets.compact ? 112 : 144), "Responsive artwork stays prominent");
+
                         checked++;
                     }
                 }
@@ -197,6 +234,7 @@ ShellRoot {
             check(findChild(widgets.contentItem, "desktopDeadlineValue").text === "Set a deadline", "Unset deadline offers an honest empty state");
             S.Media.players = [browser]; wait(1);
             check(findChild(widgets.contentItem, "desktopSpotifyTitle").text === "A little music?", "Missing Spotify shows its empty state without using browser playback");
+            check(play.enabled && play.tooltip === "Open Spotify" && !previous.enabled && !next.enabled && !progress.visible, "Unavailable Spotify exposes launch while hiding unavailable playback/progress");
             S.Media.players = [browser, spotify];
             S.Widgets.document = data;
             for (const theme of testRoot.themes) {

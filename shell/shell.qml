@@ -5,7 +5,7 @@ import Quickshell.Io
 import Quickshell.Hyprland
 import "config"
 import "services" as S
-import "integrations" as ThursdayNative
+import "integrations" as ThursdayIntegration
 
 // The island hosts daily controls, short-gesture navigation and Thursday output.
 Scope {
@@ -16,6 +16,13 @@ Scope {
     property bool captureSelecting: false
     property int activationSerial: 0
     property var islandWindows: []
+    readonly property alias islandSession: islandSession
+    S.IslandSession { id: islandSession }
+    readonly property bool islandOpen: islandWindows.some(window => window && window.pinned)
+    readonly property string islandRoute: islandSession.route
+    property var captureReturn: null
+    property string annotationId: ""
+    property bool annotationChecking: false
     readonly property var thursdayBackend: thursdayLoader.item
     property bool thursdayExternal: false
     property string thursdayError: ""
@@ -30,11 +37,11 @@ Scope {
     }
     property double thursdayOutputUntil: 0
     property string thursdayOutputScreen: ""
-    readonly property bool thursdayOutputActive: !!thursdayBackend && !!thursdayBackend.latestAnswer && !thursdayExternal
-        && (thursdayBackend.busy || thursdayBackend.speaking || thursdayBackend.playbackRunning || thursdayBackend.speechPreparing || thursdayOutputUntil > 0)
+    readonly property bool thursdayOutputActive: !!thursdayBackend && !thursdayExternal
+        && (thursdayBackend.voiceActive || (thursdayBackend.voiceSession && (thursdayBackend.busy || thursdayBackend.taskActive || thursdayBackend.sendPending)) || (!!thursdayBackend.latestAnswer && (thursdayBackend.busy || thursdayBackend.speaking || thursdayBackend.playbackRunning || thursdayBackend.speechPreparing)) || thursdayOutputUntil > 0)
     function holdThursdayOutput() {
         const backend = thursdayBackend;
-        if (!backend || !backend.latestAnswer) return;
+        if (!backend || (!backend.latestAnswer && !backend.transcript)) return;
         if (!thursdayOutputScreen) {
             const screen = resolveScreen(backend.currentScreen);
             thursdayOutputScreen = screen ? screen.name : "";
@@ -42,12 +49,11 @@ Scope {
         thursdayOutputUntil = Date.now() + 8000;
         thursdayReading.restart();
     }
-    Timer { id: thursdayReading; interval: 8000; onTriggered: desktopRoot.thursdayOutputUntil = 0 }
-    function openThursdayFull() {
-        if (!thursdayBackend || nativeDialogOpen) return;
-        close();
-        thursdayBackend.openChat();
-    }
+    Timer { id: thursdayReading; interval: 8000; onTriggered: {
+        if (desktopRoot.islandWindows.some(window => window && window.modelData && window.modelData.name === desktopRoot.thursdayOutputScreen && (window.hovered || window.previewPinned))) restart();
+        else desktopRoot.thursdayOutputUntil = 0;
+    } }
+    function openThursdayFull() { openIsland("thursday", null, false); }
     function suppressThursdayHud() {
         if (thursdayBackend && !thursdayExternal && !thursdayBackend.hudDismissed) thursdayBackend.hudDismissed = true;
     }
@@ -74,9 +80,29 @@ Scope {
             else if (S.IslandEvents.eventKind === "thursday" && S.IslandEvents.eventLabel === "Thursday needs your approval")
                 S.IslandEvents.dismissCurrent();
         }
+        function onVoiceStateChanged() {
+            const backend = desktopRoot.thursdayBackend;
+            if (!backend) return;
+            if (backend.recording) {
+                const screen = desktopRoot.resolveScreen(null);
+                desktopRoot.thursdayOutputScreen = screen ? screen.name : "";
+                desktopRoot.thursdayOutputUntil = 0; thursdayReading.stop();
+            } else if (!backend.voiceActive && backend.transcript) desktopRoot.holdThursdayOutput();
+        }
+        function onVoiceSessionChanged() {
+            const backend = desktopRoot.thursdayBackend;
+            if (backend && backend.recording) {
+                const screen = desktopRoot.resolveScreen(null);
+                desktopRoot.thursdayOutputScreen = screen ? screen.name : "";
+                desktopRoot.thursdayOutputUntil = 0; thursdayReading.stop();
+            } else if (backend && !backend.voiceSession) {
+                desktopRoot.thursdayOutputUntil = 0; desktopRoot.thursdayOutputScreen = ""; thursdayReading.stop();
+            }
+        }
+        function onTranscriptChanged() { if (desktopRoot.thursdayBackend && !desktopRoot.thursdayBackend.voiceActive && desktopRoot.thursdayBackend.transcript) desktopRoot.holdThursdayOutput(); }
         function onBusyChanged() { if (desktopRoot.thursdayBackend && !desktopRoot.thursdayBackend.busy) desktopRoot.holdThursdayOutput(); }
         function onLatestAnswerChanged() {
-            if (!desktopRoot.thursdayBackend || !desktopRoot.thursdayBackend.latestAnswer) {
+            if (!desktopRoot.thursdayBackend || (!desktopRoot.thursdayBackend.latestAnswer && !desktopRoot.thursdayBackend.voiceActive && !desktopRoot.thursdayBackend.transcript)) {
                 desktopRoot.thursdayOutputUntil = 0;
                 desktopRoot.thursdayOutputScreen = "";
                 thursdayReading.stop();
@@ -90,29 +116,33 @@ Scope {
     function dismissIslands(except, restoreApplication = false) {
         islandWindows.forEach(window => { if (window && window !== except) window.dismiss(restoreApplication); });
     }
-    function openIsland(section, preferred, toggle) {
-        if (nativeDialogOpen) return;
-        if (thursdayBackend && thursdayBackend.opened) thursdayBackend.opened = false;
+    function openIsland(section, preferred, toggle, fresh = false) {
+        if (nativeDialogOpen) return false;
         const screen = resolveScreen(preferred);
-        if (section === "thursday" && thursdayBackend) {
-            if (screen) thursdayBackend.currentScreen = screen;
-            thursdayBackend.connectHelper();
-        }
         const window = islandWindows.find(candidate => candidate && candidate.modelData === screen);
-        if (!window) return;
-        if (window.pinned) {
-            if (toggle && window.section === section) window.dismiss(true);
-            else window.selectSection(section || "controls");
-            return;
+        if (!window) return false;
+        if (toggle && window.pinned && !window.previewPinned && islandSession.route === section) { window.dismiss(true); return true; }
+        activeScreen = screen;
+        panel = "";
+        if (section) islandSession.navigate(section, "", fresh ? "fresh" : "push");
+        if (islandSession.route === "thursday" && thursdayBackend) {
+            thursdayBackend.currentScreen = screen;
+            if (typeof thursdayBackend.connectHelper === "function") thursdayBackend.connectHelper();
         }
-        close();
-        Qt.callLater(() => {
-            if (window && islandWindows.indexOf(window) >= 0) window.pin(section || "controls");
-        });
+        dismissIslands(window);
+        window.prepare(islandSession.route, fresh);
+        if (!window.pinned) window.pin();
+        else if (window.previewPinned) window.promoteDashboard();
+        else window.visual.focusDefault();
+        return true;
     }
-    function toggleIsland() { openIsland("controls", null, true); }
+    function toggleIsland() { openIsland(islandSession.route, null, true); }
     function selectCapture(annotate, record) {
         if (nativeDialogOpen) return;
+        if (record && S.Recording.recording) { S.Recording.stop(); return; }
+        const origin = islandWindows.find(window => window && window.pinned);
+        captureReturn = origin ? {screen: origin.modelData, revision: islandSession.revision, route: islandSession.route,
+            application: origin.returnApplication, workspace: origin.returnWorkspace} : null;
         close();
         captureSelecting = true;
         nativeDialogOpen = true;
@@ -121,14 +151,51 @@ Scope {
         selectorDelay.record = record;
         selectorDelay.restart();
     }
-    function finishCapture(generation, error) {
+    function captureCancelled(error, result) {
+        if (result && result.cancelled === true) return true;
+        const message = String(error || "").trim().replace(/^desktopctl:\s*/i, "");
+        return /^(?:(?:screenshot|region selection|selection|capture|recording) )?cancel(?:led|ed)\.?$/i.test(message);
+    }
+    function finishCaptureReturn(generation, error) {
         if (!captureSelecting || generation !== selectorDelay.generation) return;
+        const origin = captureReturn;
+        captureReturn = null;
         captureSelecting = false;
         nativeDialogOpen = false;
+        if (origin && origin.revision === islandSession.revision) {
+            openIsland("", origin.screen, false);
+            const window = islandWindows.find(candidate => candidate && candidate.modelData === activeScreen);
+            if (window) { window.returnApplication = origin.application; window.returnWorkspace = origin.workspace; }
+        }
         if (error) Qt.callLater(() => S.IslandEvents.show("error", error, 0, 8000));
     }
+    function finishCapture(generation, error, result) {
+        if (!captureSelecting || generation !== selectorDelay.generation || captureReturnDelay.running) return;
+        if (result && result.annotation_id) {
+            annotationId = String(result.annotation_id);
+            annotationWatch.restart();
+            return;
+        }
+        annotationId = "";
+        annotationWatch.stop();
+        const failure = captureCancelled(error, result) ? "" : error;
+        if (captureReturn) {
+            // The selector process can exit before Wayland delivers its final
+            // keyboard-grab clear. Keep the handoff guard through that teardown.
+            captureReturnDelay.generation = generation;
+            captureReturnDelay.failure = failure || "";
+            captureReturnDelay.restart();
+        } else finishCaptureReturn(generation, failure);
+    }
+    Timer {
+        id: captureReturnDelay
+        interval: 120
+        property int generation: 0
+        property string failure: ""
+        onTriggered: desktopRoot.finishCaptureReturn(generation, failure)
+    }
     function releaseCompletedCapture() {
-        if (captureSelecting && !selectorDelay.running && S.Desktop.pendingCount === 0 && !S.Recording.busy)
+        if (captureSelecting && !annotationId && !selectorDelay.running && S.Desktop.pendingCount === 0 && !S.Recording.busy)
             finishCapture(selectorDelay.generation, "");
     }
     Connections {
@@ -148,11 +215,27 @@ Scope {
         property int generation: 0
         onTriggered: {
             const token = generation;
-            const done = function(ok, result, error) { desktopRoot.finishCapture(token, ok ? "" : error); };
+            const done = function(ok, result, error) { desktopRoot.finishCapture(token, ok ? "" : error, result); };
             try {
                 if (record) S.Recording.start(done);
                 else S.Desktop.action("capture", annotate ? ["region", "annotate"] : ["region"], done);
             } catch (error) { desktopRoot.finishCapture(token, String(error)); }
+        }
+    }
+    Timer {
+        id: annotationWatch
+        interval: 700
+        repeat: true
+        onTriggered: {
+            if (!desktopRoot.annotationId || desktopRoot.annotationChecking) return;
+            const token = selectorDelay.generation;
+            const id = desktopRoot.annotationId;
+            desktopRoot.annotationChecking = true;
+            S.Desktop.action("annotation-status", [id], function(ok, result, error) {
+                desktopRoot.annotationChecking = false;
+                if (!desktopRoot.captureSelecting || token !== selectorDelay.generation || id !== desktopRoot.annotationId) return;
+                if (!ok || !result.active) desktopRoot.finishCapture(token, ok ? "" : error);
+            });
         }
     }
     property var activeScreen: Quickshell.screens.length ? Quickshell.screens[0] : null
@@ -163,8 +246,8 @@ Scope {
         return Quickshell.screens.find(s => focused && s.name === focused.name) || Quickshell.screens[0] || null;
     }
     // Discovery belongs to the selected panel, never a fading cached instance.
-    Binding { target: S.Network; property: "discoveryRequested"; value: desktopRoot.panel === "settings" && desktopRoot.settingsSection === "wifi" }
-    Binding { target: S.Bluetooth; property: "discoveryRequested"; value: desktopRoot.panel === "settings" && desktopRoot.settingsSection === "bluetooth" }
+    Binding { target: S.Network; property: "discoveryRequested"; value: !desktopRoot.nativeDialogOpen && desktopRoot.islandOpen && desktopRoot.islandRoute === "wifi" }
+    Binding { target: S.Bluetooth; property: "discoveryRequested"; value: !desktopRoot.nativeDialogOpen && desktopRoot.islandOpen && desktopRoot.islandRoute === "bluetooth" }
     Connections {
         target: Quickshell
         function onScreensChanged() {
@@ -228,7 +311,8 @@ Scope {
     Connections {
         target: S.Desktop
         function onLastErrorChanged() {
-            if (S.Desktop.lastError) S.IslandEvents.show("error", S.Desktop.lastError, 0, 8000);
+            if (S.Desktop.lastError && !(desktopRoot.captureSelecting && desktopRoot.captureCancelled(S.Desktop.lastError, null)))
+                S.IslandEvents.show("error", S.Desktop.lastError, 0, 8000);
         }
     }
     Connections {
@@ -239,6 +323,7 @@ Scope {
     }
     readonly property bool preview: Quickshell.env("SUMI_PREVIEW") === "1"
     readonly property var codexStatus: null
+    readonly property url codexDashboardSource: ""
     function resolveScreen(preferred) {
         if (preferred && Quickshell.screens.indexOf(preferred) >= 0) return preferred;
         const focused = Hyprland.focusedMonitor;
@@ -246,26 +331,29 @@ Scope {
     }
     function chooseScreen(preferred) { activeScreen = resolveScreen(preferred); }
     function open(name, screen) {
-        if (nativeDialogOpen) return false;
-        if (["launcher", "files", "clipboard", "appearance", "widgets", "settings", "calendar", "media", "notifications", "pomodoro", "help", "power"].indexOf(name) < 0) return false;
-        chooseScreen(screen); if (!activeScreen) return false;
-        dismissIslands();
-        if (name !== "settings") settingsSection = "";
-        panel = name; activationSerial += 1;
-        if (name === "notifications") S.Notifications.markRead();
-        return true;
+        const aliases = {launcher:"launcher", files:"files", clipboard:"clipboard", appearance:"appearance", widgets:"widgets",
+            settings:"controls", calendar:"calendar", media:"media", notifications:"inbox", pomodoro:"pomodoro", help:"help", power:"power", codex:"codex"};
+        if (!Object.prototype.hasOwnProperty.call(aliases, name)) return false;
+        const route = aliases[name];
+        return openIsland(route, screen, false, ["launcher", "files", "clipboard"].indexOf(route) >= 0);
     }
-    function openSettings(section, screen) { settingsSection = section || ""; open("settings", screen); }
-    function toggle(name, screen) { if (panel === name && activeScreen === resolveScreen(screen)) close(); else open(name, screen); }
-    function close() { if (nativeDialogOpen) return; dismissIslands(); panel = ""; settingsSection = ""; }
+    function openSettings(section, screen) {
+        settingsSection = section || "";
+        return openIsland(["wifi", "bluetooth", "audio", "capture"].indexOf(section) >= 0 ? section : "controls", screen, false);
+    }
+    function toggle(name, screen) {
+        const aliases = {settings:"controls",notifications:"inbox"};
+        const route = aliases[name] || name;
+        const window = islandWindows.find(candidate => candidate && candidate.modelData === resolveScreen(screen));
+        if (window && window.pinned && islandSession.route === route) { close(); return; }
+        open(name, screen);
+    }
+    function close() { if (nativeDialogOpen) return; dismissIslands(null, true); panel = ""; }
     function thursdayToggle() { openIsland("thursday", null, true); }
-    function codexToggle(screen) {}
+    function codexToggle(screen) { openIsland("codex", screen, true); }
     function launcherReady(): bool {
-        const instances = overlays.instances;
-        if (!Quickshell.screens.length || instances.length !== Quickshell.screens.length) return false;
-        for (let i = 0; i < instances.length; i++)
-            if (!instances[i].launcherReady) return false;
-        return true;
+        return Quickshell.screens.length > 0 && islandWindows.length === Quickshell.screens.length
+            && islandWindows.every(window => window && window.launcherReady);
     }
     // One registration per session, never per monitor or preview instance.
     LazyLoader {
@@ -285,7 +373,7 @@ Scope {
         function open(name: string): void { desktopRoot.open(name, null); }
         function toggle(name: string): void { desktopRoot.toggle(name, null); }
         function close(): void { desktopRoot.close(); }
-        function status(): string { return JSON.stringify({panel: desktopRoot.panel, theme: Theme.id, preview: desktopRoot.preview, barVisible: desktopRoot.barVisible, nativeDialogOpen: desktopRoot.nativeDialogOpen, captureSelecting: desktopRoot.captureSelecting, recording: S.Recording.recording, recordingBusy: S.Recording.busy, applications: DesktopEntries.applications.values.length, notifications: S.Notifications.count, notificationPopups: S.Notifications.active.length, unread: S.Notifications.unread, dnd: Settings.dnd, wifi: S.Network.name, bluetoothEnabled: S.Bluetooth.enabled, volume: S.Audio.volume, muted: S.Audio.muted, battery: S.Battery.percent}); }
+        function status(): string { return JSON.stringify({panel: desktopRoot.islandOpen ? desktopRoot.islandRoute : desktopRoot.panel, islandRoute: desktopRoot.islandRoute, theme: Theme.id, preview: desktopRoot.preview, barVisible: desktopRoot.barVisible, nativeDialogOpen: desktopRoot.nativeDialogOpen, captureSelecting: desktopRoot.captureSelecting, recording: S.Recording.recording, recordingBusy: S.Recording.busy, applications: DesktopEntries.applications.values.length, notifications: S.Notifications.count, notificationPopups: S.Notifications.active.length, unread: S.Notifications.unread, dnd: Settings.dnd, wifi: S.Network.name, bluetoothEnabled: S.Bluetooth.enabled, volume: S.Audio.volume, muted: S.Audio.muted, battery: S.Battery.percent}); }
     }
     IpcHandler {
         target: "bar"
@@ -317,11 +405,11 @@ Scope {
     }
     IpcHandler { target: "settings"; function toggle(): void { desktopRoot.toggle("settings", null); } }
     IpcHandler { target: "clipboard"; function toggle(): void { desktopRoot.toggle("clipboard", null); } }
-    // Optional external companion: an explicit environment configuration opts in.
+    // Native assistant integration begins.
     LazyLoader {
         id: thursdayLoader
         active: !desktopRoot.preview
-        component: ThursdayNative.Thursday {
+        component: ThursdayIntegration.Thursday {
             id: thursday
             repoRoot: Quickshell.env("SUMI_THURSDAY_ROOT") || ""
             theme: Theme
@@ -332,8 +420,7 @@ Scope {
             Component.onCompleted: reducedMotion = Theme.effectiveReducedMotion
         }
     }
-    // No external checkout is imported into the public shell.
+    // Native assistant integration ends.
     Variants { model: Quickshell.screens; Bar { app: desktopRoot } }
-    Variants { id: overlays; model: Quickshell.screens; Overlay { app: desktopRoot } }
     DesktopWidgets { id: widgetSurface; modelData: desktopRoot.widgetScreen; app: desktopRoot }
 }

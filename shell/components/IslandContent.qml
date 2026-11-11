@@ -5,6 +5,7 @@ import QtQuick.Controls
 import Quickshell.Widgets
 import "../config"
 import "../services" as S
+import "../integrations" as Native
 
 // Pure visual content. The native host owns geometry, focus and demand gates.
 FocusScope {
@@ -15,10 +16,21 @@ FocusScope {
     property bool notch: false
     property bool open: false
     property bool pinned: false
+    property bool previewPinned: false
+    readonly property bool musicExpanded: open && !pinned && activity === "media" && !hasEvent && !assistantAutoOutput
+    readonly property var assistantBackend: typeof app.thursdayBackend === "undefined" ? null : app.thursdayBackend
     property bool interactive: true
     property bool effectsActive: true
     property real bodyWidth: 176
     property real bodyHeight: 32
+    property real maximumWidth: 680
+    property real maximumHeight: 660
+    property bool dashboardReady: false
+    property int layoutStableFrames: 0
+    property real lastLayoutHeight: -1
+    property real lastLayoutWidth: -1
+    property int layoutFrames: 0
+    property bool revealPending: false
     property real headerRoom: 420
     property string activity: "idle"
     property string section: "home"
@@ -29,9 +41,17 @@ FocusScope {
     property string eventSection: "home"
     property bool assistantAutoOutput: false
     property bool assistantSpeaking: false
+    property bool assistantRecording: false
+    property real assistantLevel: 0
+    property bool assistantProcessing: false
     property var assistantSamples: []
+    TextMetrics { id: notificationSummaryMetric; font.pixelSize: 13; font.weight: Font.DemiBold; text: root.notification ? root.notification.summary || "" : "" }
+    TextMetrics { id: notificationBodyMetric; font.pixelSize: 12; text: root.notification ? root.notification.body || "" : "" }
+    readonly property real notificationPreferredWidth: Math.min(maximumWidth, Math.max(360, Math.min(500, Math.max(notificationSummaryMetric.width, notificationBodyMetric.width) + 64)))
+    readonly property real notificationPreferredHeight: Math.min(340, Math.max(130, notificationPreview.implicitHeight + headerHeight + 20))
     readonly property real assistantPreferredHeight: assistantOutput.implicitHeight + headerHeight + 20
     property string assistantLabel: ""
+    readonly property string assistantActiveLabel: assistantRecording ? "Listening" : assistantSpeaking ? "Speaking" : assistantProcessing ? "Thinking" : ""
     property string assistantText: ""
     property string eventKind: ""
     property string eventLabel: ""
@@ -42,8 +62,28 @@ FocusScope {
     property int periodPixelSize: 10
     property real now: Date.now()
     property real mediaPosition: 0
-    readonly property real preferredWidth: dashboard.item ? dashboard.item.preferredWidth : 640
-    readonly property real preferredHeight: dashboard.item ? dashboard.item.preferredHeight + headerHeight + 26 : 560
+    readonly property real requestedWidth: dashboard.item ? dashboard.item.preferredWidth : 640
+    readonly property real requestedHeight: dashboard.item ? dashboard.item.preferredHeight + headerHeight + 26 : 440
+    property real preferredWidth: 640
+    property real preferredHeight: 440
+    readonly property real shapeDistance: Math.abs(bodyWidth - Math.min(preferredWidth, maximumWidth)) + Math.abs(bodyHeight - Math.min(preferredHeight, maximumHeight))
+    function queueLayout() {
+        if (!pinned) return;
+        layoutStableFrames = 0; layoutFrames = 0;
+        lastLayoutWidth = -1; lastLayoutHeight = -1;
+        prepareLayout.restart();
+    }
+    function updateReveal() { if (pinned && dashboardReady && shapeDistance < 6) revealPending = false; }
+    onRequestedWidthChanged: queueLayout()
+    onRequestedHeightChanged: queueLayout()
+    onMaximumWidthChanged: queueLayout()
+    onMaximumHeightChanged: queueLayout()
+    onSectionChanged: { revealPending = true; queueLayout(); }
+    onBodyWidthChanged: updateReveal()
+    onBodyHeightChanged: updateReveal()
+    readonly property bool launcherReady: !!dashboard.item && dashboard.item.launcherReady
+    function prepare(route, fresh) { if (dashboard.item) dashboard.item.prepare(route, fresh); }
+    function back() { return !!dashboard.item && dashboard.item.back(); }
     property var samples: activity === "thursday" ? assistantSamples : S.Spectrum.samples
     readonly property alias surface: blackBody
     readonly property alias headerSurface: headerBackground
@@ -53,10 +93,13 @@ FocusScope {
     readonly property var firstControl: S.IslandMedia.available ? play : focusToggle
     readonly property real headerInset: notch ? 4 : 0
     readonly property real headerHeight: headerInset + 36
-    readonly property real headerWidth: Math.min(bodyWidth, headerRoom)
-    readonly property bool wideBody: bodyWidth > headerRoom + 0.1
+    readonly property real headerWidth: bodyWidth
+    readonly property bool wideBody: bodyWidth > headerWidth + 0.1
+    // A slight upward bias balances the orb visually beneath the notch.
+    readonly property real voiceOrbCenterY: Math.max(0, bodyHeight / 2 - 12)
     readonly property bool hasEvent: eventKind.length > 0
-    readonly property bool hasFlanks: headerWidth >= 260
+    readonly property bool hasFlanks: headerWidth >= 260 || (activity === "media" && !musicExpanded && headerWidth >= 220)
+    readonly property bool hasVisibleMediaWave: !pinned && activity === "media" && !hasEvent && (hasFlanks || musicExpanded) && rightFlank.width >= 14
     readonly property real mediaLength: S.IslandMedia.player && S.IslandMedia.player.lengthSupported ? Math.max(0, S.IslandMedia.player.length) : 0
     readonly property real remaining: app.focusRunning ? Math.max(0, app.focusDeadline - now) : Math.max(0, Number(app.focusRemaining) || 0)
     readonly property real focusProgress: Math.max(0, Math.min(1, 1 - remaining / Math.max(1,
@@ -81,11 +124,40 @@ FocusScope {
     }
     function focusDefault() {
         if (pinned && dashboard.item) { dashboard.item.focusDefault(); return; }
+        if (previewPinned && musicExpanded && headerPlay.enabled) { headerPlay.forceActiveFocus(Qt.OtherFocusReason); return; }
         if (firstControl && firstControl.enabled) firstControl.forceActiveFocus(Qt.OtherFocusReason);
         else calendar.forceActiveFocus(Qt.OtherFocusReason);
     }
+    Shortcut {
+        sequence: "Escape"
+        context: Qt.WindowShortcut
+        enabled: (root.pinned || root.previewPinned) && root.interactive
+        onActivated: root.dismissRequested()
+    }
     Keys.onEscapePressed: event => { dismissRequested(); event.accepted = true; }
 
+    // Measure at the destination width, never at the animated clipping width.
+    Timer {
+        id: prepareLayout
+        interval: 16; repeat: true
+        onTriggered: {
+            if (!root.pinned || !dashboard.item) { stop(); return; }
+            if (!dashboard.item.measurementReady) return;
+            const measured = Math.min(root.requestedHeight, root.maximumHeight);
+            const measuredWidth = Math.min(root.requestedWidth, root.maximumWidth);
+            root.layoutFrames++;
+            root.layoutStableFrames = Math.abs(measured - root.lastLayoutHeight) < .5 && Math.abs(measuredWidth - root.lastLayoutWidth) < .5 ? root.layoutStableFrames + 1 : 0;
+            root.lastLayoutHeight = measured; root.lastLayoutWidth = measuredWidth;
+            if (root.layoutStableFrames >= 1 || root.layoutFrames >= 10) {
+                root.preferredWidth = measuredWidth; root.preferredHeight = measured;
+                root.dashboardReady = true; stop(); root.updateReveal();
+            }
+        }
+    }
+    onPinnedChanged: {
+        if (!pinned) { dashboardReady = false; prepareLayout.stop(); }
+        else { revealPending = true; queueLayout(); }
+    }
     Rectangle {
         id: blackBody
         objectName: "islandBody"
@@ -93,7 +165,7 @@ FocusScope {
         y: root.wideBody ? root.headerHeight : 0
         width: root.bodyWidth
         height: Math.max(0, root.bodyHeight - y)
-        radius: root.open ? 28 : root.notch ? 20 : 18
+        radius: root.open ? 36 : Math.min(25, root.bodyHeight / 2)
         topLeftRadius: root.notch && !root.wideBody ? 0 : radius
         topRightRadius: root.notch && !root.wideBody ? 0 : radius
         color: "transparent"
@@ -102,7 +174,7 @@ FocusScope {
         id: headerBackground
         x: (root.width - width) / 2
         width: root.headerWidth; height: root.headerHeight
-        radius: root.notch ? 20 : 18
+        radius: root.notch ? 23 : Math.min(24, root.bodyHeight / 2)
         topLeftRadius: root.notch ? 0 : radius
         topRightRadius: root.notch ? 0 : radius
         color: "transparent"
@@ -143,11 +215,12 @@ FocusScope {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: root.headerClicked()
                 Accessible.role: Accessible.Button
-                Accessible.name: (root.pinned ? "Unpin" : "Pin") + " dynamic island, " + root.timeText + " " + root.periodText
+                Accessible.name: (root.pinned ? "Close Controls" : "Open Controls") + ", " + root.timeText
             }
             Label {
                 id: clock
                 objectName: "barClockTime"
+                visible: !root.musicExpanded
                 anchors.centerIn: parent
                 anchors.alignWhenCentered: false
                 text: root.timeText
@@ -159,6 +232,7 @@ FocusScope {
             Label {
                 id: period
                 objectName: "barClockPeriod"
+                visible: false
                 anchors.left: clock.right
                 anchors.leftMargin: 6
                 anchors.verticalCenter: parent.verticalCenter
@@ -169,46 +243,67 @@ FocusScope {
             }
             Item {
                 id: leftFlank
-                x: 14; height: 24
+                objectName: "islandLeftFlank"
+                x: root.activity === "media" && !root.hasEvent && !root.musicExpanded ? 10 : 14; height: 28
                 anchors.verticalCenter: parent.verticalCenter
-                width: Math.max(0, clock.x - x - 16)
-                visible: root.hasFlanks
+                width: Math.max(0, clock.x - x - (root.activity === "media" && !root.hasEvent && !root.musicExpanded ? 6 : 16))
+                visible: !root.pinned && (root.hasFlanks || root.activity === "thursday")
                 clip: true
-                ArtworkImage {
-                    id: smallArt
-                    width: 24; height: 24
-                    artworkUrl: S.IslandMedia.artUrl
-                    active: root.effectsActive && root.activity === "media" && !root.hasEvent && leftFlank.visible
-                    visible: root.activity === "media" && !root.hasEvent && status === Image.Ready
-                    sourceSize: Qt.size(48, 48)
-                    fillMode: Image.PreserveAspectCrop
-                }
                 Icon {
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: root.hasEvent || root.activity === "capture" || root.activity === "thursday" || root.activity === "recording" || (root.activity === "media" && smallArt.status !== Image.Ready)
+                    visible: root.hasEvent || root.activity === "capture" || root.activity === "recording" || (root.activity === "media" && !root.musicExpanded && smallArt.status !== Image.Ready)
                     name: root.activity === "capture" ? "camera" : root.eventKind === "notification" ? "bell" : root.eventKind === "brightness" ? "settings" : root.activity === "thursday" || root.eventKind === "thursday" ? "sparkles" : root.activity === "recording" || root.eventKind === "recording" ? "record" : root.eventKind === "volume" || root.eventKind === "mute" ? (S.Audio.muted ? "volume-x" : "volume") : root.eventKind === "microphone" ? "volume-x" : root.eventKind === "power" ? (S.Battery.charging ? "battery-charging" : "battery") : (root.eventKind === "low-battery" || root.eventKind === "critical-battery") ? "battery" : root.activity === "focus" || root.eventKind.indexOf("focus") >= 0 ? "calendar" : "music"
                     size: 14
                     color: (root.eventKind === "low-battery" || root.eventKind === "critical-battery" || root.activity === "recording") ? Theme.accentWarn : "#ffffff"
                 }
                 Label {
-                    x: root.activity === "focus" && !root.hasEvent ? 0 : 21
-                    width: parent.width - x
-                    height: parent.height
-                    text: root.hasEvent ? root.eventLabel : root.activity === "focus" ? root.duration(root.remaining) : root.activity === "capture" ? "Select region" : root.activity === "recording" ? "Recording" : root.activity === "thursday" ? root.assistantLabel : ""
-                    font.pixelSize: 10
-                    font.weight: Font.Medium
+                    objectName: "islandHeaderActivityLabel"
+                    visible: root.activity !== "media" || root.hasEvent
+                    x: root.activity === "thursday" && !root.hasEvent ? 0 : root.activity === "media" && !root.hasEvent ? (root.musicExpanded ? 68 : 38) : root.activity === "focus" && !root.hasEvent ? 0 : 21
+                    width: Math.max(0, parent.width - x)
+                    height: root.activity === "media" && !root.hasEvent ? 16 : parent.height
+                    elide: Text.ElideRight
+                    text: root.hasEvent ? root.eventLabel : root.activity === "focus" ? root.duration(root.remaining) : root.activity === "capture" ? "Select region" : root.activity === "recording" ? "Recording" : root.activity === "thursday" ? root.assistantLabel : root.activity === "media" ? S.IslandMedia.title : ""
+                    font.pixelSize: root.activity === "media" && !root.hasEvent ? 13 : 10
+                    font.weight: root.activity === "media" && !root.hasEvent ? Font.DemiBold : Font.Medium
                     color: "#e4e4e7"
                     verticalAlignment: Text.AlignVCenter
+                }
+                Label {
+                    x: root.musicExpanded ? 68 : 38; y: 16; width: Math.max(0, parent.width - x); height: 12
+                    visible: false
+                    text: S.IslandMedia.artist; font.pixelSize: 10; color: "#a8a8ae"; elide: Text.ElideRight
                 }
             }
             Item {
                 id: rightFlank
-                x: period.x + period.width + 16
-                width: Math.max(0, parent.width - x - 14)
-                height: 14
-                anchors.verticalCenter: parent.verticalCenter
+                objectName: "islandRightFlank"
+                x: root.activity === "media" && !root.hasEvent ? (root.musicExpanded ? Math.max(clock.x + clock.width + 8, parent.width - 60) : clock.x + clock.width + 6) : clock.x + clock.width + 16
+                width: Math.max(0, parent.width - x - (root.activity === "media" && !root.hasEvent && !root.musicExpanded ? 10 : 14))
+                height: root.activity === "thursday" && !root.hasEvent && !root.open ? 28 : 14
+                y: root.musicExpanded ? 48 : (parent.height - height) / 2
+                Behavior on y { NumberAnimation { duration: root.activity === "media" ? IslandStyle.musicTransition : IslandStyle.geometryTransition; easing.type: Easing.OutCubic } }
                 clip: true
-                visible: root.hasFlanks
+                visible: !root.pinned && (root.hasFlanks || root.musicExpanded || root.activity === "thursday")
+                Native.SpeechOrb {
+                    objectName: "islandThursdayCompactOrb"
+                    width: 28; height: 28
+                    anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+                    visible: root.activity === "thursday" && !root.hasEvent && !root.open && !root.assistantAutoOutput
+                    active: visible && root.effectsActive && (root.assistantSpeaking || root.assistantRecording || root.assistantProcessing)
+                    effectsActive: root.effectsActive && !root.assistantAutoOutput && !(root.pinned && root.section === "thursday")
+                    level: root.assistantLevel
+                    processing: root.assistantProcessing
+                    reducedMotion: Theme.effectiveReducedMotion
+                }
+                IslandWaveform {
+                    objectName: "islandThursdayHeaderMeter"
+                    anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+                    width: Math.min(40, parent.width); height: 14; barCount: 7
+                    visible: false
+                    tint: "#a6c9ed"; active: root.effectsActive && (root.assistantRecording || root.assistantSpeaking)
+                    samples: [root.assistantLevel * 45, root.assistantLevel * 70, root.assistantLevel * 90, root.assistantLevel * 100, root.assistantLevel * 90, root.assistantLevel * 70, root.assistantLevel * 45]
+                }
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width; height: 3; radius: 1.5
@@ -222,37 +317,101 @@ FocusScope {
                 }
                 Label { anchors.fill: parent; visible: root.activity === "capture"; text: "Esc to cancel"; color: "#c4c5ce"; font.pixelSize: 9; verticalAlignment: Text.AlignVCenter }
                 Row {
-                    anchors.fill: parent
+                    id: musicWave
+                    objectName: "islandCompactWave"
+                    width: root.musicExpanded ? parent.width : Math.min(42, parent.width)
+                    height: parent.height
+                    anchors.horizontalCenter: parent.horizontalCenter
                     spacing: 1
-                    visible: !root.hasEvent && (root.activity === "media" || root.activity === "thursday")
+                    visible: !root.hasEvent && root.activity === "media"
                     Repeater {
                         model: 20
                         Rectangle {
                             required property int index
                             objectName: "islandWave" + index
-                            width: Math.max(0, (rightFlank.width - 19) / 20)
+                            width: Math.max(0, (musicWave.width - 19) / 20)
                             height: Math.max(2, Math.min(100, Math.max(0, Number(root.samples[index]) || 0)) * 0.14)
-                            y: rightFlank.height - height
+                            y: (rightFlank.height - height) / 2
                             radius: 1
-                            color: "#f4f4f5"
-                            Behavior on height { NumberAnimation { duration: Theme.effectiveReducedMotion ? 0 : 90; easing.type: Easing.OutQuad } }
+                            color: "#e7a88f"
+                            Behavior on height { NumberAnimation { duration: Motion.control; easing.type: Easing.OutCubic } }
                         }
                     }
                 }
             }
+            Row {
+                id: dashboardLeftLane
+                objectName: "islandDashboardLeftLane"
+                x: 12; height: 36; anchors.verticalCenter: parent.verticalCenter
+                width: Math.max(0, clock.x - x - 10); clip: true; spacing: 4
+                visible: root.pinned && root.dashboardReady
+                ActionButton {
+                    objectName: "islandHeaderSearchBack"
+                    width: Math.min(parent.width, root.section === "controls" || root.section === "home" ? 92 : 70); height: 36
+                    quiet: true; textColor: "white"; font.pixelSize: 12
+                    iconName: root.section === "controls" || root.section === "home" ? "search" : ""; iconSize: 16
+                    text: root.section === "controls" || root.section === "home" ? "Search" : "‹  Back"
+                    tooltip: root.section === "controls" || root.section === "home" ? "Search apps, files and actions" : "Back to previous page"
+                    onClicked: { if (root.section === "controls" || root.section === "home") root.sectionRequested("launcher"); else if (!root.back()) root.sectionRequested("controls"); }
+                }
+                Label { height: 36; width: Math.max(0, parent.width - 75); visible: (root.activity === "thursday" && root.assistantActiveLabel.length > 0) || (root.section !== "controls" && root.section !== "home"); text: root.activity === "thursday" ? root.assistantActiveLabel : root.section === "media" ? "Now playing" : root.section === "thursday" ? "Thursday" : root.section.charAt(0).toUpperCase() + root.section.slice(1); elide: Text.ElideRight; color: "#aaaab3"; font.pixelSize: 11 }
+            }
+            Row {
+                id: dashboardRightLane
+                objectName: "islandDashboardRightLane"
+                anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter
+                height: 36; spacing: 4
+                visible: root.pinned && root.dashboardReady
+                IslandWaveform { objectName: "islandDashboardHeaderWave"; width: 28; height: 18; anchors.verticalCenter: parent.verticalCenter; barCount: 7; samples: S.Spectrum.samples; active: root.effectsActive && S.IslandMedia.playing; visible: S.IslandMedia.playing && root.section !== "controls" && root.section !== "media" && root.headerWidth >= 420 }
+                ActionButton { objectName: "islandHeaderSettings"; width: root.bodyWidth < 420 ? 30 : 36; height: 36; iconName: "settings"; iconSize: 16; quiet: true; textColor: "white"; tooltip: "Island settings"; onClicked: root.sectionRequested("settings") }
+                ActionButton { objectName: "islandHeaderClose"; width: root.bodyWidth < 420 ? 30 : 36; height: 36; text: "×"; font.pixelSize: 20; quiet: true; textColor: "white"; tooltip: "Close island"; onClicked: root.dismissRequested() }
+            }
         }
 
+        Row {
+            objectName: "islandExpandedMusicTransport"
+            x: musicPreview.x + Math.max(0, (musicPreview.width - width) / 2)
+            y: root.headerInset + 130; spacing: 2; height: 36
+            visible: root.musicExpanded
+            IslandPreviewButton { objectName: "islandHeaderMusicPrevious"; width: Math.max(20, Math.min(36, (musicPreview.width - 4) / 3)); height: 36; iconName: "chevron-down"; rotation: 90; iconSize: 20; quiet: true; tooltip: "Previous track"; enabled: !!S.IslandMedia.player && S.IslandMedia.player.canGoPrevious; onClicked: S.IslandMedia.previous() }
+            IslandPreviewButton { id: headerPlay; objectName: "islandHeaderMusicPlay"; width: Math.max(20, Math.min(36, (musicPreview.width - 4) / 3)); height: 36; iconName: S.IslandMedia.playing ? "pause" : "play"; iconSize: 21; quiet: true; tooltip: S.IslandMedia.playing ? "Pause" : "Play"; enabled: !!S.IslandMedia.player && S.IslandMedia.player.canTogglePlaying; onClicked: S.IslandMedia.toggle() }
+            IslandPreviewButton { objectName: "islandHeaderMusicNext"; width: Math.max(20, Math.min(36, (musicPreview.width - 4) / 3)); height: 36; iconName: "chevron-down"; rotation: -90; iconSize: 20; quiet: true; tooltip: "Next track"; enabled: !!S.IslandMedia.player && S.IslandMedia.player.canGoNext; onClicked: S.IslandMedia.next() }
+        }
+        ClippingRectangle {
+            id: animatedAlbum
+            objectName: "islandCompactAlbum"
+            x: root.musicExpanded ? 20 : leftFlank.x + (leftFlank.width - width) / 2
+            y: root.headerInset + (root.musicExpanded ? 28 : 4)
+            width: root.musicExpanded ? Math.min(140, Math.max(64, (parent.width - 44) * 0.4)) : 28
+            height: width
+            radius: root.musicExpanded ? 20 : 8
+            color: "#1c1c1f"
+            visible: !root.pinned && root.activity === "media" && !root.hasEvent && (root.musicExpanded || (leftFlank.visible && smallArt.status === Image.Ready))
+            Behavior on x { NumberAnimation { duration: IslandStyle.musicTransition; easing.type: Easing.OutCubic } }
+            Behavior on y { NumberAnimation { duration: IslandStyle.musicTransition; easing.type: Easing.OutCubic } }
+            Behavior on width { NumberAnimation { duration: IslandStyle.musicTransition; easing.type: Easing.OutCubic } }
+            Behavior on radius { NumberAnimation { duration: IslandStyle.musicTransition; easing.type: Easing.OutCubic } }
+            Icon { anchors.centerIn: parent; name: "music"; size: 24; color: "#bdbdc5"; visible: smallArt.status !== Image.Ready }
+            ArtworkImage { id: smallArt; anchors.fill: parent; artworkUrl: S.IslandMedia.artUrl; active: root.effectsActive && root.activity === "media" && !root.hasEvent; fillMode: Image.PreserveAspectCrop; sourceSize: Qt.size(280,280); visible: status === Image.Ready }
+        }
+        Column {
+            objectName: "islandMusicMetadata"
+            x: musicPreview.x; y: root.headerInset + 38; width: Math.max(0, musicPreview.width - 52); spacing: 3
+            visible: root.musicExpanded
+            Label { width: parent.width; text: S.IslandMedia.title; font.pixelSize: 13; font.weight: Font.DemiBold; color: "white"; elide: Text.ElideRight }
+            Label { width: parent.width; text: S.IslandMedia.artist; font.pixelSize: 10; color: "#a8a8ae"; elide: Text.ElideRight }
+        }
         Item {
             id: details
             objectName: "islandDetails"
             x: 16; y: root.headerInset + 46
             width: Math.max(0, parent.width - 32)
             height: 164
-            opacity: root.open && !root.pinned && !root.notification && !root.alertPreview && root.activity !== "thursday" && !root.assistantAutoOutput ? 1 : 0
+            opacity: root.open && !root.pinned && !root.notification && !root.alertPreview && root.activity !== "thursday" && root.activity !== "media" && !root.assistantAutoOutput ? 1 : 0
             visible: opacity > 0.001
             enabled: root.interactive && root.open
             onVisibleChanged: if (visible && root.pinned) Qt.callLater(root.focusDefault)
-            Behavior on opacity { NumberAnimation { duration: Theme.effectiveReducedMotion ? 0 : root.open ? Theme.motionEnter : Theme.motionExit } }
+            Behavior on opacity { NumberAnimation { duration: root.open ? Motion.content : Motion.control; easing.type: Easing.OutCubic } }
 
             ClippingRectangle {
                 id: face
@@ -436,8 +595,9 @@ FocusScope {
         }
 
         IslandNotificationPreview {
-            x: 20; y: root.headerHeight + 8
-            width: Math.max(0, parent.width - 40)
+            id: notificationPreview
+            x: (parent.width - width) / 2; y: root.headerHeight + 8
+            width: Math.max(0, root.notificationPreferredWidth - 40)
             height: Math.max(0, root.bodyHeight - y - 12)
             visible: !!root.notification && !root.pinned
             active: root.interactive && visible
@@ -456,21 +616,39 @@ FocusScope {
         Item {
             x: 22; y: root.headerHeight + 14; width: Math.max(0, parent.width - 44); height: 150
             visible: root.open && !root.pinned && !root.hasEvent && !root.assistantAutoOutput && root.activity === "thursday"
-            Label { text: "Thursday · " + root.assistantLabel; color: "white"; font.weight: Font.DemiBold }
-            Label { y: 31; width: parent.width; text: root.assistantText; color: "#bdc0cc"; maximumLineCount: 3; wrapMode: Text.Wrap }
+            Label { width: Math.max(0, parent.width - hoverSpeechOrb.width - 12); text: "Thursday · " + root.assistantLabel; elide: Text.ElideRight; color: "white"; font.weight: Font.DemiBold }
+            Native.SpeechOrb { id: hoverSpeechOrb; objectName: "islandThursdayHoverOrb"; anchors.right: parent.right; y: root.voiceOrbCenterY - parent.y - height / 2; width: Math.min(120, parent.width * 0.36, parent.height - 16); height: width; active: root.assistantRecording || root.assistantSpeaking; processing: root.assistantProcessing; effectsActive: root.effectsActive; level: root.assistantLevel; reducedMotion: Theme.effectiveReducedMotion }
+            Label { y: 31; width: Math.max(0, parent.width - hoverSpeechOrb.width - 12); text: root.assistantText; color: "#bdc0cc"; maximumLineCount: 3; wrapMode: Text.Wrap }
             ActionButton { y: 104; text: "Open Thursday"; quiet: true; onClicked: root.sectionRequested("thursday") }
         }
-        IslandAssistantOutput {
+        IslandMusicPreview {
+            id: musicPreview
+            objectName: "islandMusicPreview"
+            x: animatedAlbum.x + animatedAlbum.width + 16; y: root.headerInset + 90
+            width: Math.max(0, parent.width - x - 20)
+            height: 24
+            showTransport: false
+            showFooter: false
+            visible: root.musicExpanded
+            active: visible && root.effectsActive
+            mediaPosition: root.mediaPosition
+            samples: root.samples
+            onDetailsRequested: root.sectionRequested("media")
+        }
+        IslandVoicePreview {
             id: assistantOutput
             objectName: "islandAssistantOutput"
-            x: 20; y: root.headerHeight + 10
+            x: 20; y: root.headerHeight + 8
             width: Math.max(0, parent.width - 40)
-            height: Math.max(0, root.bodyHeight - y - 10)
-            text: root.assistantText
-            samples: root.assistantSamples
-            speaking: root.assistantSpeaking
+            height: Math.max(0, root.bodyHeight - y - 12)
             active: root.assistantAutoOutput && root.effectsActive
-            visible: root.assistantAutoOutput
+            orbCenterY: root.voiceOrbCenterY - assistantOutput.y
+            level: root.assistantLevel
+            partialTranscript: root.assistantBackend && typeof root.assistantBackend.partialTranscript !== "undefined" ? root.assistantBackend.partialTranscript : root.assistantText
+            finalTranscript: root.assistantBackend && typeof root.assistantBackend.finalTranscript !== "undefined" ? root.assistantBackend.finalTranscript : ""
+            answer: root.assistantBackend ? root.assistantBackend.latestAnswer || "" : root.assistantText
+            phase: !root.assistantBackend ? "listening" : root.assistantBackend.voiceError ? "error" : root.assistantRecording ? "listening" : root.assistantBackend.voiceState === "transcribing" ? "transcribing" : root.assistantSpeaking ? "speaking" : root.assistantBackend.latestAnswer ? "reply" : "thinking"
+            onOpenRequested: root.sectionRequested("thursday")
         }
         Item {
             id: dashboardFrame
@@ -479,18 +657,27 @@ FocusScope {
             width: Math.max(0, parent.width - 40)
             height: Math.max(0, root.bodyHeight - y - 18)
             visible: root.pinned
+            opacity: !root.dashboardReady ? 0 : root.revealPending ? Math.max(0, 1 - root.shapeDistance / 180) : 1
             // Transient feedback already lives in the fixed clock header.
             // Never insert a status row into the pinned dashboard geometry.
             Loader {
                 id: dashboard
                 objectName: "islandDashboardLoader"
+                x: (parent.width - width) / 2
                 y: 0
-                width: parent.width; height: Math.max(0, parent.height - y)
-                active: root.pinned
-                sourceComponent: IslandDashboard {
-                    app: root.app; screenInfo: root.screenInfo
+                width: Math.max(0, Math.min(root.requestedWidth, root.maximumWidth) - 40)
+                height: Math.max(0, Math.min(root.requestedHeight, root.maximumHeight) - root.headerHeight - 26)
+                active: true
+                onLoaded: {
+                    root.dashboardReady = false;
+                    root.layoutStableFrames = 0;
+                    root.lastLayoutHeight = -1;
+                    root.queueLayout();
+                }
+                sourceComponent: IslandDesk {
+                    app: root.app; screenInfo: root.screenInfo; headerEmbedded: true
                     section: root.section; active: root.pinned && root.effectsActive
-                    now: root.now; mediaPosition: root.mediaPosition
+                    now: root.now; mediaPosition: root.mediaPosition; spectrumSamples: S.Spectrum.samples
                     onSectionRequested: section => root.sectionRequested(section)
                     onDismissRequested: root.dismissRequested()
                     onOpenPanelRequested: panel => root.openPanelRequested(panel)
@@ -501,11 +688,5 @@ FocusScope {
                 }
             }
         }
-    }
-    IslandTabGesture {
-        anchors.fill: parent
-        z: 2000
-        deck: dashboard.item ? dashboard.item.tabDeck : null
-        active: root.pinned && root.interactive
     }
 }

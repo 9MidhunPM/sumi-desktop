@@ -41,11 +41,16 @@ def main() -> None:
         for name in ('Icon.qml', 'ActionButton.qml', 'Label.qml'):
             shutil.copy2(repo / 'shell/components' / name, work / 'components' / name)
         shutil.copytree(repo / 'shell/assets', work / 'assets')
-        (work / 'config/qmldir').write_text('singleton Theme 1.0 Theme.qml\n')
+        shutil.copy2(repo / 'shell/config/IslandStyle.qml', work / 'config/IslandStyle.qml')
+        shutil.copy2(repo / 'shell/config/Metrics.qml', work / 'config/Metrics.qml')
+        (work / 'config/qmldir').write_text('singleton Theme 1.0 Theme.qml\nsingleton IslandStyle 1.0 IslandStyle.qml\nsingleton Metrics 1.0 Metrics.qml\nsingleton Motion 1.0 Motion.qml\n')
+        (work / 'config/Motion.qml').write_text('pragma Singleton\nimport QtQuick\nQtObject { readonly property int control: Theme.effectiveReducedMotion ? 0 : 90; readonly property int content: Theme.effectiveReducedMotion ? 0 : Theme.batteryMotion ? 80 : 140; readonly property int music: Theme.effectiveReducedMotion ? 0 : Theme.batteryMotion ? 100 : 180; readonly property int geometry: Theme.effectiveReducedMotion ? 0 : Theme.batteryMotion ? 120 : 280 }\n')
         (work / 'config/Theme.qml').write_text('''pragma Singleton
         import QtQuick
         QtObject {
             readonly property color textMain: "#f3e9df"
+            readonly property color textSoft: "#bdbdc5"
+            readonly property bool batteryMotion: false
             readonly property color desktopBackground: "#17151d"
             readonly property color accentBlue: "#b8b5d9"
             readonly property color bgPlaying: "#49333e"
@@ -59,17 +64,19 @@ def main() -> None:
         ''')
         names = [
             'arch', 'arrow-right', 'battery', 'battery-charging', 'bell', 'bell-off',
-            'bluetooth', 'bluetooth-off', 'calendar', 'chevron-down', 'chevron-up',
+            'bluetooth', 'bluetooth-off', 'calendar', 'chatgpt', 'chevron-down', 'chevron-up',
             'circle-help', 'code', 'grid', 'more-horizontal', 'music', 'pause', 'play',
             'settings', 'sparkles', 'terminal', 'volume', 'volume-x', 'wifi', 'wifi-off',
-            'apps', 'unknown',
+            'apps', 'assistant', 'codex', 'unknown',
+            'leaf', 'bolt', 'sun', 'moon', 'microphone', 'microphone-off', 'camera', 'record', 'stop', 'timer',
+            'search', 'clipboard', 'palette', 'layout-grid', 'cpu', 'folder', 'power', 'chevron-right',
         ]
         source = '''import QtQuick
         import QtTest
         import "components" as C
         Window {
             id: win
-            width: 720; height: 420; visible: true; color: "#101015"
+            width: 720; height: 476; visible: true; color: "#101015"
             property int presses: 0
             property bool saved: false
             Repeater {
@@ -79,19 +86,19 @@ def main() -> None:
                     required property string modelData
                     required property int index
                     property alias icon: glyph
-                    x: (index % 8) * 90; y: Math.floor(index / 8) * 72
+                    x: (index % 8) * 90; y: Math.floor(index / 8) * 56
                     width: 90; height: 72
                     C.Icon { id: glyph; x: 33; y: 10; name: parent.modelData; size: 24; color: "#e875a5" }
                     Text { y: 40; width: 90; text: parent.modelData; font.pixelSize: 9; color: "white"; horizontalAlignment: Text.AlignHCenter }
                 }
             }
-            C.ActionButton { id: iconOnly; x: 20; y: 310; width: 28; height: 36; iconName: "wifi"; iconColor: "#64dab5"; tooltip: "Network"; onClicked: win.presses++ }
-            C.ActionButton { id: textOnly; x: 70; y: 310; text: "Text button"; tooltip: "Text action"; onClicked: win.presses++ }
-            C.ActionButton { id: combined; x: 220; y: 310; iconName: "battery"; text: "80%"; tooltip: "Control center"; onClicked: win.presses++ }
-            C.Icon { id: changing; x: 340; y: 316; name: "wifi"; color: "red"; size: 24 }
-            C.Icon { id: empty; x: 390; y: 316; name: ""; size: 24 }
-            C.Icon { id: detailed; x: 450; y: 316; source: Qt.resolvedUrl("app-pattern.png"); size: 24; color: "#64dab5" }
-            C.Icon { id: translucent; x: 490; y: 316; source: Qt.resolvedUrl("app-pattern.png"); size: 24; color: Qt.rgba(100 / 255, 218 / 255, 181 / 255, 0.5); preserveDetail: true }
+            C.ActionButton { id: iconOnly; x: 20; y: 366; width: 28; height: 36; iconName: "wifi"; iconColor: "#64dab5"; tooltip: "Network"; onClicked: win.presses++ }
+            C.ActionButton { id: textOnly; x: 70; y: 366; text: "Text button"; tooltip: "Text action"; onClicked: win.presses++ }
+            C.ActionButton { id: combined; x: 220; y: 366; iconName: "battery"; text: "80%"; tooltip: "Control center"; onClicked: win.presses++ }
+            C.Icon { id: changing; x: 340; y: 372; name: "wifi"; color: "red"; size: 24 }
+            C.Icon { id: empty; x: 390; y: 372; name: ""; size: 24 }
+            C.Icon { id: detailed; x: 450; y: 372; source: Qt.resolvedUrl("app-pattern.png"); size: 24; color: "#64dab5" }
+            C.Icon { id: translucent; x: 490; y: 372; source: Qt.resolvedUrl("app-pattern.png"); size: 24; color: Qt.rgba(100 / 255, 218 / 255, 181 / 255, 0.5); preserveDetail: true }
             TestCase {
                 name: "SumiIcons"
                 when: win.visible
@@ -153,34 +160,36 @@ def main() -> None:
                     for pixel in (tile.getpixel((x, y)) for x in range(tile.width))
                 )
             for index, name in enumerate(names):
-                pixels = matches(crop((index % 8) * 90 + 33, (index // 8) * 72 + 10, 24, 24), (232, 117, 165))
+                pixels = matches(crop((index % 8) * 90 + 33, (index // 8) * 56 + 10, 24, 24), (232, 117, 165))
                 assert pixels >= 3, f'{name} is blank or incorrectly tinted at scale {scale}: {pixels} pixels'
             def icon_tile(name):
                 index = names.index(name)
-                return crop((index % 8) * 90 + 33, (index // 8) * 72 + 10, 24, 24)
-            compact = crop(20, 310, 28, 36)
+                return crop((index % 8) * 90 + 33, (index // 8) * 56 + 10, 24, 24)
+            assert ImageChops.difference(icon_tile('codex'), icon_tile('chatgpt')).getbbox() is None, 'Codex must render the ChatGPT mark'
+            assert ImageChops.difference(icon_tile('chatgpt'), icon_tile('unknown')).getbbox() is not None, 'ChatGPT mark rendered the fallback icon'
+            compact = crop(20, 366, 28, 36)
             points = [(x, y) for y in range(compact.height) for x in range(compact.width)
                       if compact.getpixel((x, y))[1] > compact.getpixel((x, y))[0] * 1.4 and compact.getpixel((x, y))[1] > compact.getpixel((x, y))[2] * 1.1]
             assert points, 'Compact icon is blank'
             center = (min(x for x, _ in points) + max(x for x, _ in points)) / 2
             assert abs(center - compact.width / 2) <= 2 * ratio, ('Icon not centered', center)
-            assert matches(crop(340, 316, 32, 32), (100, 218, 181)) >= 3, 'Tint/size update failed'
-            assert matches(crop(353, 318, 6, 5), (100, 218, 181)) >= 1, 'Source change retained the old Wi-Fi shape'
-            assert matches(crop(85, 316, 100, 24), (243, 233, 223)) >= 8, 'Text-only label is not visible'
+            assert matches(crop(340, 372, 32, 32), (100, 218, 181)) >= 3, 'Tint/size update failed'
+            assert matches(crop(353, 374, 6, 5), (100, 218, 181)) >= 1, 'Source change retained the old Wi-Fi shape'
+            assert matches(crop(85, 372, 100, 24), (243, 233, 223)) >= 8, 'Text-only label is not visible'
             # A 20px icon at fractional scale can have no fully opaque pixels;
             # allow its antialiasing while still excluding the dark background.
-            assert matches(crop(230, 316, 26, 24), (243, 233, 223), 45) >= 3, 'Icon and text button lost its icon'
-            assert matches(crop(259, 316, 28, 24), (243, 233, 223), 35) >= 5, 'Icon and text button lost its label'
-            assert all(low == high for low, high in crop(390, 316, 24, 24).getextrema()), 'Empty icon was painted'
-            dark = crop(453, 324, 4, 4)
-            light = crop(467, 324, 4, 4)
+            assert matches(crop(230, 372, 26, 24), (243, 233, 223), 45) >= 3, 'Icon and text button lost its icon'
+            assert matches(crop(259, 372, 28, 24), (243, 233, 223), 35) >= 5, 'Icon and text button lost its label'
+            assert all(low == high for low, high in crop(390, 372, 24, 24).getextrema()), 'Empty icon was painted'
+            dark = crop(453, 380, 4, 4)
+            light = crop(467, 380, 4, 4)
             assert matches(dark, (60, 131, 109), 5) >= 3, f'App logo lost its dark internal detail: {dark.getextrema()}'
             assert matches(light, (100, 218, 181), 5) >= 3, f'App logo lost its light internal detail: {light.getextrema()}'
             def alpha_at(x, y):
                 return rgba.getpixel((int(x * ratio + 0.5), int(y * ratio + 0.5)))[3]
-            assert alpha_at(451, 317) <= 2, 'Detail tint filled transparent source pixels'
-            assert abs(alpha_at(495, 328) - 128) <= 3, 'Detail tint ignored theme alpha'
-            assert abs(alpha_at(508, 337) - 64) <= 3, 'Detail tint did not multiply source and theme alpha'
+            assert alpha_at(451, 373) <= 2, 'Detail tint filled transparent source pixels'
+            assert abs(alpha_at(495, 384) - 128) <= 3, 'Detail tint ignored theme alpha'
+            assert abs(alpha_at(508, 393) - 64) <= 3, 'Detail tint did not multiply source and theme alpha'
             print('PASS scale', scale, ':', len(names), 'SVGs/aliases/fallback; compact centering; keyboard/accessibility; live updates; app detail and alpha')
 
 

@@ -14,6 +14,7 @@ def main():
     fixture.STUBS['IslandMedia'] = fixture.STUBS['IslandMedia'].replace(
         'function toggle() {}', 'property int toggleCalls: 0\nfunction toggle() { toggleCalls++; playing = !playing; }').replace(
         'function seek(value) {}', 'property real lastSeek: 0\nfunction seek(value) { lastSeek = value; }')
+    fixture.HARNESS = fixture.HARNESS.replace('        TestCase {', '        IslandMusicPreview { id: musicPreview; width: 480; active: true; mediaPosition: 75 }\n        TestCase {', 1)
     start = fixture.HARNESS.index('            function test_dashboard() {')
     fixture.HARNESS = fixture.HARNESS[:start] + '''            function test_dashboard() {
                 const player = {identity: "Fixture Player", dbusName: "org.mpris.MediaPlayer2.fixture", trackTitle: "A deliberately long real-song fixture title that must wrap inside the compact island", trackArtist: "Fixture artist", canTogglePlaying: true, canGoPrevious: true, canGoNext: true, canSeek: true, lengthSupported: true, positionSupported: true, length: 245, position: 75};
@@ -21,10 +22,35 @@ def main():
                 S.IslandMedia.available = true; S.IslandMedia.playing = true;
                 S.IslandMedia.title = player.trackTitle; S.IslandMedia.artist = player.trackArtist;
                 S.IslandMedia.artUrl = Qt.resolvedUrl("assets/icons/music.svg");
+                const preview = musicPreview;
+                wait(50);
+                check(preview.implicitHeight <= 64, "Music controls fit beneath the host header");
+                check(findChild(preview, "islandNowPlayingArtwork") === null && findChild(preview, "islandMediaWaveform") === null, "Artwork and waveform are not duplicated below host header");
+                const previewPlay = findChild(preview, "islandPreviewPlay");
+                previewPlay.clicked(); check(!S.IslandMedia.playing && previewPlay.enabled, "Paused preview retains resume control playing=" + S.IslandMedia.playing + " enabled=" + previewPlay.enabled + " active=" + preview.active + " player=" + JSON.stringify(S.IslandMedia.player) + " previewEnabled=" + preview.enabled);
+                previewPlay.clicked(); check(S.IslandMedia.playing, "Preview resumes the same source");
+                S.IslandMedia.toggleCalls = 0;
+                const previewSeek = findChild(preview, "islandPreviewSeek");
+                previewSeek.value = 100; previewSeek.moved(); check(S.IslandMedia.lastSeek === 100, "Preview seek reaches source");
+                preview.showTransport = false; preview.width = 280; wait(20);
+                const fullPlayer = findChild(preview, "islandPreviewFullPlayer");
+                check(!previewPlay.visible && fullPlayer.visible && fullPlayer.mapToItem(preview,0,0).x + fullPlayer.width <= preview.width, "Hosted transport is omitted and full player action fits at narrow width");
+                preview.visible = false;
                 dashboard.mediaPosition = 75; dashboard.section = "media";
                 wait(350);
                 check(findChild(dashboard, "islandNowPlayingArtwork").visible, "Real artwork fixture is displayed");
-                check(findChild(dashboard, "islandNowPlayingArtwork").width >= 160, "Now playing has a substantial cover");
+                const cover = findChild(dashboard, "islandNowPlayingArtwork");
+                const track = findChild(dashboard, "islandDashboardTrackTitle");
+                check(cover.width >= 64 && track.mapToItem(dashboard, 0, 0).x > cover.mapToItem(dashboard, 0, 0).x + cover.width, "Artwork and title share a horizontal layout");
+                const mediaPage = findChild(dashboard, "islandMediaPage");
+                mediaPage.samples = [10,20,30,40,50,60,70,80,90,100];
+                const waveform = findChild(dashboard, "islandMediaWaveform");
+                check(waveform.visible && waveform.samples.length === 10, "Media waveform receives live spectrum samples");
+                wait(150);
+                const bar = findChild(waveform, "islandSpectrumBar9");
+                check(bar && bar.height > 10, "Spectrum samples drive visible bar height");
+                mediaPage.samples = [0,0,0,0,0,0,0,0,0,0]; wait(150);
+                check(bar.height <= 2.1, "Spectrum bars settle on silence");
                 check(findChild(dashboard, "islandNowPlayingPosition").text === "1:15", "Elapsed MPRIS time is shown");
                 check(findChild(dashboard, "islandNowPlayingDuration").text === "4:05", "MPRIS duration is shown");
                 findChild(dashboard, "islandDashboardPlay").clicked();
@@ -58,7 +84,7 @@ def main():
 '''
     with contextlib.redirect_stdout(io.StringIO()):
         fixture.main()
-    print('PASS: large real cover; elapsed/duration; transport/seek; collapsed source chooser; narrow long title; actual power profiles and availability')
+    print('PASS: horizontal artwork and live waveform; elapsed/duration; transport/seek; collapsed source chooser; narrow long title; actual power profiles and availability')
 
 
 if __name__ == '__main__':

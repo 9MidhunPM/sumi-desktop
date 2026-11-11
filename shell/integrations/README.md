@@ -44,7 +44,8 @@ A configured session starts one
 directory. That external client owns its authentication and private downloads;
 Sumi does not read or publish its credentials. A failed client stays disconnected
 until you reopen Thursday or explicitly run `desktopctl ipc thursday connect`.
-The full-chat button sends the client's explicit `open_web` command.
+Conversation history and voice preferences stay inside the island. The optional
+explicit `open_web` protocol action is retained for clients that need it.
 
 The island receives JSON-lines events for streamed replies, task state, voice
 state, and approval requests. Only clicking an approval action sends a decision,
@@ -57,6 +58,6 @@ requires active playback and the client's observed audible output; silent,
 missing, or exhausted measurements stay flat. This does not measure physical
 speaker or headphone output. Voice playback requires Qt 6 Multimedia.
 
-These adapter and envelope-reader files are original Sumi code under the
-repository's MIT license. No source from the external Thursday application is
-bundled. The independently installed application's license remains its own.
+The adapter and envelope reader are Sumi-owned. The bundled speech visual is a
+standalone rendering component; no backend, credentials or private data are
+included. The independently installed application remains separate.

@@ -4,11 +4,12 @@ import "../config"
 
 Slider {
     id: control
+    property bool island: false
     property string label: ""
     from: 0
     to: 1
     stepSize: 0.01
-    implicitHeight: 42
+    implicitHeight: IslandStyle.target
     padding: 0
     focusPolicy: Qt.StrongFocus
     hoverEnabled: true
@@ -17,25 +18,24 @@ Slider {
         x: control.leftPadding
         y: control.topPadding + (control.availableHeight - height) / 2
         width: control.availableWidth
-        height: 36
-        radius: 12
-        color: Qt.rgba(Theme.textMain.r, Theme.textMain.g, Theme.textMain.b, 0.075)
-        border.width: control.visualFocus ? 2 : 0
-        border.color: Theme.accentBlue
+        height: 5
+        radius: 3
+        color: control.island ? IslandStyle.line : Qt.rgba(Theme.textMain.r, Theme.textMain.g, Theme.textMain.b, 0.18)
         Rectangle {
-            width: Math.max(24, control.visualPosition * parent.width)
+            width: control.visualPosition * parent.width
             height: parent.height
             radius: parent.radius
-            color: control.enabled ? Theme.accentBlue : Theme.textSoft
+            color: control.enabled ? (control.island ? IslandStyle.accent : Theme.textMain) : Theme.textSoft
         }
     }
     handle: Rectangle {
-        x: control.leftPadding + Math.max(9, control.visualPosition * (control.availableWidth - width) - 8)
+        x: control.leftPadding + control.visualPosition * (control.availableWidth - width)
         y: control.topPadding + (control.availableHeight - height) / 2
-        implicitWidth: 4
-        implicitHeight: control.pressed ? 21 : 17
-        radius: 2
-        color: Theme.desktopBackground
-        Behavior on implicitHeight { NumberAnimation { duration: Theme.motionControl } }
+        implicitWidth: 14
+        implicitHeight: 14
+        radius: 7
+        color: control.island ? IslandStyle.text : Theme.textMain
+        border.width: control.visualFocus ? 2 : 0
+        border.color: Theme.accentBlue
     }
 }

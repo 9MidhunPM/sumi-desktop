@@ -56,7 +56,7 @@ Singleton {
     readonly property color barBackground: glassFill
     readonly property int barHeight: 34
     readonly property int panelTop: 56
-    readonly property int windowRounding: dimensions.windowRounding === undefined ? 20 : dimensions.windowRounding
+    readonly property int windowRounding: dimensions.windowRounding === undefined ? Metrics.panelRadius : dimensions.windowRounding
     readonly property int borderWidth: dimensions.borderWidth === undefined ? 1 : dimensions.borderWidth
 
     function color(key: string, fallback: string): color {

@@ -14,8 +14,8 @@ function rank(list, query, document, now) {
     const needle = normalize(query);
     const history = document && document.entries ? document.entries : {};
     return list.map(function(entry) {
-        const name = normalize(entry.name);
-        const detail = normalize(entry.detail);
+        const name = entry.searchName === undefined ? normalize(entry.name) : entry.searchName;
+        const detail = entry.searchDetail === undefined ? normalize(entry.detail) : entry.searchDetail;
         const record = history[entry.historyId];
         const preference = needle && record && record.queries ? score(record.queries[needle], now) : 0;
         let tier = 0;

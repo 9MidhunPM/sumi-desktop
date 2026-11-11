@@ -16,6 +16,8 @@ import sys
 
 if sys.argv[1:3] == ["action", "capture"]:
     print(json.dumps({"cancelled": True} if sys.argv[3] == "region" else {"path": "/fixture/capture.png"}))
+elif sys.argv[1:] == ["action", "ipc", "island", "toggle"]:
+    print("{}")
 elif sys.argv[1:3] == ["action", "fixture-failure"]:
     print("Fixture action failed", file=sys.stderr)
     sys.exit(1)
@@ -145,6 +147,15 @@ ShellRoot {
                 launcher.activate({name:"Successful capture", historyId:"action:capture-annotate", command:"capture", args:["screen"]});
                 settleAction();
                 compare(S.LauncherHistory.document.entries["action:capture-annotate"].count, 1);
+                const island = launcher.actions.find(item => item.historyId === "action:island");
+                check(!!island && island.args.join(" ") === "island toggle", "Dynamic island action uses the existing IPC path");
+                const closes = fakeApp.closed;
+                launcher.activate(island);
+                equal(fakeApp.closed, closes + 1, "Launcher releases focus before pinning the island");
+                settleAction();
+                equal(fakeApp.closed, closes + 1, "Successful pin never closes the island afterwards");
+                check(!!S.LauncherHistory.document.entries["action:island"], "Accepted island action is allowed in history");
+                equal(S.LauncherHistory.document.entries["action:island"].count, 1);
                 launcher.activate({name:"Failed command", historyId:"action:lock", command:"fixture-failure", args:[]});
                 settleAction();
                 verify(!S.LauncherHistory.document.entries["action:lock"], "Failed command never learns");
@@ -216,9 +227,9 @@ def main() -> None:
         output = result.stdout + result.stderr
         failures = ("TypeError:", "ReferenceError:", "Failed to load configuration", "Unable to assign [undefined]")
         if result.returncode or "SUMI_LAUNCHER_HISTORY_OK" not in output or any(message in output for message in failures):
-            raise SystemExit(output)
+            raise SystemExit("Exit " + str(result.returncode) + "\n" + output)
         history = json.loads((work / "state/launcher-history.json").read_text())
-        if {key: value["count"] for key, value in history["entries"].items()} != {"action:settings": 1, "action:capture-annotate": 1}:
+        if {key: value["count"] for key, value in history["entries"].items()} != {"action:settings": 1, "action:capture-annotate": 1, "action:island": 1}:
             raise SystemExit("Unexpected activation history: " + json.dumps(history))
         desktop.write_text((repo / "shell/services/Desktop.qml").read_text())
         (config / "shell.qml").write_text(PREVIEW_HARNESS)

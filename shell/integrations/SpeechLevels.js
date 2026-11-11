@@ -1,24 +1,26 @@
 .pragma library
 
-// Independent Sumi reader for the companion's normalized measured envelope.
-// Only elapsed measurements are shown, and current silence clears the trail.
+// Show recent measured audio, never invented frequency bars or future samples.
 function reading(envelope, positionMs, active, count) {
-    var size = Math.max(1, Math.min(64, Math.floor(Number(count) || 20)));
-    var bars = Array(size).fill(0);
-    var empty = {available: false, level: 0, bars: bars};
-    if (!active || !envelope || !Array.isArray(envelope.levels)) return empty;
-    var step = Number(envelope.interval_ms), position = Number(positionMs);
-    if (!isFinite(step) || step <= 0 || !isFinite(position) || position < 0) return empty;
-    var current = Math.floor(position / step);
-    if (current >= envelope.levels.length) return empty;
-    function value(index) {
-        var sample = envelope.levels[index];
-        return typeof sample === "number" && isFinite(sample) ? Math.min(1, Math.max(0, sample)) : 0;
+    var bars = []
+    count = Math.max(1, Math.min(64, Math.floor(Number(count) || 21)))
+    for (var i = 0; i < count; i++) bars.push(0)
+    var empty = {level: 0, bars: bars, available: false}
+    if (!active || !envelope || !Array.isArray(envelope.levels)) return empty
+    var interval = Number(envelope.interval_ms)
+    var position = Number(positionMs)
+    if (!isFinite(interval) || interval <= 0 || !isFinite(position) || position < 0) return empty
+    var index = Math.floor(position / interval)
+    if (index >= envelope.levels.length) return empty
+    function measured(at) {
+        if (at < 0 || at >= envelope.levels.length) return 0
+        var value = envelope.levels[at]
+        return typeof value === "number" && isFinite(value) ? Math.max(0, Math.min(1, value)) : 0
     }
-    var level = value(current);
-    if (level > 0) for (var i = 0; i < size; i++) {
-        var at = current - size + i + 1;
-        if (at >= 0) bars[i] = value(at);
+    var level = measured(index)
+    // Silence clears the whole trace immediately, including its recent history.
+    if (level > 0) {
+        for (var bar = 0; bar < count; bar++) bars[bar] = measured(index - count + 1 + bar)
     }
-    return {available: true, level: level, bars: bars};
+    return {level: level, bars: bars, available: true}
 }

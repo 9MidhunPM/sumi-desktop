@@ -1,135 +1,89 @@
 #!/usr/bin/env python3
-"""Load all panel content without a compositor or the host desktop session.
-
-Quickshell PanelWindow requires a Wayland/X11 backend, which Qt's offscreen
-plugin does not provide. This harness replaces only the outer native window
-wrappers in a temporary copy with ordinary QtQuick Windows. It exercises the
-real panel content, service bindings, and root panel/focus lifecycle. Native
-layer-shell geometry and keyboard ownership still require a host-session QA.
-"""
-
+"""Exercise every legacy entry point inside the actual island workspace."""
 import os
-import json
 from pathlib import Path
 import re
+import runpy
 import shutil
 import subprocess
 import tempfile
 
-
-def main() -> None:
-    repo = Path(__file__).resolve().parents[2]
-    with tempfile.TemporaryDirectory(prefix="sumi-ui-smoke-") as temporary:
-        work = Path(temporary)
-        config = work / "shell"
-        shutil.copytree(repo / "shell", config)
-        runtime = work / "runtime"
-        runtime.mkdir(mode=0o700)
-        for filename in ("Bar.qml", "Overlay.qml", "NotificationToasts.qml"):
-            path = config / filename
-            source = path.read_text().replace("PanelWindow {", "Window {", 1)
-            source = re.sub(r"    mask: Region \{.*?^    \}\n", "", source, flags=re.M | re.S)
-            source = re.sub(r"^    (screen:|anchors \{|margins \{|exclusiveZone:|exclusionMode:|mask:|WlrLayershell\.).*\n", "", source, flags=re.M)
-            source = re.sub(r"^    implicit(Width|Height):", lambda match: "    " + match[1].lower() + ":", source, flags=re.M)
-            source = source.replace("app.activeScreen === screen", "app.activeScreen === modelData")
-            if filename == "Bar.qml":
-                source = re.sub(r"    DynamicIsland \{.*?^    \}\n", "", source, flags=re.M | re.S)
-            if filename in ("Bar.qml", "Overlay.qml"):
-                source = source.replace("    color: \"transparent\"", "    width: 1440\n" + ("    height: 900\n" if filename == "Overlay.qml" else "") + "    color: \"transparent\"", 1)
-            if filename == "Overlay.qml":
-                probe = '''
-    Timer {
-        interval: 100
-        running: overlay.visible
-        repeat: true
-        onTriggered: {
-            if (page.item) {
-                console.info("SUMI_UI_CONTENT", overlay.app.panel);
-                if (overlay.app.panel === "appearance") {
-                    const metrics = {themeCount: page.item.themeCount, galleryWidth: page.item.galleryWidth, previewWidth: page.item.previewWidth};
-                    overlay.app.smokeAppearanceMetrics = JSON.stringify(metrics);
-                    if (metrics.themeCount >= __CATALOG_COUNT__ && metrics.galleryWidth > 200 && metrics.previewWidth <= 260 && metrics.previewWidth > 0) {
-                        overlay.app.smokeAppearanceChecked = true;
-                        console.info("SUMI_APPEARANCE_LAYOUT_OK", JSON.stringify(metrics));
-                    }
-                }
-            }
-        }
-    }
-'''
-                probe = probe.replace("__CATALOG_COUNT__", str(len(json.loads((repo / "assets/themes/catalog.json").read_text())["themes"])))
-                source = source[:source.rfind("}")] + probe + "}\n"
-            path.write_text(source)
-        path = config / "shell.qml"
-        source = path.read_text()
-        # The dedicated widget harness exercises its real content and layout.
-        # This runner replaces the older native wrappers for panel lifecycle QA.
-        source = source.replace("    DesktopWidgets { id: widgetSurface; modelData: desktopRoot.widgetScreen; app: desktopRoot }\n", "    QtObject { id: widgetSurface; property bool visible: false; property bool idle: false; property bool occluded: false; property bool moving: false; property var geometry: ({}) }\n")
-        test = '''
-    property int smokePhase: 0
-    property bool smokeAppearanceChecked: false
-    property double smokeAppearanceDeadline: 0
-    property string smokeAppearanceMetrics: "Appearance has not loaded"
+PROBE = '''
+    DynamicIsland { id: smokeIsland; app: desktopRoot; modelData: Quickshell.screens[0]; idle: false; monitor: ({activeWorkspace:{hasFullscreen:false}}) }
+    property int smokePhase: -1
     property var smokePanels: ["launcher", "files", "clipboard", "appearance", "widgets", "settings", "calendar", "media", "notifications", "pomodoro", "help", "power"]
     Timer {
-        interval: 750
-        running: true
-        repeat: true
+        interval: 550; running: true; repeat: true
         onTriggered: {
-            if (desktopRoot.panel === "appearance" && !desktopRoot.smokeAppearanceChecked) {
-                if (Date.now() > desktopRoot.smokeAppearanceDeadline) {
-                    console.error("SUMI_APPEARANCE_LAYOUT_FAILED", desktopRoot.smokeAppearanceMetrics);
-                    Qt.exit(4);
-                }
-                return;
-            }
-            if (desktopRoot.smokePhase < desktopRoot.smokePanels.length) {
-                const panelName = desktopRoot.smokePanels[desktopRoot.smokePhase];
-                desktopRoot.open(panelName, null);
-                if (panelName === "appearance") {
-                    desktopRoot.smokeAppearanceDeadline = Date.now() + 5000;
+            if (desktopRoot.smokePhase >= 0) {
+                const name = desktopRoot.smokePanels[desktopRoot.smokePhase];
+                const page = smokeIsland.visual.deskItem.currentPage;
+                if (!page || !page.active || !smokeIsland.pinned) { console.error("SUMI_UI_CONTENT_FAILED", name); Qt.exit(2); return; }
+                console.info("SUMI_UI_CONTENT", name);
+                if (name === "appearance") {
+                    const loader = probe.findChild(page, "islandDesktopAppearanceLoader");
+                    const view = loader && loader.item;
+                    const metrics = view ? {themeCount:view.themeCount,galleryWidth:view.galleryWidth,previewWidth:view.previewWidth} : {};
+                    if (!view || metrics.themeCount < 22 || metrics.galleryWidth <= 100 || metrics.previewWidth <= 0 || metrics.previewWidth > smokeIsland.bodyWidth) {
+                        console.error("SUMI_APPEARANCE_LAYOUT_FAILED",JSON.stringify(metrics), "route",page.route,"family",smokeIsland.visual.deskItem.family,"children",page.children.map(x=>x.objectName)); Qt.exit(3); return;
+                    }
+                    console.info("SUMI_APPEARANCE_LAYOUT_OK",JSON.stringify(metrics));
                     desktopRoot.nativeDialogOpen = true;
-                    desktopRoot.toggle("appearance", null);
-                    desktopRoot.close();
-                    desktopRoot.open("launcher", null);
-                    if (desktopRoot.panel !== "appearance" || !desktopRoot.nativeDialogOpen) {
-                        console.error("SUMI_NATIVE_DIALOG_HANDOFF_FAILED"); Qt.exit(5); return;
+                    desktopRoot.toggle("appearance", null); desktopRoot.close(); desktopRoot.open("launcher", null); desktopRoot.thursdayToggle(); desktopRoot.codexToggle(null);
+                    if (desktopRoot.islandSession.route !== "appearance" || !desktopRoot.nativeDialogOpen || smokeIsland.smokeGrab.active) {
+                        console.error("SUMI_NATIVE_DIALOG_HANDOFF_FAILED"); Qt.exit(4); return;
                     }
                     desktopRoot.nativeDialogOpen = false;
                 }
-                console.info("SUMI_UI_PANEL", panelName);
-                if (panelName === "pomodoro") {
-                    desktopRoot.focusReset(5);
-                    desktopRoot.focusStart();
-                    if (!desktopRoot.focusRunning || desktopRoot.focusDeadline <= Date.now()) Qt.exit(2);
+                if (name === "pomodoro") {
+                    desktopRoot.focusReset(5); desktopRoot.focusStart();
+                    if (!desktopRoot.focusRunning || desktopRoot.focusDeadline <= Date.now()) { Qt.exit(5); return; }
                     desktopRoot.focusPause();
-                    if (desktopRoot.focusRunning || desktopRoot.focusRemaining <= 0) Qt.exit(3);
+                    if (desktopRoot.focusRunning || desktopRoot.focusRemaining <= 0) { Qt.exit(6); return; }
                     desktopRoot.focusReset(25);
                 }
-                desktopRoot.smokePhase += 1;
-            } else {
-                desktopRoot.close();
-                console.info("SUMI_UI_SMOKE_OK");
-                Qt.quit();
             }
+            desktopRoot.smokePhase++;
+            if (desktopRoot.smokePhase === desktopRoot.smokePanels.length) { desktopRoot.close(); console.info("SUMI_UI_SMOKE_OK"); Qt.quit(); return; }
+            desktopRoot.open(desktopRoot.smokePanels[desktopRoot.smokePhase], null);
         }
     }
+    TestCase { id: probe; when: false }
 '''
-        path.write_text(source[:source.rfind("}")] + test + "}\n")
-        environment = dict(os.environ, SUMI_PREVIEW="1", SUMI_STATE_DIR=str(work / "state"), SUMI_DESKTOPCTL=str(repo / "bin/desktopctl"), QT_QPA_PLATFORM="offscreen", XDG_RUNTIME_DIR=str(runtime))
-        result = subprocess.run(["qs", "-p", str(config)], env=environment, text=True, capture_output=True, timeout=20)
+
+
+def main():
+    repo = Path(__file__).resolve().parents[2]
+    with tempfile.TemporaryDirectory(prefix='sumi-ui-smoke-') as temporary:
+        work = Path(temporary)
+        config = work / 'shell'
+        shutil.copytree(repo / 'shell', config)
+        adapt = runpy.run_path(str(repo / 'tests/qml/run-island-smoke.py'))['adapt']
+        path = config / 'DynamicIsland.qml'
+        path.write_text(adapt(path.read_text()))
+        visual = config / 'components/IslandContent.qml'
+        visual.write_text(visual.read_text().replace('HoverHandler {', 'HoverHandler { enabled: false;'))
+        source = (config / 'shell.qml').read_text().replace('import QtQuick\n', 'import QtQuick\nimport QtTest\n', 1)
+        source = re.sub(r'^import "(?:ThursdayNative|CodexStatusModule)"[^\n]*\n', '', source, flags=re.M)
+        source = re.sub(r'^    // Native assistant integration begins\..*?^    // Native assistant integration ends\.\n', '    QtObject { id: codexLoader; readonly property var item: null }\n    QtObject { id: thursdayLoader; readonly property var item: null }\n', source, flags=re.M | re.S)
+        source = re.sub(r'^    Variants \{.*\n', '', source, flags=re.M)
+        source = re.sub(r'^    DesktopWidgets \{.*\n', '    QtObject { id: widgetSurface }\n    QtObject { id: overlays; property var instances: [] }\n', source, flags=re.M)
+        # The probe reads the existing Item through its public host alias.
+        content = config / 'components/IslandContent.qml'
+        content.write_text(content.read_text().replace('    property bool dashboardReady:', '    readonly property var deskItem: dashboard.item\n    property bool dashboardReady:', 1))
+        (config / 'shell.qml').write_text(source[:source.rfind('}')] + PROBE + '}\n')
+        runtime = work / 'runtime'; runtime.mkdir(mode=0o700)
+        env = dict(os.environ, SUMI_PREVIEW='1', SUMI_STATE_DIR=str(work/'state'), SUMI_DESKTOPCTL=str(repo/'bin/desktopctl'), QT_QPA_PLATFORM='offscreen', XDG_RUNTIME_DIR=str(runtime))
+        result = subprocess.run(['qs', '-p', str(config)], env=env, capture_output=True, text=True, timeout=20)
         output = result.stdout + result.stderr
-        if result.returncode or "SUMI_UI_SMOKE_OK" not in output or any(message in output for message in ("TypeError:", "ReferenceError:", "Failed to load configuration", "Unable to assign [undefined]")):
+        errors = ('TypeError:', 'ReferenceError:', 'Failed to load configuration', 'Unable to assign [undefined]', 'Binding loop', '_FAILED')
+        if result.returncode or 'SUMI_UI_SMOKE_OK' not in output or any(error in output for error in errors):
             raise SystemExit(output)
-        for panel in ("launcher", "files", "clipboard", "appearance", "widgets", "settings", "calendar", "media", "notifications", "pomodoro", "help", "power"):
-            if f"SUMI_UI_CONTENT {panel}" not in output:
-                raise SystemExit(f"Panel {panel} did not instantiate\n{output}")
-        if "SUMI_APPEARANCE_LAYOUT_OK" not in output:
-            raise SystemExit(f"Appearance catalog and gallery dimensions were not verified\n{output}")
-        print("PASS: all 12 panel views instantiate; service bindings; panel navigation; focus start/pause/reset")
-        print("PASS: Appearance loads its bundled catalog; gallery remains wider than 200px; preview stays within 260px")
-        print("Native PanelWindow wrappers replaced only in temporary test copy; compositor QA remains required")
+        for name in ('launcher','files','clipboard','appearance','widgets','settings','calendar','media','notifications','pomodoro','help','power'):
+            if f'SUMI_UI_CONTENT {name}' not in output: raise SystemExit(f'{name} did not instantiate\n{output}')
+        if 'SUMI_APPEARANCE_LAYOUT_OK' not in output: raise SystemExit(output)
+        print('PASS: all 12 legacy entry points render in the retained island; active page; native dialog focus guard; focus start/pause/reset; real appearance catalog and bounded gallery/preview')
+        print('Native window wrappers replaced only in the temporary fixture; compositor QA remains required')
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__': main()

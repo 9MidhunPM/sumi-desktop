@@ -48,11 +48,12 @@ ShellRoot {
             }
             function test_application_activation() {
                 wait(250);
+                const originalHeight = launcher.height;
                 launcher.smokeSearch = "Launch Fixture";
                 launcher.smokeSearchItem.forceActiveFocus();
                 wait(50);
                 check(launcher.entries.length === 1, "Fixture entry is searchable");
-                check(launcher.height < 340 && launcher.smokeResults.height >= 66, "One result uses a compact, usable panel");
+                check(launcher.height === originalHeight && launcher.height <= 600 && launcher.smokeResults.height >= 66, "Search retains stable bounded geometry and a usable result area");
                 keyClick(Qt.Key_Return);
                 // The controller responds later: learning must use the query
                 // which activated the app, even after the user edits it.
@@ -68,7 +69,7 @@ ShellRoot {
                 tryCompare(S.LauncherHistory, "busy", false, 4000);
                 check(fakeApp.closed === 1, "Failed app stays in launcher");
                 check(launcher.error.length > 0, "Failed app exposes actionable error in launcher");
-                check(launcher.height <= 570 && launcher.smokeResults.height >= 66, "Failure leaves a usable result area");
+                check(launcher.height === originalHeight && launcher.smokeResults.height >= 66, "Failure retains stable geometry and a usable result area");
                 console.info("SUMI_LAUNCH_EXEC_OK");
                 Qt.quit();
             }

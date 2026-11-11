@@ -12,13 +12,14 @@ Item {
     property bool preserveDetail: false
     readonly property bool ready: renderer.loaded
     readonly property string resolvedName: {
-        const aliases = { apps: "grid", assistant: "sparkles" };
+        const aliases = { apps: "grid", assistant: "sparkles", codex: "chatgpt" };
         const candidate = aliases[name] || name;
-        const names = ["arch",  "grid", "sparkles", "terminal", "code", "bell", "bell-off",
+        const names = ["arch", "chatgpt", "grid", "sparkles", "terminal", "code", "bell", "bell-off",
             "wifi", "wifi-off", "bluetooth", "bluetooth-off", "volume", "volume-x",
             "leaf", "bolt", "battery", "battery-charging", "settings", "chevron-down", "chevron-up",
             "sun", "moon", "microphone", "microphone-off", "camera", "record", "stop", "timer",
-            "play", "pause", "music", "calendar", "arrow-right", "more-horizontal", "circle-help"];
+            "play", "pause", "music", "calendar", "arrow-right", "more-horizontal", "circle-help",
+            "search", "clipboard", "palette", "layout-grid", "cpu", "folder", "power", "chevron-right"];
         return names.indexOf(candidate) >= 0 ? candidate : "circle-help";
     }
     property url source: name.length ? Qt.resolvedUrl("../assets/icons/" + resolvedName + ".svg") : ""

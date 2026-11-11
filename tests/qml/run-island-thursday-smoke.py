@@ -27,6 +27,8 @@ ShellRoot {
         property var playingAudio: null
         property bool resumable: false
         property var task: null
+        property real visualizerLevel: 0
+        property string activity: ""
         property var confirmations: []
         property string lastPrompt: ""
         property string submittedDraft: ""
@@ -86,6 +88,16 @@ ShellRoot {
                 keyClick(Qt.Key_Return);
                 check(backend.prompts.length === 0,"Starting backend cannot submit");
                 backend.ready = true; backend.statusText = "Ready when you are";
+                backend.activity = "Opening Downloads"; backend.taskActive = true;
+                backend.task = {activities:[{id:"a1",tool:"hypruse__click_ui",label:"Opening Downloads",status:"running"}]};
+                backend.visualizerLevel = 0.7; wait(30);
+                check(item("islandThursdayStatus").text === "Opening Downloads", "Actual action replaces generic status");
+                check(page.activities.length === 1 && item("islandThursdayActivityTimeline").visible, "Actual tool history is visible");
+                check(item("islandThursdayOrb").level === 0.7, "Measured audio drives expanded orb");
+                backend.taskActive = false; backend.statusText = "Speaking"; wait(10);
+                check(item("islandThursdayStatus").text === "Speaking", "Completed action does not override live speech status");
+                backend.statusText = "Ready when you are";
+                backend.task = null; backend.activity = "";
                 composer.text = "  Check my desktop  "; keyClick(Qt.Key_Return); wait(30);
                 check(backend.prompts.join() === "Check my desktop" && composer.text === "  Check my desktop  ", "Enter submits one trimmed prompt while retaining the draft until acknowledgement");
                 keyClick(Qt.Key_Return);
@@ -112,6 +124,20 @@ ShellRoot {
                 check(!mic.enabled && !send.enabled && item("islandThursdayTranscript").text === backend.transcript,"Transcription blocks competing capture and shows actual text");
                 backend.voiceActive = false;
                 check(item("islandThursdayTranscript").parent.visible && item("islandThursdayTranscript").text === backend.transcript,"Actual latest voice transcript remains available after capture ends");
+                const editTranscript = item("islandThursdayEditTranscript");
+                const retryRecording = item("islandThursdayRetryRecording");
+                const sentBeforeCorrection = backend.prompts.length;
+                editTranscript.clicked(); wait(30);
+                check(composer.text === backend.transcript && composer.activeFocus && backend.prompts.length === sentBeforeCorrection, "Edit transcript focuses a draft without submitting it");
+                backend.busy = true;
+                check(!editTranscript.enabled && !retryRecording.enabled, "Busy work disables transcript corrections");
+                page.retryRecording(); check(backend.microphones === 2, "Guard prevents retries during work");
+                backend.busy = false;
+                retryRecording.clicked(); wait(30);
+                check(backend.microphones === 3 && page.recording && backend.prompts.length === sentBeforeCorrection, "Retry explicitly starts a fresh recording without submitting preview text");
+                page.retryRecording(); check(backend.microphones === 3, "Recording cannot start a competing retry");
+                mic.clicked(); check(backend.microphones === 4 && !page.recording, "Retry finishes through the existing microphone control");
+                composer.clear();
                 backend.transcript = "";
                 backend.speaking = true;
                 item("islandThursdayStopAudio").clicked(); check(backend.audioStops === 1,"Speech stop delegates to the shared player");
@@ -167,7 +193,7 @@ ShellRoot {
                 check(dismissals === 1,"Escape delegates dismissal");
                 backend.connected = false;
                 check(item("islandThursdayConnection").text.indexOf("disconnected") >= 0 && !send.enabled && !mic.enabled,"Lost connection exposes truthful recovery and disables actions");
-                check(backend.microphones === 2 && backend.prompts.length === 4,"Only explicit test actions used the fake backend");
+                check(backend.microphones === 4 && backend.prompts.length === 4,"Only explicit test actions used the fake backend");
                 console.info("ISLAND_THURSDAY_OK"); Qt.quit();
             }
         }

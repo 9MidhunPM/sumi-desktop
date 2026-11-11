@@ -4,20 +4,27 @@ import "../config"
 
 Button {
     id: root
+    property bool island: false
+    readonly property color foreground: island ? IslandStyle.text : Theme.textMain
+    readonly property color secondary: island ? IslandStyle.secondary : Theme.textSoft
+    readonly property color accent: island ? IslandStyle.accent : Theme.accentBlue
+    readonly property color accentForeground: island ? IslandStyle.accentText : Theme.desktopBackground
     property bool selected: false
     property bool quiet: false
     property string tooltip: ""
     property string iconName: ""
     property real iconSize: 20
     property real iconSpacing: 7
-    property color textColor: selected ? Theme.desktopBackground : Theme.textMain
+    property color textColor: selected ? root.accentForeground : root.foreground
     property color iconColor: textColor
     font.family: Theme.font
-    font.pixelSize: 13
+    font.pixelSize: 14
     font.weight: Font.Medium
-    implicitWidth: contentItem.implicitWidth + leftPadding + rightPadding
-    implicitHeight: Math.max(36, contentItem.implicitHeight + 12)
-    leftPadding: iconName.length && !text.length ? 8 : 12
+    readonly property real preferredPadding: iconName.length && !text.length ? 8 : 12
+    // Natural width is independent of the padding used by constrained hosts.
+    implicitWidth: contentItem.implicitWidth + preferredPadding * 2
+    implicitHeight: Math.max(IslandStyle.target, contentItem.implicitHeight + 12)
+    leftPadding: Math.max(4, Math.min(preferredPadding, (width - contentItem.implicitWidth) / 2))
     rightPadding: leftPadding
     // Keep short dismiss buttons usable without squeezing the caption to zero.
     topPadding: Math.max(0, Math.min(8, (height - contentItem.implicitHeight) / 2))
@@ -28,13 +35,14 @@ Button {
     scale: Theme.effectiveReducedMotion ? 1 : down ? 0.97 : 1
     Behavior on scale { NumberAnimation { duration: root.down ? 0 : Theme.motionControl; easing.type: Easing.OutCubic } }
     background: Rectangle {
-        radius: 10
-        color: root.selected ? Theme.accentBlue
-            : root.down ? Qt.rgba(Theme.textMain.r, Theme.textMain.g, Theme.textMain.b, 0.13)
+        radius: IslandStyle.controlRadius
+        color: root.selected ? root.accent
+            : root.down ? Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.13)
             : root.quiet ? "transparent"
-            : Qt.rgba(Theme.textMain.r, Theme.textMain.g, Theme.textMain.b, root.hovered ? 0.09 : 0.05)
-        border.width: root.visualFocus ? 2 : root.quiet || root.selected ? 0 : 1
-        border.color: root.visualFocus ? Theme.accentBlue : Theme.borderSoft
+            : root.island ? (root.hovered ? IslandStyle.hover : IslandStyle.raised)
+            : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, root.hovered ? 0.09 : 0.05)
+        border.width: root.visualFocus ? 2 : root.island || root.quiet || root.selected ? 0 : 1
+        border.color: root.visualFocus ? root.accent : Theme.borderSoft
         Behavior on color { ColorAnimation { duration: root.down ? 0 : Theme.motionControl } }
     }
     contentItem: Item {

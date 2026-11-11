@@ -539,6 +539,9 @@ def main(argv: list[str] | None = None) -> int:
         result = capture(args)
         if result is not None:
             print(json.dumps(result))
+    elif command == "annotation-status" and len(args) == 1:
+        from .annotation import status
+        print(json.dumps(status(args[0])))
     elif command == "annotation-session" and len(args) == 2:
         from .annotation import session
         session(args[0], args[1])

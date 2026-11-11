@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Bluetooth as Bt
+import Quickshell.Io
 
 Singleton {
     id: root
@@ -26,8 +27,47 @@ Singleton {
     function setScanning(value: bool): void { discoveryRequested = value; }
     function connectDevice(device: var): void { if (device && !Desktop.preview) device.connected = true; }
     function disconnectDevice(device: var): void { if (device && !Desktop.preview) device.connected = false; }
-    // BlueZ pairing needs an authentication agent; use the installed manager so
-    // PIN/passkey confirmation remains visible and interactive.
-    function pairDevice(device: var): void { if (device) Desktop.action("bluetooth-manager", []); }
+    property bool pairing: false
+    property string pairingName: ""
+    property string pairingAddress: ""
+    property string pairingError: ""
+    property string promptKind: ""
+    property string promptValue: ""
+    property int promptId: 0
+    property int passkeyEntered: 0
+    function pairDevice(device: var): void {
+        if (!device || Desktop.preview || pairing) return;
+        pairingAddress = device.address;
+        pairingName = device.name || device.address;
+        pairingError = ""; promptKind = ""; pairing = true;
+        helper.running = true;
+    }
+    function answerPairing(value: var): void {
+        if (pairing && helper.running) helper.write(JSON.stringify({command: "respond", prompt: promptId, value: value}) + "\n");
+    }
+    function cancelPairing(): void {
+        if (helper.running) helper.write(JSON.stringify({command: "cancel"}) + "\n");
+    }
     function openManager(): void { Desktop.action("bluetooth-manager", []); }
+    Process {
+        id: helper
+        command: ["python3", Quickshell.env("SUMI_BLUETOOTH_AGENT") || Quickshell.shellPath("../lib/sumi/bluetooth_agent.py"), root.pairingAddress]
+        stdinEnabled: true
+        stdout: SplitParser {
+            onRead: line => {
+                try {
+                    const event = JSON.parse(line);
+                    if (event.type === "done") { root.pairing = false; root.promptKind = ""; root.pairingError = event.error || ""; }
+                    else if (event.type === "prompt") { root.promptKind = event.kind; root.promptValue = String(event.value || ""); root.promptId = event.prompt; root.passkeyEntered = event.entered || 0; }
+                    else if (event.type === "validation") root.pairingError = event.error;
+                    else if (event.type === "waiting") { root.promptKind = ""; root.pairingError = ""; }
+                } catch (error) { root.pairingError = "Could not read the Bluetooth pairing response."; }
+            }
+        }
+        stderr: StdioCollector { id: helperErrors }
+        onExited: (code, status) => {
+            if (root.pairing) root.pairingError = helperErrors.text.trim() || "Pairing ended before the device connected. Try again.";
+            root.pairing = false; root.promptKind = "";
+        }
+    }
 }

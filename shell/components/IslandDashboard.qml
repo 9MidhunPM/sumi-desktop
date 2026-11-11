@@ -12,12 +12,17 @@ FocusScope {
     required property var app
     property var screenInfo: null
     property string section: "home"
+    property bool selectionAnimation: false
+    property bool completed: false
+    // Opening/resizing relayout must not sweep the selection across other tabs.
+    onWidthChanged: selectionAnimation = false
     property bool active: false
     property double now: Date.now()
     property real mediaPosition: 0
+    property var samples: []
     property int statsConsumer: 0
     function syncStatsDemand() { if (statsConsumer) S.SystemStats.setDemand(statsConsumer, active && (section === "home" || section === "controls")); }
-    Component.onCompleted: { statsConsumer = S.SystemStats.createConsumer(); syncStatsDemand(); }
+    Component.onCompleted: { completed = true; statsConsumer = S.SystemStats.createConsumer(); syncStatsDemand(); }
     Component.onDestruction: if (statsConsumer) S.SystemStats.releaseConsumer(statsConsumer)
     readonly property var tabDeck: section === "calendar" ? null : pagesDeck
     readonly property var thursdayBackend: typeof app.thursdayBackend === "undefined" ? null : app.thursdayBackend
@@ -77,7 +82,7 @@ FocusScope {
         if (ids.length) S.Notifications.markEntriesRead(ids);
     }
     onActiveChanged: { if (active) refresh(); readVisible.restart(); syncStatsDemand(); }
-    onSectionChanged: { readVisible.restart(); syncStatsDemand(); if (active) Qt.callLater(root.focusDefault); }
+    onSectionChanged: { selectionAnimation = completed && active; readVisible.restart(); syncStatsDemand(); if (active) Qt.callLater(root.focusDefault); }
     onInboxEntriesChanged: readVisible.restart()
     Timer { id: readVisible; interval: 120; onTriggered: root.markVisibleEntries() }
     Connections {
@@ -126,17 +131,19 @@ FocusScope {
         spacing: 12
         Rectangle {
             id: tabTrack
+            objectName: "islandTabTrack"
             readonly property var selectedTab: root.section === "thursday" ? thursdayTab : root.section === "controls" ? controlsTab : root.section === "media" ? mediaTab : root.section === "inbox" ? inboxTab : homeTab
             Layout.fillWidth: true
             implicitHeight: 40
             radius: 20
             color: "#222328"
             Rectangle {
+                objectName: "islandTabSelection"
                 x: tabTrack.selectedTab.x + 3; y: 3
                 width: tabTrack.selectedTab.width; height: 34; radius: 17
                 color: "#f6f6f8"
-                Behavior on x { NumberAnimation { duration: Theme.effectiveReducedMotion ? 0 : Theme.batteryMotion ? 120 : 180; easing.type: Easing.OutCubic } }
-                Behavior on width { NumberAnimation { duration: Theme.effectiveReducedMotion ? 0 : Theme.batteryMotion ? 120 : 180; easing.type: Easing.OutCubic } }
+                Behavior on x { enabled: root.selectionAnimation; NumberAnimation { duration: Motion.music; easing.type: Easing.OutCubic } }
+                Behavior on width { enabled: root.selectionAnimation; NumberAnimation { duration: Motion.music; easing.type: Easing.OutCubic } }
             }
             RowLayout {
                 anchors.fill: parent
@@ -265,6 +272,7 @@ FocusScope {
                     width: mediaScroll.availableWidth
                     active: root.active && root.section === "media"
                     mediaPosition: root.mediaPosition
+                    samples: root.samples
                     onDetailsRequested: root.openPanelRequested("media")
                 }
             }

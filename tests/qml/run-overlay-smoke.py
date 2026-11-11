@@ -90,6 +90,7 @@ ShellRoot {
             tryAssert(() => firstScreen.smokeItem !== null, 3000);
             wait(250);
             const first = firstScreen.smokeItem;
+            assertTrue(firstScreen.launcherReady, "Shell readiness must include the preloaded launcher");
             assertEqual(firstScreen.shown, true);
             assertEqual(String(firstScreen.smokeScrimColor), String(Theme.scrim), "Launcher dims the entire active output");
             assertEqual(secondScreen.shown, false);
@@ -113,8 +114,29 @@ ShellRoot {
             assertTrue(firstScreen.smokeItem === first, "Launcher must be reused on reopen");
             assertEqual(first.smokeSearch, "");
             assertTrue(first.smokeSearchItem.activeFocus, "Reopening must restore typing focus");
+            fakeApp.close(); wait(230);
+            fakeApp.open("launcher", screenA);
+            assertTrue(first.smokeSearchItem.activeFocus, "Warm opening must focus search synchronously");
+            keyClick(Qt.Key_F); keyClick(Qt.Key_I); keyClick(Qt.Key_R);
+            wait(40);
+            assertEqual(first.smokeSearch, "fir", "Immediate typing must survive deferred activation callbacks");
             mouseClick(first, 10, first.height / 2);
             assertEqual(fakeApp.panel, "launcher", "Panel whitespace must not dismiss the overlay");
+            // Narrow displays must keep launcher controls inside the panel.
+            for (const size of [[320, 360], [400, 360]]) {
+                screenA.width = size[0]; screenA.height = size[1]; wait(40);
+                assertTrue(first.width <= screenA.width - 48 && first.height <= screenA.height - 48, "Compact launcher fits monitor");
+                function checkCompactControls(item) {
+                    if (!item.visible) return;
+                    if (typeof item.clicked === "function") assertTrue(fits(item, first), "Compact button fits: " + item.text);
+                    for (const child of item.children) checkCompactControls(child);
+                }
+                checkCompactControls(first);
+                first.tab = "Clipboard"; wait(30); checkCompactControls(first);
+                first.tab = "Apps"; first.resetConfirm = true; wait(30); checkCompactControls(first);
+                first.resetConfirm = false;
+            }
+            screenA.width = 1440; screenA.height = 900;
             fakeApp.open("settings", screenA);
             tryAssert(() => firstScreen.smokeItem !== null && firstScreen.smokeItem !== first, 3000);
             const settings = firstScreen.smokeItem;

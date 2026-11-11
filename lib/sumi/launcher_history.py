@@ -17,7 +17,7 @@ MAX_STORAGE_BYTES = 8_000_000
 HALF_LIFE_SECONDS = 30 * 24 * 60 * 60
 MAX_COUNT = 9_007_199_254_740_991
 ACTION_IDS = frozenset(("appearance", "widgets", "settings", "notifications", "calendar",
-                        "media", "pomodoro", "capture-region", "capture-annotate", "lock", "help", "power"))
+                        "media", "island", "pomodoro", "capture-region", "capture-annotate", "lock", "help", "power"))
 
 
 def defaults() -> dict:

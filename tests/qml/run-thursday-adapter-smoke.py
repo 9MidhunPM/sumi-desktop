@@ -61,6 +61,7 @@ ShellRoot {
             check(!backend.playingAudio && backend.audioQueue.length === 0 && !backend.speaking, "Two queued chunks drain completely");
             backend.send({command:"health",marker:"after-drain"});
             backend.openChat(); wait(50);
+            check(backend.opened, "Full conversation requests the island surface");
             backend.disconnect(); wait(50);
             check(!backend.connected && !backend.ready && !backend.requested && !backend.speaking, "Explicit disconnect releases the helper and speaking state");
             console.info("THURSDAY_ADAPTER_OK"); Qt.quit();
@@ -130,7 +131,7 @@ Scope {
                 raise SystemExit(output)
         recorded = [json.loads(line) for line in commands.read_text().splitlines()]
         confirmations = [item for item in recorded if item["command"] == "confirm"]
-        if confirmations != [{"command":"confirm","id":"first","approved":False}] or not any(item["command"] == "open_web" for item in recorded):
+        if confirmations != [{"command":"confirm","id":"first","approved":False}] or any(item["command"] == "open_web" for item in recorded):
             raise SystemExit(f"Unexpected explicit command routing: {recorded}")
         voice = [item for item in recorded if item.get("generation_id") == "queued-voice"]
         states = [item["state"] for item in voice if item["command"] == "playback"]
@@ -143,7 +144,7 @@ Scope {
         if "playing" not in states or not idle_positions or idle_positions[0] < second_release or release_order != ["first", "second"]:
             raise SystemExit(f"Queued speech feedback lifecycle is incorrect: {recorded}")
         print("PASS: queued speech retains active playback until final drain; playing requires observed audibility")
-        print("PASS: no-config isolation; configured helper stream; draft acknowledgement; first explicit approval; voice state; measured silent-safe speech; local audio boundary; explicit full-chat and disconnect")
+        print("PASS: no-config isolation; configured helper stream; draft acknowledgement; first explicit approval; voice state; measured silent-safe speech; local audio boundary; inline full-chat request and disconnect")
 
 
 if __name__ == "__main__":

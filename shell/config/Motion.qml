@@ -14,6 +14,10 @@ Singleton {
     readonly property int enter: reduced ? 0 : battery ? 120 : 160
     readonly property int exit: reduced ? 0 : battery ? 80 : 100
     readonly property int control: reduced ? 0 : battery ? 60 : 90
+    // Shell-local roles. Keep compositor synchronization and legacy timings intact.
+    readonly property int content: reduced ? 0 : battery ? 80 : 140
+    readonly property int music: reduced ? 0 : battery ? 100 : 180
+    readonly property int geometry: reduced ? 0 : battery ? 120 : 280
     property string appliedMode: ""
     property string error: ""
     property int retryCount: 0

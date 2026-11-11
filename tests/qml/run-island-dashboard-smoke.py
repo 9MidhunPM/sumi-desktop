@@ -137,13 +137,16 @@ ShellRoot {
                         if (button.visible && typeof button.text === "string" && typeof button.clicked === "function")
                             check(button.x + button.width <= controlsContent.width + 1, "Wrapped controls stay within viewport");
                 }
-                findChild(dashboard, "islandControlsScroll").contentItem.contentY = 0;
-                wait(100);
+                const controlsScroll = findChild(dashboard, "islandControlsScroll");
                 const level = findChild(dashboard, "islandDashboardBrightness");
+                controlsScroll.contentItem.contentY = Math.max(0, level.mapToItem(controlsScroll.contentItem, 0, 0).y - 20);
+                wait(100);
                 const pixels = grabImage(dashboard);
                 const origin = level.mapToItem(dashboard, 0, 0);
-                check(pixels.red(Math.floor(origin.x + level.width * .25), Math.floor(origin.y + level.height * .75)) > 200, "Vertical brightness fill renders white");
-                check(pixels.red(Math.floor(origin.x + level.width / 2), Math.floor(origin.y + level.height * .35)) < 100, "Vertical brightness track renders charcoal");
+                check(level.orientation === Qt.Horizontal, "Brightness uses a horizontal slider");
+                const trackY = origin.y + level.topPadding + level.availableHeight / 2;
+                check(pixels.red(Math.floor(origin.x + level.width * .25), Math.floor(trackY)) > 200, "Horizontal brightness fill renders white");
+                check(pixels.red(Math.floor(origin.x + level.width * .85), Math.floor(trackY)) < 100, "Unfilled brightness track renders charcoal");
                 check(findChild(dashboard, "islandDashboardRecord") === null && findChild(dashboard, "islandControlMore") === null && findChild(dashboard, "islandControlDetail0") === null, "Extra bottom tools are removed from the island");
                 const finalControl = findChild(dashboard, "islandPowerProfile-performance");
                 finalControl.forceActiveFocus(Qt.OtherFocusReason);
@@ -305,6 +308,7 @@ def main():
         shutil.copytree(repo / 'shell/components', work / 'components')
         shutil.copytree(repo / 'shell/config', work / 'config')
         shutil.copytree(repo / 'shell/assets', work / 'assets')
+        shutil.copytree(repo / 'shell/integrations', work / 'integrations')
         services = work / 'services'
         services.mkdir()
         (services / 'qmldir').write_text(''.join(f'singleton {name} {name}.qml\n' for name in STUBS))

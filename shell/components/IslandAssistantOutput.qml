@@ -2,23 +2,37 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import "../config"
+import "../integrations" as Native
 
-// Passive response only. Speech visualization belongs to the island header.
+// Passive response and measured speech orb; no transport or playback ownership.
 Item {
     id: root
     property string text: ""
     // Retained for host compatibility; this surface creates no speech bars.
     property var samples: []
     property bool speaking: false
+    property real level: 0
+    property bool processing: false
     property bool active: false
-    readonly property real preferredHeight: Math.min(260, Math.max(60, Math.ceil(response.contentHeight) + 30))
+    readonly property real preferredHeight: 180 + Math.min(260, Math.max(60, Math.ceil(response.contentHeight) + 30))
     implicitHeight: preferredHeight
     visible: active
     enabled: active
+    Native.SpeechOrb {
+        id: orb
+        objectName: "islandAssistantOutputOrb"
+        anchors { horizontalCenter: parent.horizontalCenter; top: parent.top }
+        width: Math.min(160, root.width); height: Math.min(160, Math.max(0, root.height - 60))
+        active: root.active && visible && (root.speaking || root.processing)
+        effectsActive: root.active && visible
+        level: root.level
+        processing: root.processing
+        reducedMotion: Theme.effectiveReducedMotion
+    }
     Label {
         id: sender
         objectName: "islandAssistantOutputSender"
-        anchors { left: parent.left; right: parent.right; top: parent.top }
+        anchors { left: parent.left; right: parent.right; top: orb.bottom; topMargin: 12 }
         height: 22
         text: "Thursday:"
         font.pixelSize: 11

@@ -264,7 +264,10 @@ def main():
         (work / "config").mkdir()
         for name in ("IslandTabDeck.qml", "IslandTabGesture.qml", "QuickSlider.qml"):
             shutil.copy2(repo / "shell/components" / name, work / "components")
-        (work / "config/qmldir").write_text("singleton Theme Theme.qml\n")
+        shutil.copy2(repo / "shell/config/IslandStyle.qml", work / "config/IslandStyle.qml")
+        shutil.copy2(repo / "shell/config/Metrics.qml", work / "config/Metrics.qml")
+        (work / "config/qmldir").write_text("singleton Theme Theme.qml\nsingleton IslandStyle IslandStyle.qml\nsingleton Metrics Metrics.qml\nsingleton Motion Motion.qml\n")
+        (work / "config/Motion.qml").write_text("pragma Singleton\nimport QtQuick\nQtObject { readonly property int control: Theme.effectiveReducedMotion ? 0 : 90; readonly property int content: Theme.effectiveReducedMotion ? 0 : Theme.batteryMotion ? 80 : 140; readonly property int music: Theme.effectiveReducedMotion ? 0 : Theme.batteryMotion ? 100 : 180; readonly property int geometry: Theme.effectiveReducedMotion ? 0 : Theme.batteryMotion ? 120 : 280 }\n")
         (work / "config/Theme.qml").write_text("pragma Singleton\nimport QtQuick\nQtObject { property bool effectiveReducedMotion: false; property bool batteryMotion: false; property color textMain: \"#eeeeee\"; property color textSoft: \"#bbbbbb\"; property color accentBlue: \"#7788aa\"; property color desktopBackground: \"#111111\"; property int motionControl: 0 }\n")
         (work / "shell.qml").write_text(HARNESS)
         runtime = work / "runtime"

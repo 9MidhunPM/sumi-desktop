@@ -15,6 +15,11 @@ PanelWindow {
     readonly property bool shown: app.panel !== "" && app.activeScreen === modelData
     readonly property bool popupShown: shown
     property string dashboardKind: "calendar"
+    // The app increments this once for every explicit open, even when the
+    // same panel is already visible. Never reset a query twice for one open.
+    property int preparedSerial: -1
+    property var launcherLoader: null
+    readonly property bool launcherReady: launcherLoader !== null && launcherLoader.status === Loader.Ready && launcherLoader.item !== null
     readonly property string panelKind: ["launcher", "files", "clipboard"].indexOf(app.panel) >= 0 ? "launcher"
         : app.panel === "appearance" ? "appearance" : app.panel === "widgets" ? "widgets" : app.panel === "settings" ? "settings" : "dashboard"
     property real reveal: shown ? 1 : 0
@@ -36,7 +41,7 @@ PanelWindow {
             dashboardKind = app.panel;
     }
     function focusCurrent() {
-        if (!popupShown || !page.item) return;
+        if (!popupShown || app.nativeDialogOpen || !page.item) return;
         content.forceActiveFocus(Qt.OtherFocusReason);
         if (typeof page.item.focusDefault === "function") page.item.focusDefault();
         else {
@@ -47,16 +52,18 @@ PanelWindow {
     }
     function prepareCurrent() {
         rememberPanel();
-        if (!popupShown || !page.item) return;
+        if (!popupShown || !page.item || preparedSerial === app.activationSerial) return;
+        preparedSerial = app.activationSerial;
         if (typeof page.item.activatePanel === "function") page.item.activatePanel(app.panel);
         else if (typeof page.item.activate === "function") page.item.activate();
-        Qt.callLater(focusCurrent);
+        focusCurrent();
     }
-    onPopupShownChanged: if (popupShown) { rememberPanel(); Qt.callLater(prepareCurrent); }
+    onPopupShownChanged: if (popupShown) rememberPanel()
     Connections {
         target: overlay.app
-        function onActivationSerialChanged() { overlay.rememberPanel(); Qt.callLater(overlay.prepareCurrent); }
+        function onActivationSerialChanged() { overlay.prepareCurrent(); }
         function onPanelChanged() { overlay.rememberPanel(); }
+        function onNativeDialogOpenChanged() { if (!overlay.app.nativeDialogOpen) Qt.callLater(overlay.focusCurrent); }
     }
     Rectangle {
         id: scrim
@@ -93,10 +100,10 @@ PanelWindow {
                 x: placement === "right" ? Math.max(24, overlay.width - width - 24) : Math.max(24, (overlay.width - width) / 2)
                 y: placement === "center" ? Math.max(24, (overlay.height - height) / 2) : topInset
                 opacity: motionProgress
-                scale: Theme.effectiveReducedMotion ? 1 : 0.95 + motionProgress * 0.05
+                scale: Theme.effectiveReducedMotion ? 1 : modelData === "launcher" ? 0.985 + motionProgress * 0.015 : 0.95 + motionProgress * 0.05
                 transform: Translate {
                     x: Theme.effectiveReducedMotion || panelLoader.placement !== "right" ? 0 : (1 - panelLoader.motionProgress) * (Theme.batteryMotion ? 14 : 24)
-                    y: Theme.effectiveReducedMotion || panelLoader.placement === "right" ? 0 : (1 - panelLoader.motionProgress) * (panelLoader.placement === "top" ? -1 : 1) * (Theme.batteryMotion ? 12 : 20)
+                    y: Theme.effectiveReducedMotion || panelLoader.placement === "right" ? 0 : (1 - panelLoader.motionProgress) * (panelLoader.placement === "top" ? -1 : 1) * (panelLoader.modelData === "launcher" ? 8 : Theme.batteryMotion ? 12 : 20)
                 }
                 Behavior on motionProgress {
                     id: panelMotion
@@ -105,7 +112,11 @@ PanelWindow {
                 sourceComponent: modelData === "launcher" ? launcherComponent : modelData === "appearance" ? appearanceComponent
                     : modelData === "widgets" ? widgetsComponent : modelData === "settings" ? settingsComponent : dashboardComponent
                 onSelectedChanged: if (selected) initialized = true
-                Component.onCompleted: if (selected) initialized = true
+                Component.onCompleted: {
+                    if (modelData === "launcher") overlay.launcherLoader = panelLoader;
+                    if (selected) initialized = true;
+                }
+                Component.onDestruction: if (overlay.launcherLoader === panelLoader) overlay.launcherLoader = null
                 onLoaded: if (selected) overlay.prepareCurrent()
                 MouseArea { anchors.fill: parent; z: -1; onClicked: {} }
             }

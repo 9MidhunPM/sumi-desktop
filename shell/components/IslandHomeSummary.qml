@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import "../config"
 import "../services" as S
 
 Item {
@@ -29,10 +30,10 @@ Item {
     Rectangle {
         y: root.usageHeight + 12
         width: root.width; height: 60
-        radius: 21; color: "#202126"
+        radius: Metrics.moduleRadius; color: IslandStyle.raised
         Icon { x: 15; anchors.verticalCenter: parent.verticalCenter; name: S.Battery.charging ? "battery-charging" : "battery"; size: 22; color: "#c5cbd9" }
-        Label { x: 47; y: 12; width: parent.width - 94; text: S.Battery.available ? Math.round(S.Battery.percent) + "% battery" : "AC power"; font.pixelSize: 12; font.weight: Font.DemiBold; color: "#f2f4fa" }
-        Label { x: 47; y: 31; width: parent.width - 94; text: S.Battery.timeLabel; font.pixelSize: 10; color: "#a7afc2" }
+        Label { x: 47; y: 12; width: parent.width - 94; text: S.Battery.available ? Math.round(S.Battery.percent) + "% battery" : "AC power"; font.pixelSize: 12; font.weight: Font.DemiBold; color: IslandStyle.text }
+        Label { x: 47; y: 31; width: parent.width - 94; text: S.Battery.timeLabel; font.pixelSize: 10; color: IslandStyle.secondary }
         IslandPreviewButton { anchors { right: parent.right; verticalCenter: parent.verticalCenter; rightMargin: 9 } text: "›"; tooltip: "Power and system controls"; quiet: true; implicitWidth: 32; onClicked: root.controlsRequested() }
     }
 }

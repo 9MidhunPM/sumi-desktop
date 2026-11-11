@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import "../config"
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
@@ -18,24 +19,24 @@ Rectangle {
     signal openRequested()
     signal dismissRequested()
     implicitHeight: header.implicitHeight + message.implicitHeight + 29
-    radius: 21
-    color: "#24252b"
+    radius: 18
+    color: IslandStyle.raised
     enabled: active && !!entry
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 12
+        anchors.margins: Metrics.space3
         spacing: 5
         RowLayout {
             id: header
             Layout.fillWidth: true; Layout.minimumWidth: 0
-            spacing: 7
+            spacing: Metrics.space2
             Rectangle {
                 implicitWidth: 23; implicitHeight: 23; radius: 7; color: "#3b3d47"
                 Icon { anchors.centerIn: parent; name: "bell"; size: 14; color: "#e2e3eb"; visible: appImage.status !== Image.Ready }
                 Image { id: appImage; anchors.fill: parent; source: root.appIcon; sourceSize: Qt.size(46,46); fillMode: Image.PreserveAspectFit; asynchronous: true; visible: status === Image.Ready }
             }
-            Label { Layout.fillWidth: true; Layout.minimumWidth: 0; text: root.entry ? root.entry.appName : "Notification"; color: "#bfc1ce"; font.pixelSize: 11; font.weight: Font.Medium }
-            Label { text: root.entry && root.entry.time && !isNaN(new Date(root.entry.time).getTime()) ? Qt.formatDateTime(new Date(root.entry.time), "h:mm") : ""; font.pixelSize: 10; color: "#989cac" }
+            Label { Layout.fillWidth: true; Layout.minimumWidth: 0; text: root.entry ? root.entry.appName : "Notification"; color: IslandStyle.secondary; font.pixelSize: 11; font.weight: Font.Medium }
+            Label { text: root.entry && root.entry.time && !isNaN(new Date(root.entry.time).getTime()) ? Qt.formatDateTime(new Date(root.entry.time), "h:mm") : ""; font.pixelSize: 10; color: IslandStyle.secondary }
             IslandPreviewButton { text: "›"; tooltip: "Open notification in Inbox"; quiet: true; implicitWidth: 30; implicitHeight: 30; leftPadding: 4; rightPadding: 4; onClicked: root.openRequested() }
             IslandPreviewButton { objectName: "islandNotificationDismiss"; text: "×"; tooltip: "Dismiss notification"; quiet: true; implicitWidth: 30; implicitHeight: 30; leftPadding: 4; rightPadding: 4; onClicked: root.dismissRequested() }
         }
@@ -52,12 +53,12 @@ Rectangle {
                 id: message
                 width: scroll.availableWidth
                 spacing: 5
-                Label { width: parent.width; text: root.entry ? root.entry.summary : ""; color: "#f7f7fb"; font.pixelSize: 13; font.weight: Font.DemiBold; wrapMode: Text.Wrap }
-                Label { width: parent.width; visible: text.length > 0; text: root.entry ? root.entry.body || "" : ""; color: "#b7bac8"; font.pixelSize: 12; wrapMode: Text.Wrap }
+                Label { width: parent.width; text: root.entry ? root.entry.summary : ""; color: IslandStyle.text; font.pixelSize: 13; font.weight: Font.DemiBold; wrapMode: Text.Wrap }
+                Label { width: parent.width; visible: text.length > 0; text: root.entry ? root.entry.body || "" : ""; color: IslandStyle.secondary; font.pixelSize: 12; wrapMode: Text.Wrap }
                 Flow {
                     width: parent.width
                     visible: !!root.entry && (root.entry.actions || []).length > 0
-                    spacing: 6
+                    spacing: Metrics.space2
                     Repeater {
                         model: root.entry ? root.entry.actions || [] : []
                         IslandPreviewButton {

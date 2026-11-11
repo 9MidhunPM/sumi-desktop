@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import "../config"
 import QtQuick.Layouts
 
 // A local month view: no calendar account or event data is implied.
@@ -11,8 +12,8 @@ Rectangle {
     readonly property int firstWeekday: (month.getDay() + 6) % 7
     readonly property int daysInMonth: new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate()
     implicitHeight: content.implicitHeight + 24
-    radius: 21
-    color: "#202126"
+    radius: 18
+    color: IslandStyle.surface
 
     ColumnLayout {
         id: content
@@ -26,7 +27,7 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
                 text: Qt.formatDateTime(root.month, "MMMM yyyy")
-                font.pixelSize: 13; font.weight: Font.DemiBold; color: "#f2f4fa"
+                font.pixelSize: root.width < 340 ? 15 : 18; font.weight: Font.DemiBold; color: IslandStyle.text; elide: Text.ElideRight
             }
             IslandPreviewButton {
                 objectName: "islandCalendarToday"
@@ -59,7 +60,7 @@ Rectangle {
                     text: modelData
                     Layout.fillWidth: true; Layout.preferredWidth: 1
                     horizontalAlignment: Text.AlignHCenter
-                    color: "#a7afc2"; font.pixelSize: 10
+                    color: IslandStyle.secondary; font.pixelSize: 10
                 }
             }
             Repeater {
@@ -73,15 +74,15 @@ Rectangle {
                         && root.month.getMonth() === root.today.getMonth() && root.month.getFullYear() === root.today.getFullYear()
                     objectName: "islandCalendarDay" + index
                     Layout.fillWidth: true; Layout.preferredWidth: 1
-                    implicitHeight: 28
-                    radius: 9
-                    color: isToday ? "#f5f5f8" : "transparent"
+                    implicitHeight: 36
+                    radius: 11
+                    color: isToday ? IslandStyle.accent : "transparent"
                     Accessible.role: Accessible.StaticText
                     Accessible.name: inMonth ? Qt.formatDateTime(new Date(root.month.getFullYear(), root.month.getMonth(), day), "dddd, d MMMM yyyy") + (isToday ? ", today" : "") : ""
                     Label {
                         anchors.centerIn: parent
                         text: dayCell.inMonth ? dayCell.day : ""
-                        color: dayCell.isToday ? "#202027" : "#f2f4fa"
+                        color: dayCell.isToday ? IslandStyle.accentText : IslandStyle.text
                         font.pixelSize: 12; font.weight: dayCell.isToday ? Font.DemiBold : Font.Normal
                     }
                 }

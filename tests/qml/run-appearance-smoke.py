@@ -47,9 +47,13 @@ ShellRoot {
                 const gallery = findChild(appearance, "appearanceGallery");
                 const accent = findChild(appearance, "appearanceAccent");
                 const applyAccent = findChild(appearance, "appearanceApplyAccent");
-                const recovery = findChild(appearance, "appearanceClassic");
-                assertTrue(!recovery.visible, "Recovery is hidden without a usable previous-desktop backup");
-                const names = ["appearanceGallery", "appearanceAddWallpaper", "appearanceClose", "appearanceAccent", "appearanceApplyAccent", "appearanceApplyTheme", "appearanceBarMode", "appearanceMotion"];
+                const names = ["appearanceGallery", "appearanceAddWallpaper", "appearanceClose", "appearanceAccent", "appearanceApplyAccent", "appearanceApplyTheme", "appearanceClassic", "appearanceBarMode", "appearanceIslandStyle", "appearanceMotion"];
+                const islandStyle = findChild(appearance, "appearanceIslandStyle");
+                assertTrue(Settings.islandNotch && islandStyle.text === "Center: Notch", "Notch is the default");
+                islandStyle.clicked();
+                assertTrue(!Settings.islandNotch && islandStyle.text === "Center: Island", "Floating toggle changes the shared preference");
+                islandStyle.clicked();
+                assertTrue(Settings.islandNotch, "Style toggle returns to the notch");
                 assertTrue(appearance.galleryWidth > 200 && appearance.previewWidth > 0 && appearance.previewWidth <= 260, "Default gallery and preview metrics remain valid");
                 for (const size of [[480, 360], [600, 440], [960, 540], [1280, 720]]) {
                     screenInfo.width = size[0]; screenInfo.height = size[1]; wait(100);
@@ -76,9 +80,6 @@ ShellRoot {
                     for (let index = 0; index < 15; index++) { keyClick(Qt.Key_Tab, Qt.ShiftModifier); wait(35); }
                     assertTrue(win.activeFocusItem !== null, "Reverse navigation retains focus");
                 }
-                appearance.recoveryAvailable = true; wait(30);
-                assertTrue(recovery.visible && recovery.enabled, "Recovery is exposed only after a usable backup is reported");
-                appearance.recoveryAvailable = false;
                 appearance.selected = null;
                 accent.text = "#aabbcc";
                 wait(30);

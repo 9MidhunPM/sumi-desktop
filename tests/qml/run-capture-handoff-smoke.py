@@ -15,6 +15,14 @@ import "services" as S
 import "config"
 ShellRoot {
     id: desktopRoot
+    S.IslandSession { id: islandSession }
+    readonly property alias islandSession: islandSession
+    property var islandWindows: [island]
+    property var captureReturn: null
+    property string annotationId: ""
+    property bool annotationChecking: false
+    property var activeScreen: screenInfo
+    function openIsland(route, screen, toggle) { if (route) islandSession.navigate(route); island.pin(); }
     property bool nativeDialogOpen: false
     property bool captureSelecting: false
     property string panel: ""
@@ -38,6 +46,7 @@ ShellRoot {
             function check(value, message) { if (!value) { console.error("CAPTURE_HANDOFF_FAILED", message); Qt.exit(1); throw new Error(message); } }
             function requests(name) { return S.Desktop.requests.filter(item => item.name === name); }
             function begin(annotate, record) {
+                if (record) S.Recording.recording = false;
                 desktopRoot.selectCapture(annotate, record);
                 check(desktopRoot.nativeDialogOpen && island.visible, "Region handoff keeps the compact island visible");
                 const before = S.Desktop.requests.length;
@@ -45,7 +54,10 @@ ShellRoot {
                 check(S.Desktop.requests.length === before, "A second selector cannot start during a handoff");
                 wait(130);
                 check(desktopRoot.nativeDialogOpen && island.visible, "Pending region selection cannot make the bar disappear");
-                check(!island.pinned && island.bodyHeight <= 40.1 && island.inputHeight === 0, "Selector retains focus while the island is compact and passes input through");
+                check(!island.pinned && !island.expanded && island.activity === "capture"
+                    && Math.abs(island.bodyHeight - (island.notch ? 46 : 42)) < 0.1
+                    && island.inputWidth === 0 && island.inputHeight === 0,
+                    "Selector retains focus while the island is compact and passes input through");
             }
             function released(label) {
                 check(!desktopRoot.nativeDialogOpen && island.visible && desktopRoot.barVisible, label + " releases the actual root visibility guard");
@@ -93,6 +105,17 @@ ShellRoot {
                 S.Desktop.respond("capture", true, {saved:true,file:"/tmp/fixture.png"});
                 released("Successful screenshot");
 
+                begin(true, false);
+                S.Desktop.respond("capture", true, {saved:true,file:"/tmp/fixture.png",annotation_id:"annotation-fixture"});
+                check(desktopRoot.nativeDialogOpen && desktopRoot.captureSelecting && desktopRoot.annotationId === "annotation-fixture", "Annotation editor retains the native handoff after region selection");
+                wait(750);
+                check(requests("annotation-status").length === 1, "Annotation handoff checks owned editor status");
+                S.Desktop.respond("annotation-status", true, {active:true});
+                check(desktopRoot.nativeDialogOpen, "An active annotation editor retains focus ownership");
+                wait(750);
+                S.Desktop.respond("annotation-status", true, {active:false});
+                released("Annotation editor completion");
+
                 begin(false, false);
                 S.Desktop.respond("capture", false, {}, "Screenshot cancelled");
                 released("Cancelled screenshot");
@@ -117,6 +140,22 @@ ShellRoot {
                 check(!island.visible, "Unrelated native dialogs retain their existing overlay guard");
                 desktopRoot.nativeDialogOpen = false;
 
+                S.IslandEvents.clear();
+                islandSession.navigate("capture");
+                island.pin(); wait(40);
+                check(island.pinned, "Capture starts from an actually pinned origin");
+                const originRevision = islandSession.revision;
+                begin(false, false);
+                S.Desktop.respond("capture", false, {}, "desktopctl: Screenshot cancelled");
+                check(desktopRoot.nativeDialogOpen && !island.pinned, "Selector teardown keeps input guarded before restoring origin");
+                wait(45);
+                island.smokeGrab.cleared();
+                wait(160);
+                check(island.pinned && island.section === "capture" && islandSession.revision === originRevision,
+                    "Selector cancellation repins the origin after delayed native grab-clear");
+                check(!desktopRoot.nativeDialogOpen && !desktopRoot.captureSelecting && !S.IslandEvents.active,
+                    "Ordinary Escape cancellation restores controls without an error alert");
+                island.dismiss();
                 S.Desktop.preview = true;
                 desktopRoot.selectCapture(false, true); wait(130);
                 released("Preview recording rejection");
@@ -154,7 +193,7 @@ def main():
         errors = ("TypeError:", "ReferenceError:", "Unable to assign [undefined]", "Failed to load configuration", "FAIL!", "Binding loop")
         if result.returncode or "CAPTURE_HANDOFF_OK" not in output or any(error in output for error in errors):
             raise SystemExit(output)
-        print("PASS: actual root record/capture dispatch; compact inputless selector handoff; success/cancel/error/malformed/busy/preview release; lost/stale callback recovery; other native dialog guard; selector serialization")
+        print("PASS: actual root record/capture dispatch; compact inputless selector handoff; success/cancel/error/malformed/busy/preview release; lost/stale callback recovery; other native dialog guard; selector serialization; pinned origin restoration after delayed grab-clear; silent cancellation")
         print("Controller and recorder are inert; native region selection is not exercised")
 
 

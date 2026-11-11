@@ -1,3 +1,6 @@
 singleton Theme Theme.qml
 singleton Settings Settings.qml
 singleton Motion Motion.qml
+
+singleton IslandStyle IslandStyle.qml
+singleton Metrics Metrics.qml
