@@ -18,7 +18,7 @@ C.Surface {
     readonly property color accent: embedded ? IslandStyle.accent : Theme.accentBlue
     readonly property color accentForeground: embedded ? IslandStyle.accentText : Theme.desktopBackground
     readonly property color separator: embedded ? IslandStyle.line : Theme.borderSoft
-    readonly property int panelInset: app.activeScreen && app.activeScreen.height <= 600 ? 16 : 20
+    readonly property int panelInset: app.activeScreen && app.activeScreen.height <= 600 ? Metrics.space4 : Metrics.space5
     readonly property real contentHeight: bodyContent.implicitHeight + (embedded ? 0 : header.implicitHeight + footer.implicitHeight + panelInset * 2 + 32)
     property bool pageActive: true
     color: embedded ? "transparent" : Theme.glassFill
@@ -189,8 +189,8 @@ C.Surface {
 
                     GridLayout {
                         columns: 2
-                        columnSpacing: 10
-                        rowSpacing: 10
+                        columnSpacing: Metrics.space3
+                        rowSpacing: Metrics.space3
                         Layout.fillWidth: true
                         C.QuickTile { island: root.embedded;
                             id: wifiTile
@@ -254,7 +254,7 @@ C.Surface {
                             C.Label { text: Math.round(S.Audio.volume * 100) + "%"; color: root.secondary; font.pixelSize: 12 }
                             C.QuickButton { island: root.embedded; glyph: "󰁔"; compact: true; quiet: true; tooltip: "Choose sound devices"; onClicked: root.section = "audio" }
                         }
-                        C.Label { objectName: "settingsOutputName"; text: S.Audio.outputName; color: root.secondary; font.pixelSize: 11; Layout.fillWidth: true }
+                        C.Label { objectName: "settingsOutputName"; text: S.Audio.outputName; color: root.secondary; font.pixelSize: 12; Layout.fillWidth: true; elide: Text.ElideRight }
                         C.QuickSlider { island: root.embedded; objectName: "settingsOutputVolume"; label: "Output volume"; Layout.fillWidth: true; enabled: S.Audio.hasOutput; value: S.Audio.volume; onMoved: S.Audio.setVolume(value) }
                         RowLayout {
                             Layout.fillWidth: true
@@ -321,8 +321,8 @@ C.Surface {
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 3
-                            C.Label { color: root.foreground; text: S.Media.title; font.weight: Font.Medium; Layout.fillWidth: true }
-                            C.Label { text: S.Media.artist; color: root.secondary; font.pixelSize: 11; Layout.fillWidth: true }
+                            C.Label { color: root.foreground; text: S.Media.title; font.weight: Font.Medium; Layout.fillWidth: true; elide: Text.ElideRight }
+                            C.Label { text: S.Media.artist; color: root.secondary; font.pixelSize: 12; Layout.fillWidth: true; elide: Text.ElideRight }
                         }
                         C.QuickButton { island: root.embedded; glyph: S.Media.playing ? "󰏤" : "󰐊"; quiet: true; tooltip: S.Media.playing ? "Pause playback" : "Play"; onClicked: S.Media.toggle() }
                     }
@@ -374,7 +374,7 @@ C.Surface {
                             selectByMouse: true
                             Accessible.name: "Wi-Fi password"
                             onAccepted: root.connectSelected()
-                            background: Rectangle { radius: 11; color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.06); border.width: password.activeFocus ? 2 : 1; border.color: password.activeFocus ? root.accent : root.separator }
+                            background: Rectangle { radius: Metrics.controlRadius; color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.06); border.width: password.activeFocus ? 2 : 1; border.color: password.activeFocus ? root.accent : root.separator }
                         }
                         RowLayout {
                             Layout.fillWidth: true

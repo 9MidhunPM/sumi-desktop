@@ -20,7 +20,7 @@ AbstractButton {
     signal secondaryClicked()
     implicitWidth: 180
     implicitHeight: Math.max(96, contentItem.implicitHeight + topPadding + bottomPadding)
-    padding: 16
+    padding: Metrics.space4
     font.family: Theme.font
     focusPolicy: Qt.StrongFocus
     hoverEnabled: true
@@ -58,8 +58,8 @@ AbstractButton {
         ColumnLayout {
             spacing: 1
             Layout.fillWidth: true
-            Label { text: control.text; color: control.foreground; font.pixelSize: 14; font.weight: Font.DemiBold; Layout.fillWidth: true }
-            Label { text: control.subtitle; font.pixelSize: 12; color: control.secondary; Layout.fillWidth: true }
+            Label { text: control.text; color: control.foreground; font.pixelSize: 14; font.weight: Font.DemiBold; Layout.fillWidth: true; elide: Text.ElideRight }
+            Label { text: control.subtitle; font.pixelSize: 12; color: control.secondary; Layout.fillWidth: true; elide: Text.ElideRight }
         }
     }
 }
