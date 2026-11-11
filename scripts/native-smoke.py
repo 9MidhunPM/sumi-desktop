@@ -174,7 +174,7 @@ def worker(work: Path, output: Path, parent: Path) -> dict:
         wait_for(lambda: history.exists() and "app:sumi-notes" in json.loads(history.read_text()).get("entries", {}), label="launcher learning")
         report["checks"]["launcher_keyboard_and_learning"] = True
         ipc("sumi", "open", "settings")
-        wait_for(lambda: status()["panel"] == "settings", label="standalone control center open")
+        wait_for(lambda: status()["panel"] == "controls", label="island controls open")
         capture("quick-settings.png")
         call("wtype", "-k", "Escape")
         wait_for(lambda: status()["panel"] == "", label="keyboard Escape")

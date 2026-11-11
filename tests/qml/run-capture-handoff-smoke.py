@@ -33,7 +33,7 @@ ShellRoot {
     QtObject { id: screenInfo; property string name: "fixture"; property int width: 1920; property int height: 1080 }
     property bool barVisible: true
     property int closes: 0
-    function close() { closes++; panel = ""; island.dismiss(); }
+    function close() { closes++; island.dismiss(); }
     __CAPTURE_HANDOFF__
     DynamicIsland { id: island; app: desktopRoot; modelData: screenInfo; centerRoom: 500 }
     Window {
@@ -139,12 +139,6 @@ ShellRoot {
                 wait(20);
                 check(!island.visible, "Unrelated native dialogs retain their existing overlay guard");
                 desktopRoot.nativeDialogOpen = false;
-
-                desktopRoot.panel = "settings";
-                begin(false, false);
-                check(desktopRoot.panel === "", "Standalone settings closes before region selector");
-                S.Desktop.respond("capture", false, {}, "Screenshot cancelled");
-                released("Standalone settings capture cancellation");
 
                 S.IslandEvents.clear();
                 islandSession.navigate("capture");

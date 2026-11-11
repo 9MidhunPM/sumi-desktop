@@ -18,28 +18,7 @@ PROBE = '''
             if (desktopRoot.smokePhase >= 0) {
                 const name = desktopRoot.smokePanels[desktopRoot.smokePhase];
                 const page = smokeIsland.visual.deskItem.currentPage;
-                if (name === "settings") {
-                    if (desktopRoot.panel !== "settings" || desktopRoot.settingsSection !== "" || smokeIsland.pinned) { console.error("SUMI_UI_CONTENT_FAILED", name); Qt.exit(2); return; }
-                    desktopRoot.openSettings("wifi", null);
-                    if (desktopRoot.panel !== "settings" || desktopRoot.settingsSection !== "wifi" || !S.Network.discoveryRequested || S.Bluetooth.discoveryRequested) { console.error("SUMI_WIFI_ROUTING_FAILED"); Qt.exit(2); return; }
-                    const priorActivation = desktopRoot.activationSerial;
-                    desktopRoot.openSettings("wifi", null);
-                    if (desktopRoot.activationSerial !== priorActivation + 1 || !S.Network.discoveryRequested) { console.error("SUMI_WIFI_REPEAT_FAILED"); Qt.exit(2); return; }
-                    desktopRoot.openSettings("bluetooth", null);
-                    if (desktopRoot.settingsSection !== "bluetooth" || S.Network.discoveryRequested || !S.Bluetooth.discoveryRequested) { console.error("SUMI_BLUETOOTH_ROUTING_FAILED"); Qt.exit(2); return; }
-                    desktopRoot.openSettings("audio", null);
-                    if (desktopRoot.settingsSection !== "audio" || S.Network.discoveryRequested || S.Bluetooth.discoveryRequested) { console.error("SUMI_AUDIO_ROUTING_FAILED"); Qt.exit(2); return; }
-                    desktopRoot.toggle("settings", null);
-                    if (desktopRoot.panel !== "") { console.error("SUMI_SETTINGS_TOGGLE_FAILED"); Qt.exit(2); return; }
-                    smokeIsland.visual.headerClicked();
-                    if (desktopRoot.panel !== "settings" || desktopRoot.settingsSection !== "") { console.error("SUMI_CLOCK_SETTINGS_FAILED"); Qt.exit(2); return; }
-                    smokeIsland.visual.headerClicked();
-                    if (desktopRoot.panel !== "") { console.error("SUMI_CLOCK_TOGGLE_FAILED"); Qt.exit(2); return; }
-                    desktopRoot.nativeDialogOpen = true;
-                    smokeIsland.visual.headerClicked();
-                    if (desktopRoot.panel !== "") { console.error("SUMI_CLOCK_DIALOG_GUARD_FAILED"); Qt.exit(2); return; }
-                    desktopRoot.nativeDialogOpen = false;
-                } else if (!page || !page.active || !smokeIsland.pinned) { console.error("SUMI_UI_CONTENT_FAILED", name); Qt.exit(2); return; }
+                if (!page || !page.active || !smokeIsland.pinned) { console.error("SUMI_UI_CONTENT_FAILED", name); Qt.exit(2); return; }
                 console.info("SUMI_UI_CONTENT", name);
                 if (name === "appearance") {
                     const loader = probe.findChild(page, "islandDesktopAppearanceLoader");
@@ -103,7 +82,7 @@ def main():
         for name in ('launcher','files','clipboard','appearance','widgets','settings','calendar','media','notifications','pomodoro','help','power'):
             if f'SUMI_UI_CONTENT {name}' not in output: raise SystemExit(f'{name} did not instantiate\n{output}')
         if 'SUMI_APPEARANCE_LAYOUT_OK' not in output: raise SystemExit(output)
-        print('PASS: 11 island entry points and standalone settings route render; active page; native dialog focus guard; focus start/pause/reset; real appearance catalog and bounded gallery/preview')
+        print('PASS: all 12 legacy entry points render in the retained island; active page; native dialog focus guard; focus start/pause/reset; real appearance catalog and bounded gallery/preview')
         print('Native window wrappers replaced only in the temporary fixture; compositor QA remains required')
 
 
