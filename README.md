@@ -84,14 +84,18 @@ See [the changelog](CHANGELOG.md), [contributing](CONTRIBUTING.md), and [securit
 
 ## Dynamic island
 
-The island keeps its opaque black surface and neutral border. Clicking its clock
-opens the standalone Control Center, a compact glass panel anchored on the right.
-The bar's settings button and battery open the same panel; its Wi-Fi and sound
-buttons open the corresponding device pages. Escape closes the panel.
+The island keeps its opaque black surface, neutral border and compact control layout.
+Search and Settings open contextual pages inside the same morphing surface; there is
+no main tab strip or separate Home/Desktop landing page. Clicking the island
+header opens Controls or closes the pinned island. Escape closes the whole island
+from any subpage; Back provides internal navigation. Existing launcher, clipboard,
+appearance and settings shortcuts enter the matching island page directly.
 
-Search, clipboard, appearance and other tools remain available in the island,
-with Back for internal navigation and Escape to close it. The existing launcher,
-clipboard and appearance shortcuts continue to open their island pages directly.
+Controls uses the earlier compact layout: a grouped set of connectivity,
+Do Not Disturb and night-light toggles sits beside music and vertical brightness
+and volume controls. CPU, memory and storage usage and battery power profiles
+appear below. Hold Wi-Fi or Bluetooth to open its device page. Use Search in the
+island header to reach other desktop tools.
 
 Notifications, music, Wi-Fi, Bluetooth, sound devices, capture, calendar, focus,
 system usage, session actions, wallpaper and widget settings are reachable inside
