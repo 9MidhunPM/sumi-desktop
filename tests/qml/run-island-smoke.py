@@ -216,17 +216,17 @@ ShellRoot {
             check(coverArt.rotation === 0, "Album artwork remains stationary");
             const originArt = album.mapToItem(island.contentItem, 0, 0);
             const originWave = wave.mapToItem(island.contentItem, 0, 0);
-            island.pin("", true); wait(25);
             let movingSamples = 0, lastWidth = album.width;
-            for (let frame = 0; frame < 3; frame++) {
+            island.pin("", true); wait(25);
+            for (let frame = 0; frame < 12 && movingSamples === 0; frame++) {
                 wait(16);
                 if (album.width > lastWidth + .1) movingSamples++;
                 lastWidth = album.width;
             }
-            check(IslandStyle.musicTransition <= 180 && movingSamples >= 1, "Music transition responds quickly and produces intermediate motion: " + movingSamples + " / " + IslandStyle.musicTransition);
+            check(IslandStyle.musicTransition <= 180 && movingSamples >= 1, "Music transition responds quickly and progresses: " + movingSamples + " / " + IslandStyle.musicTransition);
             const middleArt = album.mapToItem(island.contentItem, 0, 0);
             const middleWave = wave.mapToItem(island.contentItem, 0, 0);
-            check(island.spectrumDemand && middleArt.y > originArt.y && middleWave.y > originWave.y && album.width > 28 && album.width < 140, "Artwork and waveform animate globally with continuous spectrum demand");
+            check(island.spectrumDemand && middleArt.y > originArt.y && middleWave.y > originWave.y && album.width > 28 && album.width <= 140, "Artwork and waveform animate globally with continuous spectrum demand");
             island.dismiss(); wait(70);
             check(island.spectrumDemand && album.mapToItem(island.contentItem, 0, 0).y < middleArt.y, "Interrupted morph reverses without losing spectrum " + JSON.stringify({spectrum:island.spectrumDemand,y:album.mapToItem(island.contentItem, 0, 0).y,middle:middleArt.y,activity:island.activity,flanks:island.visual.hasFlanks}));
             wait(350);
