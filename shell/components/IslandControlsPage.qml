@@ -22,7 +22,7 @@ FocusScope {
     readonly property var assistant: typeof app.thursdayBackend === "undefined" ? null : app.thursdayBackend
     readonly property string assistantStatus: !assistant ? "Ask Thursday" : assistant.confirmations && assistant.confirmations.length ? "Thursday · Approval needed" : assistant.recording ? "Thursday · Listening" : assistant.busy || assistant.taskActive ? "Thursday · Working…" : assistant.speaking ? "Thursday · Speaking" : "Ask Thursday"
     property int statsConsumer: 0
-    function syncDemand() { if (statsConsumer) S.SystemStats.setDemand(statsConsumer, active && route === "system"); }
+    function syncDemand() { if (statsConsumer) S.SystemStats.setDemand(statsConsumer, active && (route === "system" || route === "controls")); }
     Component.onCompleted: { statsConsumer = S.SystemStats.createConsumer(); syncDemand(); }
     Component.onDestruction: if (statsConsumer) S.SystemStats.releaseConsumer(statsConsumer)
     onActiveChanged: syncDemand()
@@ -42,7 +42,7 @@ FocusScope {
         focusPolicy: Qt.StrongFocus
         Accessible.name: text + (detail ? ", " + detail : "")
         onClicked: root.routeRequested(target)
-        background: Rectangle { radius: 12; color: row.down || row.hovered ? IslandStyle.hover : "transparent"; border.width: row.visualFocus ? 2 : 0; border.color: Theme.accentCyan }
+        background: Rectangle { radius: Metrics.controlRadius; color: row.down || row.hovered ? IslandStyle.hover : "transparent"; border.width: row.visualFocus ? 2 : 0; border.color: Theme.accentCyan }
         contentItem: RowLayout {
             spacing: 14
             Icon { name: row.iconName; size: 22; color: IslandStyle.text; Layout.leftMargin: 10 }
@@ -54,7 +54,7 @@ FocusScope {
             Icon { name: "arrow-right"; size: 16; color: IslandStyle.secondary; Layout.rightMargin: 10 }
         }
     }
-    ScrollView {
+    PanelScrollView {
         id: overview
         anchors.fill: parent
         visible: !root.deviceRoute && !dashboard.visible
@@ -64,12 +64,13 @@ FocusScope {
         ColumnLayout {
             id: overviewContent
             width: overview.availableWidth
-            spacing: 6
+            spacing: Metrics.space2
             ColumnLayout {
                 visible: root.route === "controls"
-                Layout.fillWidth: true; spacing: 12
+                Layout.fillWidth: true; spacing: Metrics.space3
                 IslandControlCenter {
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                     Layout.preferredHeight: implicitHeight
                     app: root.app; active: root.active && root.route === "controls"; now: root.now
                     spectrumSamples: root.spectrumSamples
@@ -77,66 +78,12 @@ FocusScope {
                     onCaptureRequested: annotate => root.captureRequested(annotate)
                     onRecordingRequested: root.recordingRequested()
                 }
-                GridLayout {
-                    Layout.fillWidth: true
-                    columns: width >= 500 ? 6 : 4
-                    rowSpacing: 4; columnSpacing: 4
-                    Repeater {
-                        model: [{label:"Search",route:"launcher",icon:"search"},{label:"Clipboard",route:"clipboard",icon:"clipboard"},{label:"Appearance",route:"appearance",icon:"palette"},{label:"Capture",route:"capture",icon:"camera"},{label:"Focus",route:"pomodoro",icon:"timer"},{label:"Widgets",route:"widgets",icon:"layout-grid"},{label:"System",route:"system",icon:"cpu"},{label:"Sound",route:"audio",icon:"volume"},{label:"Calendar",route:"calendar",icon:"calendar"},{label:"Files",route:"files",icon:"folder"},{label:"Codex",route:"codex",icon:"terminal"},{label:"Power",route:"power",icon:"power"}]
-                        Button {
-                            id: tool
-                            required property var modelData
-                            objectName: "islandTool-" + modelData.route
-                            Layout.fillWidth: true; Layout.preferredWidth: 1; Layout.minimumWidth: 0
-                            implicitHeight: 58
-                            hoverEnabled: true; focusPolicy: Qt.StrongFocus
-                            Accessible.name: modelData.label
-                            background: Rectangle { radius: 12; color: tool.hovered || tool.down ? IslandStyle.hover : "transparent"; border.width: tool.visualFocus ? 2 : 0; border.color: IslandStyle.text }
-                            contentItem: Item {
-                                Icon { anchors.horizontalCenter: parent.horizontalCenter; y: 4; name: tool.modelData.icon; size: 20; color: IslandStyle.text }
-                                Label { anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: 4 } text: tool.modelData.label; horizontalAlignment: Text.AlignHCenter; font.pixelSize: 10; color: IslandStyle.secondary; elide: Text.ElideRight }
-                            }
-                            onClicked: root.routeRequested(modelData.route)
-                        }
-                    }
-                }
-                IslandPreviewButton {
-                    objectName: "islandQuickThursday"
-                    Layout.fillWidth: true
-                    implicitHeight: 48
-                    text: root.assistantStatus
-                    tooltip: "Open Thursday conversation"
-                    iconName: "sparkles"
-                    onClicked: root.routeRequested("thursday")
-                }
-                RowLayout {
-                    visible: S.Notifications.count > 0
-                    Layout.fillWidth: true
-                    Label { text: "Recent notifications"; color: IslandStyle.secondary; font.pixelSize: 12; Layout.fillWidth: true }
-                    IslandPreviewButton { text: "Inbox ›"; quiet: true; implicitHeight: 30; onClicked: root.routeRequested("inbox") }
-                }
-                Repeater {
-                    model: S.Notifications.history.slice(0, 2)
-                    IslandNotificationPreview {
-                        required property var modelData
-                        objectName: "islandQuickNotification"
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: Math.min(120, implicitHeight)
-                        entry: modelData
-                        active: root.active && root.route === "controls"
-                        onOpenRequested: {
-                            if (typeof root.app.islandSession !== "undefined" && root.app.islandSession) root.app.islandSession.entityId = modelData.id;
-                            root.routeRequested("notification");
-                        }
-                        onDismissRequested: S.Notifications.dismiss(modelData.id)
-                    }
-                }
                 Caption { visible: !!(S.Brightness.error || S.NightLight.error || S.Recording.error); text: S.Brightness.error || S.NightLight.error || S.Recording.error; color: Theme.accentWarn }
             }
             Heading { visible: root.route !== "controls"; text: root.route === "system" ? "System usage" : "Island preferences" }
             ColumnLayout {
                 visible: root.route === "system"
-                Layout.fillWidth: true; spacing: 12
+                Layout.fillWidth: true; spacing: Metrics.space3
                 IslandSystemUsage { Layout.fillWidth: true; Layout.preferredHeight: 90; metric: "cpu" }
                 IslandSystemUsage { Layout.fillWidth: true; Layout.preferredHeight: 90; metric: "memory" }
                 IslandSystemUsage { Layout.fillWidth: true; Layout.preferredHeight: 90; metric: "storage" }
@@ -144,7 +91,7 @@ FocusScope {
             }
             ColumnLayout {
                 visible: root.route === "settings"
-                Layout.fillWidth: true; spacing: 12
+                Layout.fillWidth: true; spacing: Metrics.space3
                 QuickButton { text: Settings.islandNotch ? "Island: screen-edge notch" : "Island: floating"; Layout.fillWidth: true; onClicked: Settings.setValue("islandNotch", !Settings.islandNotch) }
                 QuickButton { text: Settings.reducedMotion ? "Motion: reduced" : Settings.fullMotion ? "Motion: expressive" : "Motion: adaptive"; Layout.fillWidth: true; onClicked: Settings.cycleMotion() }
                 QuickButton { text: Settings.dnd ? "Notifications: silenced" : "Notifications: allowed"; Layout.fillWidth: true; onClicked: S.Notifications.toggleDnd() }
