@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Morph the island contour to natural task content, with compact focus/notification states, result-aware search, responsive conversation sizing and bounded scrolling.
+
+- Keep the original black island controls and replace top-level tabs with contextual navigation.
+- Bring search, clipboard, appearance, widgets, device selection, Bluetooth pairing, full conversation history and session controls inside the island.
+- Preserve page state and restore the originating route after capture, annotation and native wallpaper selection.
+- Keep public Thursday setup optional and exclude private Codex integration.
+
 - Add an outlined black dynamic island with adaptive Home, Inbox, Music, Controls, and optional Thursday pages.
 - Route desktop notifications, backlight changes, audio, connectivity, and battery thresholds through a prioritized preview stream.
 - Support short horizontal touchpad gestures across the entire island, keyboard tab switching, compact power profiles, and reduced/battery motion.

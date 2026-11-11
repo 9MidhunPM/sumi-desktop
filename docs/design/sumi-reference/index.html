@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%23141416%27/%3E%3Ctext x=%276%27 y=%2725%27 fill=%27%23dfc8b1%27 font-size=%2727%27%3E✳%3C/text%3E%3C/svg%3E">
+<title>Sumi — Interactive desktop reference</title>
+<link rel="stylesheet" href="shell.css">
+</head>
+<body>
+<header class="reference-header"><div class="wordmark"><span class="sumi-mark" aria-hidden="true">✳</span><span>sumi<span class="wordmark-dot">.</span></span><span class="reference-divider"></span><span class="reference-label">Desktop reference</span></div><div class="header-note">Everything in its place.</div><button class="reference-button" data-action="guide" aria-label="Show prototype guide">How to explore <span>↗</span></button></header>
+<main>
+<section id="desktop" class="desktop" aria-label="Interactive Sumi desktop" data-wallpaper="dusk">
+  <div class="wallpaper" aria-hidden="true"></div><div class="wallpaper-shade" aria-hidden="true"></div>
+  <nav class="desktop-bar left" aria-label="Workspaces"><button class="workspace active" data-action="workspace" data-value="1" aria-label="Workspace 1">1</button><button class="workspace" data-action="workspace" data-value="2" aria-label="Workspace 2">2</button><button class="workspace" data-action="workspace" data-value="3" aria-label="Workspace 3">3</button><span class="bar-divider"></span><button class="bar-search" data-route="launcher" aria-label="Search apps"><span data-icon="search"></span></button></nav>
+  <nav class="desktop-bar right" aria-label="Desktop shortcuts"><button data-route="wifi" aria-label="Wi-Fi"><span data-icon="wifi"></span></button><button data-route="inbox" aria-label="Notifications"><span data-icon="bell"></span><i class="notification-dot"></i></button></nav>
+  <div id="island" class="island" data-mode="panel" data-shape="notch" aria-label="Dynamic Island">
+    <div id="island-surface" class="island-surface"><svg id="silhouette" aria-hidden="true"><path id="silhouette-path"></path></svg></div>
+    <div id="clock-anchor" class="clock-anchor"><button id="clock-button" class="clock-button" aria-label="Open Controls"><span id="clock-time">09:41</span><span class="clock-period">AM</span></button></div>
+    <div id="left-lane" class="lane lane-left"></div><div id="right-lane" class="lane lane-right"></div>
+    <div id="island-content" class="island-content"></div>
+  </div>
+  <div id="desktop-widgets" class="desktop-widgets"></div>
+  <div class="desktop-caption"><span class="caption-line"></span><span id="desktop-context">A little space. A lot of possibility.</span></div>
+  <div id="toast" class="toast" role="status"></div>
+  <div class="sample-stamp">LOCAL DESIGN PREVIEW · SAMPLE DATA</div>
+</section>
+<section class="review-bar" aria-label="Preview controls"><div class="review-copy"><strong id="view-name">Control centre</strong><span id="view-caption">Your full setup, together again.</span></div><div class="scene-switch" aria-label="Island scenarios"><button data-scene="rest">Rest</button><button data-scene="music">Music</button><button data-scene="controls" class="selected">Controls</button><button data-scene="voice">Thursday</button></div><div class="review-tools"><label class="route-picker"><span class="sr-only">Explore every view</span><select id="route-picker"><option value="">All views</option></select></label><button class="review-icon" data-action="replay" aria-label="Replay expansion"><span data-icon="replay"></span></button><button class="review-icon" data-action="guide" aria-label="Keyboard shortcuts and guide"><span data-icon="help"></span></button></div></section>
+<footer class="reference-footer"><span><span class="tiny-key">click</span> Open Controls <span class="footer-dot">·</span> <span class="tiny-key">hover</span> Glance <span class="footer-dot">·</span> <span class="tiny-key">esc</span> Back to your desktop</span><span>Clock stays. Everything else moves around it.</span></footer>
+</main>
+<dialog id="guide"><form method="dialog"><button class="icon-button guide-close" aria-label="Close guide">×</button></form><p class="guide-kicker">Sumi / Interactive reference</p><h1>Explore your whole desktop.</h1><p>This is a working design prototype. Every device, song, message and action here is simulated; your live desktop stays untouched.</p><div class="guide-grid"><div><strong>Start with the island</strong><p>Click the time for your complete Controls hub. Hover a resting island for a quick glance. Escape or click the wallpaper to close.</p></div><div><strong>Try a conversation</strong><p>Choose Thursday below the desktop to watch listening, the words it heard, and a response. Open the full conversation to edit or approve a task.</p></div><div><strong>Visit every corner</strong><p>Use All views to jump anywhere, or navigate naturally through Controls. Settings changes persist during this preview.</p></div><div><strong>Use the keyboard</strong><p><kbd>Ctrl K</kbd> search · <kbd>Alt ←</kbd> back · <kbd>Esc</kbd> close. Tab through controls and press Enter to activate.</p></div></div><button class="btn primary" data-action="guide-close">Explore Sumi</button></dialog>
+<script src="ui.js"></script><script src="device-pages.js"></script><script src="desktop-pages.js"></script><script src="conversation-pages.js"></script><script src="app.js"></script>
+</body></html>

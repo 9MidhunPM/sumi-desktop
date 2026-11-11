@@ -21,7 +21,7 @@ These are actual nested Hyprland captures using distributable wallpapers and syn
 - Screenshots, annotation, recording, lock, idle handling, and adaptive or reduced motion.
 - An installer with explicit collision consent, verified backups, updates, rollback, and ownership-aware removal.
 
-Thursday and Codex integrations are excluded. MIT-licensed source and original wallpapers; the Arch mark retains its [separate license](assets/README.md).
+The optional Thursday adapter connects to a separately configured backend; companion code and the private Codex integration are excluded. MIT-licensed source and original wallpapers; the Arch mark retains its [separate license](assets/README.md).
 
 ## Before you install
 
@@ -84,36 +84,45 @@ See [the changelog](CHANGELOG.md), [contributing](CONTRIBUTING.md), and [securit
 
 ## Dynamic island
 
-The center island has an opaque black surface and a neutral gray border. Click
-it to open compact Home, Inbox, Music, Controls and Thursday pages. Two-finger
-horizontal scrolling works anywhere on the expanded island; a short gesture
-switches one tab. Ctrl+Tab and Ctrl+Shift+Tab provide keyboard navigation.
-Reduced-motion and battery settings also apply to its transitions. The Calendar
-button on Home opens a separate month view inside the island, with previous/next
-month, Today and Back to Home controls. Calendar adds no tab or slide destination.
+The island keeps its opaque black surface, neutral border and compact control layout.
+Search and Settings open contextual pages inside the same morphing surface; there is
+no main tab strip or separate Home/Desktop landing page. Clicking the island header always opens the main controls. Escape closes the
+whole island from any subpage; the Back button provides internal navigation. Existing launcher, clipboard,
+appearance and settings shortcuts enter the matching island page directly.
+
+Notifications, music, Wi-Fi, Bluetooth, sound devices, capture, calendar, focus,
+system usage, session actions, wallpaper and widget settings are reachable inside
+the island. Wi-Fi passwords and Bluetooth PIN/passkey requests stay in their
+respective pages. Session actions retain explicit confirmation. Clipboard history
+appears only when requested; pause, delete, clear and copy remain available there.
+Search and unfinished widget edits survive internal navigation.
 
 Notifications, brightness, volume, connectivity and battery alerts share a
-prioritized preview. Notifications show no unread indicator dot. Dismiss a card
-from the preview, Home or Inbox to remove it, or use Inbox to clear all and mark
-all read. All sender actions are available directly in the island, and long
-previews scroll while keeping dismissal visible. Inbox marks visible entries
-read. Music supports player selection, playback and seeking. Controls provides
-brightness, audio, connectivity, DND, night light and compact power profiles.
-The right-side settings button still opens the full original Quick Settings.
-The battery button opens island Controls. Appearance switches between a floating
-island and an attached notch.
+prioritized preview without switching the page you are using. Notification
+history marks visible entries read and supports sender-provided actions. Music
+supports source selection, transport, seeking and inline sound output selection.
+The contour changes with the task instead of opening a fixed-size panel. Focus,
+notifications and small device lists stay compact; music, search and richer tools
+receive the width and height they need. Search shrinks with its result count, and
+Thursday grows for conversation or voice settings. Long content remains bounded
+and scrollable. A single black silhouette grows from the compact island, without
+a separate popup shelf; content is measured at its destination width before the
+shape morphs. Reduced-motion changes are immediate, while battery mode uses
+shorter transitions.
 
-Use `desktopctl ipc island toggle`, `desktopctl ipc island open inbox` (or
-`home`, `media`, `controls`, `thursday`), and `desktopctl ipc island close`.
-The launcher also includes a Dynamic island action.
+Use `desktopctl ipc island toggle`, `desktopctl ipc island open controls` (or
+`inbox`, `media`, `thursday`, `launcher`, `appearance`), and
+`desktopctl ipc island close`. Legacy `home` and `desktop` routes resolve to
+Controls and Search. Appearance switches between floating island and attached notch.
 
-Thursday integration is optional. Without configuration, the desktop starts
-without that external project and its tab explains the unavailable state. See
-[Optional Thursday setup](shell/integrations/README.md) for environment settings
-and backend requirements. Thursday code, credentials and conversation history
-are not bundled. Configured replies expand as plain text with a Thursday sender
-label, and speech uses the music position's single measured waveform.
+Thursday is optional. Without configuration, it shows an unavailable state and
+starts no companion process. See [Optional Thursday setup](shell/integrations/README.md).
+The Sumi-owned adapter displays conversation history, streaming answers, voice
+controls and explicit approvals without opening a second chat window. Backend
+code, credentials and private conversation data are not bundled. Speech uses a
+measured particle visualization; it does not claim to measure physical speakers.
 
-Region selection compacts the island while keeping its status visible. Escape cancels normally; stalled selectors time out, are reaped, and release the interface so capture can be retried.
-
-Home and Controls show live CPU utilization, used/total RAM, and used/total root storage. One shared observer runs only while those pages are visible; unavailable readings are shown honestly. The control page ends with compact battery and power profiles.
+Region selection, annotation and the wallpaper file picker temporarily release
+island input to the native tool and restore the originating page afterward.
+Cancellation, stale callbacks and failures preserve the navigation boundary.
+Launching an application or selecting another window intentionally transfers focus.
