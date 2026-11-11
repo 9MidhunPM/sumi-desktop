@@ -246,8 +246,8 @@ Scope {
         return Quickshell.screens.find(s => focused && s.name === focused.name) || Quickshell.screens[0] || null;
     }
     // Discovery belongs to the selected panel, never a fading cached instance.
-    Binding { target: S.Network; property: "discoveryRequested"; value: !desktopRoot.nativeDialogOpen && desktopRoot.islandOpen && desktopRoot.islandRoute === "wifi" }
-    Binding { target: S.Bluetooth; property: "discoveryRequested"; value: !desktopRoot.nativeDialogOpen && desktopRoot.islandOpen && desktopRoot.islandRoute === "bluetooth" }
+    Binding { target: S.Network; property: "discoveryRequested"; value: !desktopRoot.nativeDialogOpen && ((desktopRoot.panel === "settings" && desktopRoot.settingsSection === "wifi") || (desktopRoot.islandOpen && desktopRoot.islandRoute === "wifi")) }
+    Binding { target: S.Bluetooth; property: "discoveryRequested"; value: !desktopRoot.nativeDialogOpen && ((desktopRoot.panel === "settings" && desktopRoot.settingsSection === "bluetooth") || (desktopRoot.islandOpen && desktopRoot.islandRoute === "bluetooth")) }
     Connections {
         target: Quickshell
         function onScreensChanged() {
@@ -331,6 +331,7 @@ Scope {
     }
     function chooseScreen(preferred) { activeScreen = resolveScreen(preferred); }
     function open(name, screen) {
+        if (name === "settings") return openSettings("", screen);
         const aliases = {launcher:"launcher", files:"files", clipboard:"clipboard", appearance:"appearance", widgets:"widgets",
             settings:"controls", calendar:"calendar", media:"media", notifications:"inbox", pomodoro:"pomodoro", help:"help", power:"power", codex:"codex"};
         if (!Object.prototype.hasOwnProperty.call(aliases, name)) return false;
@@ -338,10 +339,18 @@ Scope {
         return openIsland(route, screen, false, ["launcher", "files", "clipboard"].indexOf(route) >= 0);
     }
     function openSettings(section, screen) {
-        settingsSection = section || "";
-        return openIsland(["wifi", "bluetooth", "audio", "capture"].indexOf(section) >= 0 ? section : "controls", screen, false);
+        if (nativeDialogOpen) return false;
+        const target = resolveScreen(screen);
+        if (!target) return false;
+        dismissIslands(null, false);
+        activeScreen = target;
+        settingsSection = ["wifi", "bluetooth", "audio", "capture"].indexOf(section) >= 0 ? section : "";
+        panel = "settings";
+        activationSerial++;
+        return true;
     }
     function toggle(name, screen) {
+        if (name === "settings") { if (panel === "settings" && activeScreen === resolveScreen(screen)) close(); else openSettings("", screen); return; }
         const aliases = {settings:"controls",notifications:"inbox"};
         const route = aliases[name] || name;
         const window = islandWindows.find(candidate => candidate && candidate.modelData === resolveScreen(screen));
@@ -422,5 +431,6 @@ Scope {
     }
     // Native assistant integration ends.
     Variants { model: Quickshell.screens; Bar { app: desktopRoot } }
+    Variants { model: Quickshell.screens; Overlay { app: desktopRoot } }
     DesktopWidgets { id: widgetSurface; modelData: desktopRoot.widgetScreen; app: desktopRoot }
 }

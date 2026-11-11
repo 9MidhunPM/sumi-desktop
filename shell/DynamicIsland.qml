@@ -281,7 +281,7 @@ PanelWindow {
         onRecordingRequested: root.selectCapture(false, true)
         onEventDismissRequested: S.IslandEvents.dismissCurrent()
         onThursdayFullChatRequested: root.selectSection("thursday")
-        onHeaderClicked: root.togglePin()
+        onHeaderClicked: { if (typeof root.app.toggle === "function") root.app.toggle("settings", root.modelData); else root.togglePin(); }
         onDismissRequested: root.dismiss(true)
         onHoverChanged: hovered => { if (hovered) root.enterHover(); else root.leaveHover(); }
         onCalendarRequested: root.selectSection("calendar")

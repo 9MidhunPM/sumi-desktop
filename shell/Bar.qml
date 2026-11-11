@@ -155,7 +155,7 @@ PanelWindow {
                     leftPadding: 6; rightPadding: 6
                     TextMetrics { id: batteryWidth; font: batteryButton.font; text: "100%" }
                     tooltip: "Battery · " + Math.round(S.Battery.percent) + "% · " + S.Battery.timeLabel
-                    onClicked: app.openIsland("controls", bar.screen, true)
+                    onClicked: app.openSettings("", bar.screen)
                 }
                 C.ActionButton {
                     objectName: "barSettings"

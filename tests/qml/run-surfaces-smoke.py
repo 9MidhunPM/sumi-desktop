@@ -82,7 +82,7 @@ ShellRoot {
                 fakeApp.panel = "";
             }
             mouseClick(battery, battery.width / 2, battery.height / 2);
-            assertTrue(fakeApp.panel === "island" && fakeApp.settingsSection === "controls", "Battery still opens island Controls");
+            assertTrue(fakeApp.panel === "settings" && fakeApp.settingsSection === "", "Battery opens the standalone controls overview");
             fakeApp.panel = "";
             mouseClick(settings, settings.width / 2, settings.height / 2);
             assertTrue(fakeApp.panel === "settings", "Right settings icon opens the original control panel");

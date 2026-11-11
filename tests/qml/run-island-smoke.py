@@ -173,6 +173,10 @@ ShellRoot {
                 check(island.pinned && !island.previewPinned && island.section === "controls", "Header opens full controls after " + route);
                 keyClick(Qt.Key_Escape); wait(30); assertClosed("Escape from main controls");
             }
+            fakeApp.nativeDialogOpen = true;
+            island.visual.headerClicked(); wait(20);
+            check(!island.pinned, "Header fallback without app.toggle respects native dialog guard");
+            fakeApp.nativeDialogOpen = false;
             for (const mode of [false, true]) {
                 Settings.islandNotch = mode; island.dismiss(); wait(10); center();
                 check(island.notch === mode && Math.abs(island.bodyHeight - (mode ? 46 : 42)) < .5, "Notch changes connector height");
