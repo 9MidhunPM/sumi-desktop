@@ -84,7 +84,7 @@ PanelWindow {
             anchors.verticalCenter: parent.verticalCenter
             width: leftRow.implicitWidth + (bar.compact ? 12 : 16)
             height: Theme.barHeight - 2
-            C.Surface { anchors.fill: parent; radius: height / 2; color: Theme.barBackground }
+            C.Surface { anchors.fill: parent; radius: IslandStyle.controlRadius; color: Theme.barBackground }
             RowLayout {
                 id: leftRow
                 anchors.centerIn: parent
@@ -123,7 +123,7 @@ PanelWindow {
             anchors.verticalCenter: parent.verticalCenter
             width: rightRow.implicitWidth + 12
             height: Theme.barHeight - 2
-            C.Surface { anchors.fill: parent; radius: height / 2; color: Theme.barBackground }
+            C.Surface { anchors.fill: parent; radius: IslandStyle.controlRadius; color: Theme.barBackground }
             RowLayout {
                 id: rightRow
                 anchors.centerIn: parent
@@ -151,7 +151,7 @@ PanelWindow {
                     iconName: S.Battery.charging ? "battery-charging" : "battery"; iconSize: 16
                     iconSpacing: 5
                     textColor: S.Battery.percent < 20 ? Theme.accentWarn : Theme.textMain
-                    quiet: true; padding: 6; implicitWidth: batteryWidth.width + iconSize + iconSpacing + 12; implicitHeight: 28
+                    quiet: true; padding: 6; implicitWidth: Math.ceil(batteryWidth.advanceWidth) + iconSize + iconSpacing + 12; implicitHeight: 28
                     leftPadding: 6; rightPadding: 6
                     TextMetrics { id: batteryWidth; font: batteryButton.font; text: "100%" }
                     tooltip: "Battery · " + Math.round(S.Battery.percent) + "% · " + S.Battery.timeLabel
