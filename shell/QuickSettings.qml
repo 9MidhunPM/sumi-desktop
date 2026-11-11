@@ -335,7 +335,7 @@ C.Surface {
                     RowLayout {
                         Layout.fillWidth: true
                         C.Label { color: root.foreground; text: S.Network.wifiEnabled ? "Available networks" : "Wi-Fi is off"; font.weight: Font.Medium; Layout.fillWidth: true }
-                        C.QuickButton { island: root.embedded; id: wifiToggle; text: S.Network.wifiEnabled ? "Turn off" : "Turn on"; selected: S.Network.wifiEnabled; compact: true; enabled: S.Network.wifiAvailable; onClicked: S.Network.toggleWifi() }
+                        C.QuickButton { island: root.embedded; id: wifiToggle; objectName: "settingsWifiPageToggle"; text: S.Network.wifiEnabled ? "Turn off" : "Turn on"; selected: S.Network.wifiEnabled; compact: true; enabled: S.Network.wifiAvailable; onClicked: S.Network.toggleWifi() }
                     }
                     C.Label { visible: !S.Network.wifiAvailable || (S.Network.wifiEnabled && S.Network.networks.length === 0); text: !S.Network.wifiAvailable ? "No wireless adapter is available." : "Looking for nearby networks…"; color: root.secondary; Layout.fillWidth: true; wrapMode: Text.Wrap }
                     C.Label { visible: S.Network.captivePortal; text: "This network needs a browser sign-in."; color: Theme.accentWarn; Layout.fillWidth: true; wrapMode: Text.Wrap }
@@ -392,7 +392,7 @@ C.Surface {
                     RowLayout {
                         Layout.fillWidth: true
                         C.Label { color: root.foreground; text: S.Bluetooth.enabled ? "Your devices" : "Bluetooth is off"; font.weight: Font.Medium; Layout.fillWidth: true }
-                        C.QuickButton { island: root.embedded; id: bluetoothToggle; text: S.Bluetooth.enabled ? "Turn off" : "Turn on"; selected: S.Bluetooth.enabled; compact: true; enabled: S.Bluetooth.available; onClicked: S.Bluetooth.toggle() }
+                        C.QuickButton { island: root.embedded; id: bluetoothToggle; objectName: "settingsBluetoothPageToggle"; text: S.Bluetooth.enabled ? "Turn off" : "Turn on"; selected: S.Bluetooth.enabled; compact: true; enabled: S.Bluetooth.available; onClicked: S.Bluetooth.toggle() }
                     }
                     C.Label { visible: !S.Bluetooth.available || (S.Bluetooth.enabled && S.Bluetooth.devices.length === 0); text: !S.Bluetooth.available ? "No Bluetooth adapter is available." : "Looking for nearby devices…"; color: root.secondary; Layout.fillWidth: true; wrapMode: Text.Wrap }
                     Repeater {

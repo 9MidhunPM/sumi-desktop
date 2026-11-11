@@ -71,8 +71,8 @@ Item {
             anchors.margins: 11
             columns: 2
             spacing: 6
-            CircleControl { width: (connectivity.width - 28) / 2; height: (connectivity.height - 28) / 2; objectName: "islandControlWifi"; title: "Wi-Fi"; iconName: "wifi"; selected: S.Network.wifiEnabled; enabled: S.Network.wifiAvailable; onClicked: S.Network.toggleWifi(); onPressAndHold: root.settingsRequested("wifi") }
-            CircleControl { width: (connectivity.width - 28) / 2; height: (connectivity.height - 28) / 2; objectName: "islandControlBluetooth"; title: "Bluetooth"; iconName: "bluetooth"; selected: S.Bluetooth.enabled; enabled: S.Bluetooth.available; onClicked: S.Bluetooth.toggle(); onPressAndHold: root.settingsRequested("bluetooth") }
+            CircleControl { width: (connectivity.width - 28) / 2; height: (connectivity.height - 28) / 2; objectName: "islandControlWifi"; title: "Wi-Fi"; accessibleTitle: "Open Wi-Fi settings" + (S.Network.wifiAvailable ? "" : ", unavailable"); iconName: "wifi"; selected: S.Network.wifiEnabled; onClicked: root.settingsRequested("wifi") }
+            CircleControl { width: (connectivity.width - 28) / 2; height: (connectivity.height - 28) / 2; objectName: "islandControlBluetooth"; title: "Bluetooth"; accessibleTitle: "Open Bluetooth settings" + (S.Bluetooth.available ? "" : ", unavailable"); iconName: "bluetooth"; selected: S.Bluetooth.enabled; onClicked: root.settingsRequested("bluetooth") }
             CircleControl { width: (connectivity.width - 28) / 2; height: (connectivity.height - 28) / 2; objectName: "islandControlDnd"; title: "DND"; accessibleTitle: "Do Not Disturb"; iconName: "bell-off"; selected: S.Notifications.dnd; activeColor: "#7656d6"; onClicked: S.Notifications.toggleDnd() }
             CircleControl { width: (connectivity.width - 28) / 2; height: (connectivity.height - 28) / 2; objectName: "islandControlNight"; title: "Night light"; iconName: "moon"; selected: S.NightLight.active; activeColor: "#b47b35"; enabled: S.NightLight.available && !S.NightLight.busy; onClicked: S.NightLight.toggle() }
         }

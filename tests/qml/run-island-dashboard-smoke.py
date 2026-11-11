@@ -41,6 +41,8 @@ ShellRoot {
             anchors.margins: 16
             app: fakeApp
             active: true
+            property string lastSettings: ""
+            onSettingsRequested: section => lastSettings = section
             onSectionRequested: section => dashboard.section = section
         }
         TestCase {
@@ -128,9 +130,20 @@ ShellRoot {
                 const dndControl = findChild(dashboard, "islandControlDnd");
                 check(wifiControl && bluetoothControl && nightControl && dndControl, "Original connectivity controls exist");
                 mouseClick(wifiControl, wifiControl.width / 2, wifiControl.height / 2);
-                check(!S.Network.wifiEnabled, "Wi-Fi click changes service state");
+                check(dashboard.lastSettings === "wifi" && S.Network.wifiEnabled, "Wi-Fi pointer opens its page without toggling");
+                dashboard.lastSettings = "";
+                bluetoothControl.forceActiveFocus(Qt.TabFocusReason); keyClick(Qt.Key_Space);
+                check(dashboard.lastSettings === "bluetooth" && S.Bluetooth.enabled, "Bluetooth keyboard activation opens its page without toggling");
+                dashboard.lastSettings = "";
+                S.Network.wifiAvailable = false;
+                mouseClick(wifiControl, wifiControl.width / 2, wifiControl.height / 2);
+                check(dashboard.lastSettings === "wifi" && S.Network.wifiEnabled, "Unavailable Wi-Fi can open its status without toggling");
+                S.Network.wifiAvailable = true;
+                dashboard.lastSettings = "";
+                S.Bluetooth.available = false;
                 mouseClick(bluetoothControl, bluetoothControl.width / 2, bluetoothControl.height / 2);
-                check(!S.Bluetooth.enabled, "Bluetooth click changes service state");
+                check(dashboard.lastSettings === "bluetooth" && S.Bluetooth.enabled, "Unavailable Bluetooth can open its status without toggling");
+                S.Bluetooth.available = true;
                 mouseClick(nightControl, nightControl.width / 2, nightControl.height / 2);
                 check(S.NightLight.active, "Night light click changes service state");
                 dndControl.forceActiveFocus(Qt.TabFocusReason); keyClick(Qt.Key_Space);

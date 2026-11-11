@@ -14,6 +14,10 @@ ShellRoot {
  function check(value, message) { if (!value) { console.error("SESSION_FAILED",message); Qt.exit(1); throw new Error(message); } }
  Timer { interval: 1; running: true; onTriggered: {
   check(session.route === "controls", "Single useful root instead of Home landing");
+  for (const device of ["wifi", "bluetooth"]) {
+   session.navigate(device);
+   check(session.route === device && session.back() && session.route === "controls", "Device Back returns to original Controls: " + device);
+  }
   session.navigate("media"); session.navigate("audio");
   check(session.back() && session.route === "media", "Sound Back returns to originating music page");
   session.navigate("appearance"); session.navigate("widgets");
