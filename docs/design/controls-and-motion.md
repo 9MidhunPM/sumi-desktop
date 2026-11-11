@@ -1,16 +1,17 @@
 # Controls and motion
 
-Sumi opens its contextual Controls workspace from the island clock. The hub
-contains connectivity, notification and night-light toggles, power profiles,
-media, brightness and volume, with shortcuts to the rest of the desktop tools.
-Device details and settings open in the same workspace. The island clock remains
-in a stable position while the surrounding workspace changes.
+Clicking the island clock opens the standalone Control Center, a compact glass
+panel anchored on the right. Its bar settings and battery buttons open the same
+panel, while the Wi-Fi and sound buttons open their device pages. The panel has
+connectivity and notification toggles, horizontal brightness and volume controls,
+power profiles, and capture actions. Search and the other island workspaces
+remain available; the island clock retains its stable position.
 
 The island uses a black surface and the other desktop panels retain their
 wallpaper-aware glass. Shared metrics keep spacing, rounded corners and primary
-action sizes consistent. Controls stack at narrow widths and long pages scroll.
-Keyboard focus remains visible; Escape closes the island and Back returns through
-workspace navigation.
+action sizes consistent. Controls adapt to narrow widths and long pages scroll.
+Keyboard focus remains visible; Escape closes the active panel, and Back returns
+through island workspace navigation.
 
 Island geometry, media, content and controls use shared motion durations. The
 existing battery and reduced-motion settings remain authoritative. The optional
