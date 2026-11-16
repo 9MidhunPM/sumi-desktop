@@ -37,6 +37,7 @@ Replace `DP-1` with an output you actually have. Avoid copying another machine's
 | Super+Shift+Space | Find files |
 | Super+Enter / Super+E / Super+B | Terminal / files / browser |
 | Super+N | Notification history |
+| Super+Tab | Workspace overview |
 | Super+comma | Quick settings |
 | Super+Ctrl+V | Clipboard history |
 | Super+Shift+T | Appearance |
@@ -65,6 +66,10 @@ Replace `DP-1` with an output you actually have. Avoid copying another machine's
 The hardware volume, mute, microphone, brightness, and media keys use their corresponding system tools. Missing hardware disables its controls or leaves that key without a device to change.
 
 In the launcher, **Ctrl+Tab** and **Ctrl+Shift+Tab** change tabs; **Alt+1–5** chooses a tab directly. App and action ranking learns successful selections locally. File search looks at visible folders in your home, skips hidden and dependency folders, and has a time/result limit. It does not index file contents.
+
+The workspace overview supports arrow-key navigation, Enter to open the selected
+workspace, and Escape to dismiss it. Scrolling changes the selection; clicking
+a workspace or window opens it.
 
 ## Appearance, widgets, and defaults
 

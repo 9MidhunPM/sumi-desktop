@@ -8,11 +8,11 @@ A glass desktop for **Arch Linux + Hyprland**, built with Quickshell. Quiet surf
 | --- | --- |
 | ![Keyboard launcher with a synthetic Sumi Notes application](docs/screenshots/launcher.png) | ![Quick settings with unavailable hardware and a synthetic brightness fixture](docs/screenshots/quick-settings.png) |
 
-These are actual nested Hyprland captures using distributable wallpapers and synthetic content. Brightness is a test fixture; physical devices were isolated. See [verification](docs/verification.md) for what was exercised.
+These are earlier nested Hyprland captures using distributable wallpapers and synthetic content; the current interface may differ. Brightness is a test fixture; physical devices were isolated. See [verification](docs/verification.md) for what was exercised.
 
 ## What you get
 
-- A glass bar, workspace controls, system tray, and anchored panels.
+- A glass bar, workspace overview, and anchored panels.
 - A searchable launcher with local learning, files, clipboard history, and window navigation.
 - Audio, network, Bluetooth, brightness, night-light, and power controls that handle missing hardware.
 - Notification history, Do Not Disturb, MPRIS media controls, and a focus timer.
@@ -82,6 +82,13 @@ Remove `--dry-run` when you want rollback or uninstall to run. Updates retain a 
 See [the changelog](CHANGELOG.md), [contributing](CONTRIBUTING.md), and [security reporting](SECURITY.md). Report reproducible problems through the repository's issue forms, without attaching private state or backups.
 
 
+## Workspace overview
+
+Press **Super+Tab** to open the workspace overview. Use the arrow keys to
+select a workspace, Enter to open it, and Escape to close the overview. The
+grid shows windows and scales to fit the display. Pointer scrolling changes
+the selection; click a workspace or window to open it.
+
 ## Dynamic island
 
 The island keeps its opaque black surface, neutral border and compact control layout.
@@ -114,8 +121,9 @@ receive the width and height they need. Search shrinks with its result count, an
 Thursday grows for conversation or voice settings. Long content remains bounded
 and scrollable. A single black silhouette grows from the compact island, without
 a separate popup shelf; content is measured at its destination width before the
-shape morphs. Reduced-motion changes are immediate, while battery mode uses
-shorter transitions.
+shape morphs. Spring motion carries the contour between destinations; content
+reveals behind it, and artwork moves between compact and expanded music views.
+Reduced-motion changes are immediate, while battery mode uses calmer transitions.
 
 Use `desktopctl ipc island toggle`, `desktopctl ipc island open controls` (or
 `inbox`, `media`, `thursday`, `launcher`, `appearance`), and
