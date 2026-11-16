@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Services.Pipewire as Pw
+import Quickshell.Hyprland
 
 Singleton {
     id: root
@@ -11,14 +12,24 @@ Singleton {
     readonly property var source: Pw.Pipewire.defaultAudioSource
     readonly property bool hasOutput: ready && !!sink && !!sink.audio
     readonly property bool hasInput: ready && !!source && !!source.audio
-    readonly property string outputName: hasOutput ? sink.description || sink.name : "No output device"
-    readonly property string inputName: hasInput ? source.description || source.name : "No microphone"
+    readonly property string outputName: hasOutput ? label(sink) : "No output device"
+    readonly property string inputName: hasInput ? label(source) : "No microphone"
+    // PipeWire's node.nick is the short name people recognise ("Headphones", "HDMI 1").
+    function label(node: var): string { return node ? String(node.nickname || node.description || node.name || "") : ""; }
+    function isDisplayAudio(node: var): bool { return !!node && /HDMI|DisplayPort/i.test(String(node.nickname || "") + " " + String(node.description || "")); }
+    function deviceIcon(node: var): string {
+        const name = label(node).toLowerCase();
+        return isDisplayAudio(node) ? "display" : /head|ear|bud/.test(name) ? "headphones" : node && !node.isSink ? "microphone" : "volume";
+    }
+    // Display audio only carries sound while an external screen is attached.
+    readonly property bool externalDisplay: Hyprland.monitors.values.some(monitor => !/^eDP/.test(String(monitor.name || "")))
     readonly property real volume: sink && sink.audio ? sink.audio.volume : 0
     readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
     readonly property real sourceVolume: source && source.audio ? source.audio.volume : 0
     readonly property bool sourceMuted: source && source.audio ? source.audio.muted : false
     readonly property var sinks: Pw.Pipewire.nodes.values.filter(node => node.audio && node.isSink && !node.isStream)
     readonly property var sources: Pw.Pipewire.nodes.values.filter(node => node.audio && !node.isSink && !node.isStream)
+    readonly property var visibleSinks: sinks.filter(node => !isDisplayAudio(node) || externalDisplay || node === sink)
 
     // PipeWire nodes must be tracked for audio controls to remain bound.
     Pw.PwObjectTracker { objects: [root.sink, root.source].filter(node => node !== null) }

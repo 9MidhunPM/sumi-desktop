@@ -21,6 +21,12 @@ Slider {
     focusPolicy: Qt.StrongFocus
     Accessible.name: label
     opacity: enabled ? 1 : 0.4
+    // The value stays exact; only its picture eases when the service changes it.
+    property real shownPosition: position
+    Behavior on shownPosition { enabled: !control.pressed; NumberAnimation { duration: Motion.control * 2; easing.type: Easing.OutCubic } }
+    // Pressing lifts the slider slightly, the way Control Center sliders respond.
+    scale: Theme.effectiveReducedMotion || horizontalLayout ? 1 : pressed ? 1.035 : 1
+    Behavior on scale { NumberAnimation { duration: Motion.control * 2; easing.type: Easing.OutBack } }
     background: Item {
         width: control.width
         height: control.height
@@ -34,7 +40,7 @@ Slider {
                 onHeightChanged: requestPaint()
                 Connections {
                     target: control
-                    function onPositionChanged() { track.requestPaint(); }
+                    function onShownPositionChanged() { track.requestPaint(); }
                     function onVisualFocusChanged() { track.requestPaint(); }
                     function onPressedChanged() { track.requestPaint(); }
                 }
@@ -49,7 +55,7 @@ Slider {
                     c.fillStyle = control.pressed ? "#36373d" : "#292a2f"; c.fill();
                     c.save(); c.clip();
                     c.fillStyle = "#f6f6f8";
-                    c.fillRect(0,height*(1-control.position),width,height*control.position);
+                    c.fillRect(0,height*(1-control.shownPosition),width,height*control.shownPosition);
                     c.restore();
                     if (control.visualFocus) { c.lineWidth=3; c.strokeStyle="#ffffff"; c.stroke(); }
                 }
@@ -57,9 +63,10 @@ Slider {
             Label {
                 anchors { top: parent.top; horizontalCenter: parent.horizontalCenter; topMargin: 15 }
                 text: Math.round(control.value * 100) + "%"
-                font.pixelSize: 11
-                font.weight: Font.Medium
-                color: control.position > .85 ? "#393940" : "#d7d7dd"
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                font.features: IslandStyle.figures
+                color: control.shownPosition > .85 ? "#393940" : "#d7d7dd"
             }
             Button {
                 anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: 8 }
@@ -80,7 +87,7 @@ Slider {
                 Icon { anchors.fill: parent; name: control.iconName; size: 26; color: "#f6f6f8" }
                 Item {
                     id: filledGlyph
-                    y: Math.max(0, Math.min(glyph.height, 47 - control.height * control.position))
+                    y: Math.max(0, Math.min(glyph.height, 47 - control.height * control.shownPosition))
                     width: glyph.width
                     height: glyph.height - y
                     clip: true

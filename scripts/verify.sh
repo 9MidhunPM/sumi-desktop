@@ -4,6 +4,7 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 export PYTHONPATH="$PWD/lib${PYTHONPATH:+:$PYTHONPATH}"
 python3 -m unittest discover -s tests -v
 python3 tests/qml/run-services-smoke.py
+python3 tests/qml/run-hyprland-actions-smoke.py
 python3 tests/qml/run-widget-services-smoke.py
 python3 tests/qml/run-artwork-smoke.py
 python3 tests/qml/run-island-events-smoke.py
@@ -16,6 +17,7 @@ python3 tests/qml/run-system-stats-smoke.py
 python3 tests/qml/run-island-dashboard-smoke.py
 python3 tests/qml/run-island-session-smoke.py
 python3 tests/qml/run-island-workspace-smoke.py
+python3 tests/qml/run-overview-smoke.py
 python3 tests/qml/run-island-open-target-smoke.py
 python3 tests/qml/run-island-adaptive-smoke.py
 python3 tests/qml/run-island-natural-size-smoke.py
@@ -28,6 +30,7 @@ python3 tests/qml/run-island-calendar-smoke.py
 python3 tests/qml/run-island-tabs-smoke.py
 python3 tests/qml/run-island-thursday-smoke.py
 python3 tests/qml/run-island-thursday-bridge-smoke.py
+python3 tests/qml/run-thursday-restart-smoke.py
 python3 tests/qml/run-island-assistant-output-smoke.py
 python3 tests/qml/run-island-now-playing-smoke.py
 python3 tests/qml/run-ui-smoke.py

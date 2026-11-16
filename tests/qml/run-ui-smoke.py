@@ -58,6 +58,8 @@ def main():
         work = Path(temporary)
         config = work / 'shell'
         shutil.copytree(repo / 'shell', config)
+        media_fixture = config / "services/Media.qml"
+        media_fixture.write_text(media_fixture.read_text().replace("readonly property var players: Mp.Mpris.players.values", "property var players: []"))
         adapt = runpy.run_path(str(repo / 'tests/qml/run-island-smoke.py'))['adapt']
         path = config / 'DynamicIsland.qml'
         path.write_text(adapt(path.read_text()))
@@ -66,6 +68,7 @@ def main():
         source = (config / 'shell.qml').read_text().replace('import QtQuick\n', 'import QtQuick\nimport QtTest\n', 1)
         source = re.sub(r'^import "(?:ThursdayNative|CodexStatusModule)"[^\n]*\n', '', source, flags=re.M)
         source = re.sub(r'^    // Native assistant integration begins\..*?^    // Native assistant integration ends\.\n', '    QtObject { id: codexLoader; readonly property var item: null }\n    QtObject { id: thursdayLoader; readonly property var item: null }\n', source, flags=re.M | re.S)
+        source = re.sub(r'^    Variants \{\n        model: Quickshell\.screens\n        WorkspaceOverview \{.*?^    \}\n', '', source, flags=re.M | re.S)
         source = re.sub(r'^    Variants \{.*\n', '', source, flags=re.M)
         source = re.sub(r'^    DesktopWidgets \{.*\n', '    QtObject { id: widgetSurface }\n    QtObject { id: overlays; property var instances: [] }\n', source, flags=re.M)
         # The probe reads the existing Item through its public host alias.

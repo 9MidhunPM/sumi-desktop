@@ -12,14 +12,16 @@ h=m['HARNESS'].split('        function test_island() {')[0]+'''        function 
                 island.pin(previous);wait(250);island.dismiss();wait(250);
                 island.visual.headerClicked();
                 check(island.pinned && !island.previewPinned && island.section === "controls", "Header opens the full controls dashboard");
-                let lastHeight = island.bodyHeight, lastWidth = island.bodyWidth;
+                let lastHeight = island.targetHeight, lastWidth = island.targetWidth;
                 const header=child("islandUtilityHeader");
                 check(header !== null, "Contextual utility header is retained");
                 for(let frame=0;frame<24;frame++) {
                     wait(1);
-                    console.info("OPEN_GEOMETRY", previous, frame, island.bodyWidth, island.bodyHeight);
-                    check(island.bodyHeight >= lastHeight - .5 && island.bodyWidth >= lastWidth - .5, "Opening geometry must not overshoot then shrink");
-                    lastHeight = island.bodyHeight; lastWidth = island.bodyWidth;
+                    console.info("OPEN_GEOMETRY", previous, frame, island.bodyWidth, island.bodyHeight, island.targetWidth, island.targetHeight);
+                    // The contour spring may overshoot, but its destination must head straight to Controls.
+                    check(island.targetHeight >= lastHeight - .5 && island.targetWidth >= lastWidth - .5, "Opening destination must not detour through another shape");
+                    check(island.bodyHeight <= island.targetHeight * 1.08 + 1 && island.bodyWidth <= island.targetWidth * 1.08 + 1, "Opening overshoot stays within the spring envelope");
+                    lastHeight = island.targetHeight; lastWidth = island.targetWidth;
                     const workspace=child("islandDashboardLoader").item;
                     check(island.section==="controls" && workspace.resolvedRoute==="controls","Explicit promotion opens controls from its first visible frame");
                     check(workspace.currentPage && workspace.currentPage.route==="controls","Retained page content identifies the intended utility during expansion");

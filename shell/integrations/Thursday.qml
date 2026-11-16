@@ -21,6 +21,9 @@ Scope {
     property var currentScreen: Quickshell.screens[0] || null
     property bool connected: false
     property bool ready: false
+    // History/init snapshots restore data, never a request to present the UI.
+    // Only a fresh ordered interaction enables automatic output attention.
+    property bool presentationEnabled: false
     property bool busy: false
     property bool sendPending: false
     property string submittedDraft: ""
@@ -170,6 +173,8 @@ Scope {
         const allowed = ["message", "voice_start", "voice_stop", "voice_cancel", "task_cancel", "task_resume", "confirm",
             "playback", "audio_release", "audio_stop", "open_web", "settings", "health", "conversation", "voice_inputs", "voice_input", "voice_options", "voice_settings", "voice_preview"];
         if (!command || allowed.indexOf(command.command) < 0) return false;
+        if (["message", "voice_start", "voice_preview", "task_resume", "confirm"].indexOf(command.command) >= 0)
+            presentationEnabled = true;
         if (!transport.running) {
             errorText = configured ? "Thursday is disconnected. Open Thursday again to retry." : "Thursday is not configured. Set SUMI_THURSDAY_ROOT to enable it.";
             return false;
@@ -288,6 +293,7 @@ Scope {
             for (const item of data.messages || []) appendMessage(item.role, item.content);
             break;
         case "init":
+            presentationEnabled = false;
             historyRequest++; historyLoading = false; historyNeedsReload = false;
             historyModel.clear(); pendingRow = -1;
             for (const item of data.history || []) appendMessage(item.role, item.content);
@@ -299,6 +305,7 @@ Scope {
             if (data.voice_options) setVoiceOptions(data.voice_options);
             break;
         case "user_message":
+            presentationEnabled = true;
             // The ordered server echo confirms acceptance. HTTP/status events
             // alone must never erase a draft, including a newer edited draft.
             if (submittedComposerPrompt && String(data.content || "").trim() === submittedComposerPrompt) {
@@ -313,20 +320,24 @@ Scope {
             latestAnswer = ""; busy = true; sendPending = false;
             break;
         case "token":
+            presentationEnabled = true;
             latestAnswer += String(data.chunk || "");
             if (pendingRow < 0) { appendMessage("assistant", latestAnswer); pendingRow = historyModel.count - 1; }
             else historyModel.setProperty(pendingRow, "body", latestAnswer);
             break;
         case "final_response":
+            presentationEnabled = true;
             latestAnswer = String(data.content || latestAnswer);
             if (pendingRow >= 0) historyModel.setProperty(pendingRow, "body", latestAnswer);
             else appendMessage("assistant", latestAnswer);
             pendingRow = -1; busy = false; sendPending = false; activity = ""; refreshHistory(); break;
         case "status": busy = data.busy === true; if (!busy) sendPending = false; refreshHistory(); break;
         case "task_updated": switchConversation(data.conversation_id); task = data; activity = data.activity ? data.activity.label || "" : ""; refreshHistory(); break;
-        case "confirm_required": confirmations = confirmations.filter(item => item.id !== data.id).concat([data]); break;
+        case "confirm_required": presentationEnabled = true; confirmations = confirmations.filter(item => item.id !== data.id).concat([data]); break;
         case "confirm_resolved": confirmations = confirmations.filter(item => item.id !== data.id); break;
-        case "voice_state": setVoice(data); break;
+        case "voice_state":
+            if (["listening", "transcribing"].indexOf(data.state) >= 0) presentationEnabled = true;
+            setVoice(data); break;
         case "native_cursor": cursorState = data; break;
         case "native_playback":
             if (!data.generation_id || ["playing", "idle", "failed"].indexOf(data.state) < 0 || retiredGenerations.indexOf(data.generation_id) >= 0) break;

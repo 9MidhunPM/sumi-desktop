@@ -152,7 +152,8 @@ hl.bind(mainMod .. " + W", hl.dsp.window.close())
         self.assertNotIn("pkill qs", result)
         self.assertIn('hl.dsp.window.close()', result)
         self.assertIn("do-not-execute", result)
-        self.assertIn("ipc sumi toggle launcher", helper)
+        self.assertIn('hl.dsp.global("sumi:launcher")', helper)
+        self.assertIn('hl.dsp.global("sumi:overview")', helper)
         self.assertEqual(shortcuts.render_bindings(result, executable), (result, helper))
         # Compile generated output without executing any dispatcher or file.
         for content in (result, helper):

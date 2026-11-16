@@ -23,6 +23,7 @@ Singleton {
     readonly property int motionEnter: Motion.enter
     readonly property int motionExit: Motion.exit
     readonly property int motionControl: Motion.control
+    readonly property int motionBounce: Motion.bounce
     readonly property color bgPanel: glassInset
     readonly property color bgPanelStrong: glassFill
     readonly property color bgPlaying: color("bgPlaying", "#49333e")
@@ -51,7 +52,8 @@ Singleton {
     readonly property color glassRim: Qt.rgba(1, 1, 1, 0.26)
     readonly property color glassHighlight: Qt.rgba(1, 1, 1, 0.07)
     readonly property string font: typography.font || "Adwaita Sans"
-    readonly property string fontMono: typography.fontMono || "JetBrains Mono"
+    // One typeface everywhere: monospace roles share the interface font, with tabular figures where digits align.
+    readonly property string fontMono: font
     readonly property int fontSize: typography.fontSize || 13
     readonly property color barBackground: glassFill
     readonly property int barHeight: 34

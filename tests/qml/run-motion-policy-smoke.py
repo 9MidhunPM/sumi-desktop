@@ -45,6 +45,9 @@ ShellRoot {
                 check(Motion.mode === mode, "Expected mode " + mode + ", got " + Motion.mode);
                 check(Motion.enter === enter && Motion.exit === exit && Motion.control === control,
                       "Durations for " + mode + ": " + [Motion.enter, Motion.exit, Motion.control]);
+                const roles = mode === "reduced" ? [0, 0, 0] : mode === "battery" ? [80, 100, 120] : [140, 180, 280];
+                check(Motion.content === roles[0] && Motion.music === roles[1] && Motion.geometry === roles[2],
+                      "Shell transition roles for " + mode);
                 check(Motion.reduced === (mode === "reduced"), "Reduced policy flag");
                 check(Motion.expressive === (mode === "normal"), "Expressive policy flag");
                 until(() => Motion.appliedMode === mode, "Private controller received " + mode);

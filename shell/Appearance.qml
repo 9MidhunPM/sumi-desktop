@@ -145,7 +145,7 @@ C.Surface {
                 Layout.row: 0
                 Layout.column: 0
                 Layout.fillWidth: true
-                spacing: 4
+                spacing: Metrics.space1
                 C.Label { color: root.foreground; text: "Appearance"; font.pixelSize: root.compact ? 23 : 26; font.weight: Font.DemiBold; Layout.fillWidth: true }
                 C.Label { visible: !root.shortLayout; text: "A different atmosphere. One coherent desktop."; color: root.secondary; font.pixelSize: 13; Layout.fillWidth: true; wrapMode: Text.Wrap }
             }
@@ -243,7 +243,7 @@ C.Surface {
                             spacing: Metrics.space3
                             Image { id: preview; visible: !root.compact; Layout.fillWidth: true; Layout.minimumWidth: 0; Layout.preferredWidth: 250; Layout.maximumWidth: 250; Layout.preferredHeight: root.shortLayout ? 112 : 155; source: root.selected ? root.selected.thumbnail || root.selected.wallpaper : ""; fillMode: Image.PreserveAspectCrop; sourceSize: Qt.size(600,360) }
                             C.Label { color: root.foreground; text: root.selected ? root.selected.name : "Choose a theme"; font.pixelSize: 20; Layout.fillWidth: true; wrapMode: Text.Wrap }
-                            Row { spacing: 10; Repeater { model: root.selected ? [root.selected.colors.accentBlue,root.selected.colors.accentCyan,root.selected.colors.accentPink,root.selected.colors.accentWarn] : []; Rectangle { required property string modelData; width: 24; height: 24; radius: 12; color: modelData } } }
+                            Row { spacing: Metrics.space2; Repeater { model: root.selected ? [root.selected.colors.accentBlue,root.selected.colors.accentCyan,root.selected.colors.accentPink,root.selected.colors.accentWarn] : []; Rectangle { required property string modelData; width: 24; height: 24; radius: 12; color: modelData } } }
                             C.Label { text: "Primary accent"; color: root.secondary; font.pixelSize: 12 }
                             TextField {
                                 id: accent

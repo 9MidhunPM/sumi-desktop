@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Exercise real desktop cards, crop-aware placement, motion and demand gates."""
+import argparse
 import json
 import os
 from pathlib import Path
@@ -76,11 +77,11 @@ ShellRoot {
         function assertCardContrast(theme) {
             const panel = card("spotify");
             const bg = panel.panelColor;
-            const sheen = Theme.glassHighlight.a;
+            const sheen = panel.surface ? Theme.glassHighlight.a : 0;
             const composite = Qt.rgba((bg.r*bg.a+1-bg.a)*(1-sheen)+sheen,
                 (bg.g*bg.a+1-bg.a)*(1-sheen)+sheen, (bg.b*bg.a+1-bg.a)*(1-sheen)+sheen, 1);
             const b = luminance(composite);
-            for (const color of [panel.mainText,panel.secondaryText,panel.warningText,Theme.accentBlue,Theme.accentCyan,Theme.accentPink]) {
+            for (const color of [panel.mainText,panel.secondaryText,panel.accent]) {
                 const f = luminance(color);
                 check((Math.max(f,b)+0.05)/(Math.min(f,b)+0.05) >= 4.5, theme.id + " card text readable over white wallpaper detail");
             }
@@ -106,6 +107,31 @@ ShellRoot {
             });
             for (let a = 0; a < names.length; a++) for (let b = a + 1; b < names.length; b++)
                 check(!Layout.intersects(geo[names[a]], geo[names[b]], 0), label + " no overlap " + names[a] + "/" + names[b]);
+            assertPair(geo, label);
+        }
+        function assertPair(geo, label) {
+            check(Math.abs(geo.clock.x + geo.clock.width / 2 - geo.spotify.x - geo.spotify.width / 2) < 0.1, label + " paired horizontal centers");
+            const gap = 0; // Clock allocation already includes Eww's 14px bottom margin.
+            check(Math.abs(geo.spotify.y - geo.clock.y - geo.clock.height - gap) < 0.1, label + " player follows the clock");
+        }
+        function checkEnabledLayouts(theme, size, mode) {
+            const names = ["clock", "spotify", "priorities", "deadline"];
+            for (let combination = 0; combination < 16; combination++) {
+                const flags = {};
+                names.forEach((key, index) => flags[key] = !!(combination & (1 << index)));
+                const geo = Layout.layout(scene(theme), size[0], size[1], mode, flags);
+                const visible = names.filter(key => flags[key]);
+                visible.forEach(key => {
+                    const r = geo[key];
+                    check(Number.isFinite(r.x) && Number.isFinite(r.y) && r.width > 0 && r.height > 0,
+                        theme.id + " enabled finite " + combination + " " + key);
+                    check(r.x >= 0 && r.y >= 48 && r.x + r.width <= size[0] + 0.01 && r.y + r.height <= size[1] + 0.01,
+                        theme.id + " enabled bounds " + combination + " " + key);
+                });
+                for (let a = 0; a < visible.length; a++) for (let b = a + 1; b < visible.length; b++)
+                    check(!Layout.intersects(geo[visible[a]], geo[visible[b]], 0), theme.id + " enabled overlap " + combination);
+                if (flags.clock && flags.spotify) assertPair(geo, theme.id + " enabled " + combination);
+            }
         }
         function test_cards() {
             ready(() => S.Widgets.loaded && widgets.initialized, "Widgets initialized");
@@ -126,16 +152,16 @@ ShellRoot {
             const previous = findChild(widgets.contentItem, "desktopSpotifyPrevious");
             const next = findChild(widgets.contentItem, "desktopSpotifyNext");
             const title = findChild(widgets.contentItem, "desktopSpotifyTitle");
-            check(play.iconName === "pause" && play.width === play.height, "Playing uses a round pause control");
+            check(play.tooltip === "Pause Spotify" && play.width >= 32 && play.height >= 32, "Playing offers a usable Eww pause control");
             spotify.isPlaying = false; wait(1);
-            check(play.iconName === "play" && !S.WidgetMedia.progressActive, "Paused state offers play and releases progress demand");
+            check(play.tooltip === "Play Spotify" && !S.WidgetMedia.progressActive, "Paused state offers play and releases progress demand");
             spotify.canGoPrevious = false; spotify.canGoNext = false; spotify.canTogglePlaying = false; wait(1);
             check(!previous.enabled && !next.enabled && !play.enabled, "Unsupported player controls remain disabled");
             spotify.canGoPrevious = true; spotify.canGoNext = true; spotify.canTogglePlaying = true;
             spotify.isPlaying = true;
             spotify.trackTitle = "A very long Spotify track title that needs two lines and must stay clear of playback controls";
             spotify.trackArtist = "An artist with an unusually long display name"; wait(1);
-            check(title.maximumLineCount === 2 && title.width > 0 && title.height > 0, "Long metadata has a bounded two-line title");
+            check(title.elide === Text.ElideRight && title.width > 0 && title.height > 0, "Long metadata stays bounded in the centered Eww row");
             check(title.y + title.height <= findChild(widgets.contentItem, "desktopSpotifyArtist").y, "Title cannot overlap artist or controls");
             spotify.trackTitle = "A quiet place to begin"; spotify.trackArtist = "Your soundtrack";
             spotify.trackArtUrl = ""; wait(1);
@@ -144,13 +170,13 @@ ShellRoot {
             spotify.position = 300; wait(1);
             const progress = findChild(widgets.contentItem, "desktopSpotifyProgress");
             const fill = findChild(widgets.contentItem, "desktopSpotifyProgressFill");
-            check(Math.abs(fill.width - progress.width) < 0.1, "Progress clamps safely at track duration");
+            check(Math.abs(fill.width - (progress.width - 3)) < 0.1, "Progress clamps safely at track duration");
             spotify.position = 92;
             const normal = Layout.layout({layout: {compact: false}}, 2304, 1440, "split", data.enabled);
             const small = Layout.layout({layout: {compact: true}}, 2304, 1440, "split", data.enabled);
-            check(normal.clock.width === 630 && normal.clock.height === 225, "Normal clock reserves 1.5 times its former footprint");
-            check(small.clock.width === 450 && small.clock.height === 168, "Compact clock retains the enlarged design");
-            check(normal.spotify.width === 520 && normal.spotify.height === 216 && small.spotify.width === 440 && small.spotify.height === 176, "Wide player reserves enlarged artwork and controls");
+            check(normal.clock.width === 520 && normal.clock.height === 222, "Normal clock reserves the Eww clock footprint");
+            check(small.clock.width === 520 && small.clock.height === 222, "Legacy compact metadata does not shrink the Eww design");
+            check(normal.spotify.width === 420 && normal.spotify.height === 183 && small.spotify.width === 420 && small.spotify.height === 183, "Player keeps measured GTK dimensions for both legacy compact and normal scenes");
 
             findChild(widgets.contentItem, "desktopPrioritiesEdit").clicked();
             check(fakeApp.lastPanel === "widgets", "The edit control opens the existing overlay route");
@@ -162,15 +188,25 @@ ShellRoot {
                 Theme.document = theme;
                 assertCardContrast(theme);
                 S.Widgets.committedScene = scene(theme);
+                for (const viewport of [[2304,1440], [1920,1080]]) {
+                    const full = Layout.layout(scene(theme), viewport[0], viewport[1], "curated", data.enabled);
+                    check(full.scale === 1 && full.clock.width === 520 && full.clock.height === 222
+                        && full.spotify.width === 420 && full.spotify.height === 183,
+                        theme.id + " same full-sized widgets on desktop " + viewport);
+                }
+                const pairOnly = {clock: true, spotify: true, priorities: false, deadline: false};
+                const compactPair = Layout.layout(scene(theme), 600, 480, "curated", pairOnly);
+                check(compactPair.scale === 1, theme.id + " no shrinking when the full-size pair fits a compact screen");
                 for (const size of [[2304,1440],[1920,1080],[1280,720],[960,600],[600,480],[1080,1920]]) {
                     screenInfo.width = size[0]; screenInfo.height = size[1];
                     for (const mode of ["curated","left","right","split"]) {
                         setMode(mode); wait(1);
                         bounds(theme.id + " " + size + " " + mode);
+                        checkEnabledLayouts(theme, size, mode);
                         check(!card("clock").surface, "Clock keeps floating directly on wallpaper");
                         const digit = findChild(widgets.contentItem, "desktopClockDigit0");
-                        check(digit.font.pixelSize === (widgets.compact ? 93 : 129), "Clock digits use the enlarged size");
-                        check(findChild(widgets.contentItem, "desktopSpotifyAlbum").width === (widgets.compact ? 112 : 144), "Responsive artwork stays prominent");
+                        check(digit.font.pixelSize === 160, "Clock digits use the enlarged size");
+                        check(findChild(widgets.contentItem, "desktopSpotifyAlbum").width === 160, "Responsive artwork stays prominent");
 
                         checked++;
                     }
@@ -233,10 +269,15 @@ ShellRoot {
             S.Widgets.document = JSON.parse(JSON.stringify(past)); wait(1);
             check(findChild(widgets.contentItem, "desktopDeadlineValue").text === "Set a deadline", "Unset deadline offers an honest empty state");
             S.Media.players = [browser]; wait(1);
-            check(findChild(widgets.contentItem, "desktopSpotifyTitle").text === "A little music?", "Missing Spotify shows its empty state without using browser playback");
-            check(play.enabled && play.tooltip === "Open Spotify" && !previous.enabled && !next.enabled && !progress.visible, "Unavailable Spotify exposes launch while hiding unavailable playback/progress");
+            check(findChild(widgets.contentItem, "desktopSpotifyTitle").text === "Nothing playing", "Missing Spotify shows its empty state without using browser playback");
+            check(play.enabled && play.tooltip === "Open Spotify" && !previous.enabled && !next.enabled && progress.visible && fill.width === 0, "Unavailable Spotify exposes launch and an honest empty Eww progress bar");
             S.Media.players = [browser, spotify];
-            S.Widgets.document = data;
+            const renderData = JSON.parse(JSON.stringify(data));
+            renderData.enabled.priorities = false;
+            renderData.enabled.deadline = false;
+            S.Widgets.document = renderData;
+            screenInfo.width = RENDER_WIDTH;
+            screenInfo.height = RENDER_HEIGHT;
             for (const theme of testRoot.themes) {
                 Theme.document = theme;
                 S.Widgets.committedScene = scene(theme);
@@ -244,7 +285,7 @@ ShellRoot {
                 widgets.smokeWallpaper = theme.wallpaper;
                 ready(() => widgets.smokeBackground.status === Image.Ready, "Wallpaper image ready " + theme.id);
                 wait(30);
-                grabImage(widgets.contentItem).save("/tmp/sumi-widgets-" + theme.id + ".png");
+                grabImage(widgets.contentItem).save(RENDER_PREFIX_JSON + theme.id + ".png");
             }
             console.info("SUMI_WIDGETS_OK", checked, "layouts");
             // Clear fixture references before their QtObjects are destroyed;
@@ -258,6 +299,24 @@ ShellRoot {
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--render-size", default="1920x1080", metavar="WIDTHxHEIGHT",
+                        help="Wallpaper review capture dimensions; behavior tests still cover all six standard sizes")
+    parser.add_argument("--output-dir", type=Path,
+                        help="Write <theme-id>.png and montage.jpg here instead of the default /tmp/sumi-widgets-* paths")
+    args = parser.parse_args()
+    dimensions = re.fullmatch(r"([0-9]+)x([0-9]+)", args.render_size)
+    if not dimensions or any(not 320 <= int(value) <= 8192 for value in dimensions.groups()):
+        parser.error("--render-size must be WIDTHxHEIGHT with each dimension between 320 and 8192")
+    render_width, render_height = map(int, dimensions.groups())
+    if args.output_dir:
+        args.output_dir = args.output_dir.resolve()
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+        render_prefix = str(args.output_dir) + "/"
+        montage_path = args.output_dir / "montage.jpg"
+    else:
+        render_prefix = "/tmp/sumi-widgets-"
+        montage_path = Path("/tmp/sumi-widgets-montage.jpg")
     repo = Path(__file__).resolve().parents[2]
     themes = json.loads((repo / "assets/themes/catalog.json").read_text())["themes"]
     for theme in themes:
@@ -297,7 +356,7 @@ def main() -> None:
         motion.write_text(re.sub(r"^    readonly property bool battery:.*$", "    property bool battery: false", motion.read_text(), flags=re.M))
         for name, color in (("fixture-art.svg", "#679e98"), ("fixture-art-2.svg", "#af87a1")):
             (config / name).write_text(f'<svg xmlns="http://www.w3.org/2000/svg" width="216" height="216"><rect width="216" height="216" fill="#182b35"/><circle cx="108" cy="108" r="70" fill="{color}"/><circle cx="108" cy="108" r="22" fill="#182b35"/><circle cx="108" cy="108" r="5" fill="#eff1dd"/></svg>')
-        (config / "shell.qml").write_text(HARNESS.replace("THEMES_JSON", json.dumps(themes)))
+        (config / "shell.qml").write_text(HARNESS.replace("THEMES_JSON", json.dumps(themes)).replace("RENDER_WIDTH", str(render_width)).replace("RENDER_HEIGHT", str(render_height)).replace("RENDER_PREFIX_JSON", json.dumps(render_prefix)))
         runtime = work / "runtime"
         runtime.mkdir(mode=0o700)
         environment = dict(os.environ, SUMI_PREVIEW="1", SUMI_STATE_DIR=str(work / "state"), SUMI_DESKTOPCTL=str(repo / "bin/desktopctl"), QT_QPA_PLATFORM="offscreen", XDG_RUNTIME_DIR=str(runtime))
@@ -306,22 +365,23 @@ def main() -> None:
         if result.returncode or "SUMI_WIDGETS_OK" not in output or any(message in output for message in ("TypeError:", "ReferenceError:", "Failed to load configuration", "Unable to assign [undefined]", "FAIL!", "Binding loop")):
             raise SystemExit(output)
     columns = 4
-    tile_width, tile_height, caption = 480, 270, 30
+    tile_width, caption = 480, 30
+    tile_height = round(tile_width * render_height / render_width)
     rows = (len(themes) + columns - 1) // columns
     montage = Image.new("RGB", (columns * tile_width, rows * (tile_height + caption)), "#161720")
     draw = ImageDraw.Draw(montage)
     for index, theme in enumerate(themes):
-        image_path = Path("/tmp") / ("sumi-widgets-" + theme["id"] + ".png")
+        image_path = Path(render_prefix + theme["id"] + ".png")
         image = Image.open(image_path).convert("RGB")
-        if image.size != (1920, 1080):
+        if image.size != (render_width, render_height):
             raise SystemExit(f"Incorrect widget render dimensions: {image_path}: {image.size}")
         x = index % columns * tile_width
         y = index // columns * (tile_height + caption)
         montage.paste(image.resize((tile_width, tile_height)), (x, y))
         draw.text((x + 10, y + tile_height + 8), theme["name"], fill="#e7e9ed")
-    montage.save("/tmp/sumi-widgets-montage.jpg", quality=92)
-    print(f"PASS: {len(themes)} wallpapers × 6 sizes × 4 modes; actual bounds and overlap; cover crop; Spotify independence/empty state; priorities/deadline; normal/battery/reduced/interrupted motion; fullscreen/idle/output gates; gated artwork requests")
-    print("Actual QML renders: /tmp/sumi-widgets-<theme-id>.png; /tmp/sumi-widgets-montage.jpg")
+    montage.save(montage_path, quality=92)
+    print(f"PASS: {len(themes)} wallpapers × 6 sizes × 4 modes; all 16 enabled combinations; paired centers/gaps; actual bounds and overlap; cover crop; Spotify independence/empty state; priorities/deadline; normal/battery/reduced/interrupted motion; fullscreen/idle/output gates; gated artwork requests")
+    print(f"Actual QML renders: {render_prefix}<theme-id>.png ({render_width}x{render_height}); {montage_path}")
     print("Native layer stacking, input regions, DPMS and battery impact require compositor validation.")
 
 

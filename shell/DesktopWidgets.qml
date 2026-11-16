@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
@@ -34,9 +35,10 @@ PanelWindow {
     readonly property var geometry: WidgetLayout.layout(S.Widgets.scene, width, height, S.Widgets.layoutMode, flags)
     readonly property bool compact: geometry.compact
     readonly property real widgetScale: geometry.scale
+    readonly property var widgetStyle: S.Widgets.scene.layout && S.Widgets.scene.layout.widgetStyle || ({})
     readonly property bool darkClock: S.Widgets.scene.layout && S.Widgets.scene.layout.clockTone === "dark"
-    readonly property color clockText: darkClock ? "#14202b" : "#f5f3ec"
-    readonly property color clockAccent: darkClock ? "#633142" : Theme.accentCyan
+    readonly property color clockText: widgetStyle.clockInk || (darkClock ? "#14202b" : "#eaf4ff")
+    readonly property color clockAccent: widgetStyle.clockAccent || (darkClock ? "#633142" : Theme.accentCyan)
     readonly property int moveDuration: !visible || idle || Theme.effectiveReducedMotion ? 0 : Theme.batteryMotion ? 140 : 650
     property bool initialized: false
     property bool settling: false
@@ -96,61 +98,61 @@ PanelWindow {
         uiScale: root.widgetScale
         surface: false
         visible: WidgetLayout.enabled(root.flags, "clock")
-        Behavior on x { enabled: root.initialized && !root.settling; NumberAnimation { id: clockX; duration: root.moveDuration; easing.type: Easing.OutQuint } }
-        Behavior on y { enabled: root.initialized && !root.settling; NumberAnimation { id: clockY; duration: root.moveDuration; easing.type: Easing.OutQuint } }
+        Behavior on x { enabled: root.initialized && !root.settling; NumberAnimation { id: clockX; duration: root.moveDuration; easing.type: Easing.BezierSpline; easing.bezierCurve: Motion.bounceCurve } }
+        Behavior on y { enabled: root.initialized && !root.settling; NumberAnimation { id: clockY; duration: root.moveDuration; easing.type: Easing.BezierSpline; easing.bezierCurve: Motion.bounceCurve } }
 
         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.app.open("calendar", root.modelData) }
-        C.Label {
-            x: 0; y: root.compact ? 0 : 6
-            width: parent.width
-            text: Qt.formatDateTime(S.Clock.date, "dddd")
-            color: root.clockText
-            font.pixelSize: root.compact ? 16 : 18
-            font.letterSpacing: 0.2
-            font.weight: Font.DemiBold
-            style: root.darkClock ? Text.Normal : Text.Outline; styleColor: "#60000000"
-        }
-        Row {
-            x: -7.5; y: root.compact ? 24 : 33
-            spacing: 18
-            Row {
-                spacing: -6
-                Repeater {
-                    model: [S.Clock.hour, ":", S.Clock.minute]
-                    C.Label {
-                        required property string modelData
-                        required property int index
-                        objectName: "desktopClockDigit" + index
-                        text: modelData
-                        color: index === 1 ? root.clockAccent : root.clockText
-                        font.family: Theme.fontMono
-                        font.pixelSize: index === 1 ? (root.compact ? 80 : 110) : (root.compact ? 93 : 129)
-                        font.weight: index === 1 ? Font.Light : Font.Light
-                        font.letterSpacing: index === 1 ? 0 : root.compact ? -3.2 : -4.5
-                        style: root.darkClock ? Text.Normal : Text.Outline; styleColor: "#50000000"
-                        Accessible.ignored: true
-                    }
+        // Measured directly from Eww's GTK allocations. The clock's 14px
+        // bottom margin is included in this 520x222 footprint.
+        Repeater {
+            model: [S.Clock.hour.length === 1 ? "0" + S.Clock.hour : S.Clock.hour, ":", S.Clock.minute]
+            C.Label {
+                required property string modelData
+                required property int index
+                objectName: "desktopClockDigit" + index
+                x: [4, 199, 247][index]; y: 2
+                width: [193, 48, 193][index]; height: 210
+                leftPadding: index === 1 ? 8 : 0
+                rightPadding: index === 1 ? 8 : 0
+                text: modelData
+                color: index === 1 ? root.clockAccent : root.clockText
+                font.family: Theme.font; font.features: IslandStyle.figures
+                font.pixelSize: index === 1 ? 136 : 160
+                // The proportional face is wider than the old mono cells: fit, never elide.
+                elide: Text.ElideNone; fontSizeMode: Text.HorizontalFit; minimumPixelSize: 90
+                font.weight: index === 1 ? Font.Medium : Font.Black
+                horizontalAlignment: Text.AlignHCenter
+                Accessible.ignored: true
+                layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: "#081430"
+                    shadowOpacity: 0.3
+                    shadowVerticalOffset: 4
+                    blurMax: 14
+                    shadowBlur: 1
                 }
             }
-            C.Label {
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: root.compact ? 18 : 25
-                text: S.Clock.period
-                color: root.clockText
-                font.family: Theme.fontMono
-                font.pixelSize: root.compact ? 24 : 33
-                font.weight: Font.Bold
-                style: root.darkClock ? Text.Normal : Text.Outline; styleColor: "#60000000"
-            }
         }
         C.Label {
-            x: 0; y: root.compact ? 136.5 : 187.5
-            width: parent.width
-            text: Qt.formatDateTime(S.Clock.date, "d MMMM yyyy")
-            color: root.clockText
-            font.pixelSize: root.compact ? 18 : 21
-            font.letterSpacing: 1.5
-            style: root.darkClock ? Text.Normal : Text.Outline; styleColor: "#60000000"
+            objectName: "desktopClockPeriod"
+            x: 442; y: 2; width: 78; height: 210
+            leftPadding: 8; topPadding: 24
+            text: S.Clock.period
+            elide: Text.ElideNone
+            color: root.widgetStyle.clockPeriod || root.clockAccent
+            font.family: Theme.font; font.features: IslandStyle.figures
+            font.pixelSize: 48
+            font.weight: Font.Bold
+            layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: "#081430"
+                shadowOpacity: 0.26
+                shadowVerticalOffset: 3
+                blurMax: 10
+                shadowBlur: 1
+            }
         }
         Accessible.role: Accessible.Button
         Accessible.name: S.Clock.accessibleTime + ", " + S.Clock.dateLabel + ". Open calendar"
@@ -163,21 +165,40 @@ PanelWindow {
         x: root.geometry.spotify.x; y: root.geometry.spotify.y
         width: root.geometry.spotify.width; height: root.geometry.spotify.height
         uiScale: root.widgetScale
+        surface: false
+        panelColor: root.widgetStyle.cardFill || Qt.rgba(Theme.desktopBackground.r, Theme.desktopBackground.g, Theme.desktopBackground.b, 0.82)
+        mainText: root.widgetStyle.text || Theme.textMain
+        secondaryText: root.widgetStyle.muted || Theme.textSoft
+        readonly property color accent: root.widgetStyle.accent || Theme.accentBlue
+        readonly property color outline: root.widgetStyle.cardBorder || Qt.rgba(Theme.accentPink.r, Theme.accentPink.g, Theme.accentPink.b, 0.24)
         visible: WidgetLayout.enabled(root.flags, "spotify")
-        Behavior on x { enabled: root.initialized && !root.settling; NumberAnimation { id: musicX; duration: root.moveDuration; easing.type: Easing.OutQuint } }
-        Behavior on y { enabled: root.initialized && !root.settling; NumberAnimation { id: musicY; duration: root.moveDuration; easing.type: Easing.OutQuint } }
+        Behavior on x { enabled: root.initialized && !root.settling; NumberAnimation { id: musicX; duration: root.moveDuration; easing.type: Easing.BezierSpline; easing.bezierCurve: Motion.bounceCurve } }
+        Behavior on y { enabled: root.initialized && !root.settling; NumberAnimation { id: musicY; duration: root.moveDuration; easing.type: Easing.BezierSpline; easing.bezierCurve: Motion.bounceCurve } }
 
+        RectangularShadow {
+            anchors.fill: parent
+            radius: 20; blur: 24; offset: Qt.vector2d(0, 8)
+            color: "#29060e1e"
+            visible: GraphicsInfo.api !== GraphicsInfo.Software
+        }
+        Rectangle {
+            anchors.fill: parent
+            radius: 20
+            color: musicCard.panelColor
+            border.width: 1.5
+            border.color: musicCard.outline
+        }
         Rectangle {
             id: album
             objectName: "desktopSpotifyAlbum"
-            x: 18; y: 18
-            width: root.compact ? 112 : 144; height: width
-            radius: IslandStyle.radius
-            color: Theme.glassInset
+            x: 11; y: 11
+            width: 160; height: 160
+            radius: 18
+            color: Qt.rgba(musicCard.accent.r, musicCard.accent.g, musicCard.accent.b, 0.12)
             clip: true
             C.Icon {
                 objectName: "desktopSpotifyArtworkFallback"
-                anchors.centerIn: parent; name: "music"; size: root.compact ? 38 : 48
+                anchors.centerIn: parent; name: "music"; size: 48
                 color: musicCard.mainText
                 visible: artwork.status !== Image.Ready
             }
@@ -187,15 +208,25 @@ PanelWindow {
                 anchors.fill: parent
                 artworkUrl: root.artworkSource
                 active: root.eligible && !root.idle && WidgetLayout.enabled(root.flags, "spotify")
-                sourceSize: Qt.size(288, 288)
+                sourceSize: Qt.size(320, 320)
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 cache: true
-                visible: status === Image.Ready
+                visible: status === Image.Ready && GraphicsInfo.api === GraphicsInfo.Software
             }
-            Rectangle {
-                anchors.fill: parent; radius: parent.radius
-                color: "transparent"; border.width: 1; border.color: Theme.glassRim
+            Item {
+                id: albumMask
+                anchors.fill: parent
+                visible: false
+                layer.enabled: true
+                Rectangle { anchors.fill: parent; radius: 18; color: "white" }
+            }
+            MultiEffect {
+                anchors.fill: parent
+                source: artwork
+                maskEnabled: true
+                maskSource: albumMask
+                visible: artwork.status === Image.Ready && GraphicsInfo.api !== GraphicsInfo.Software
             }
             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: S.WidgetMedia.openSpotify() }
             Accessible.role: Accessible.Button
@@ -204,40 +235,57 @@ PanelWindow {
         }
         Item {
             id: musicInfo
-            x: album.x + album.width + 20; y: 18
-            width: parent.width - x - 20
-            height: root.compact ? 126 : 154
+            x: 187; y: 1; width: 232; height: 181
             Row {
-                spacing: 7
-                Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 5; height: 5; radius: 3; color: S.WidgetMedia.playing ? Theme.accentCyan : musicCard.secondaryText }
-                C.Label { text: "Spotify"; font.pixelSize: 11; font.letterSpacing: 0; color: musicCard.secondaryText; font.weight: Font.DemiBold }
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: 8; height: 24
+                spacing: 0
+                C.Label {
+                    objectName: "desktopSpotifyStatus"
+                    text: S.WidgetMedia.available ? (S.WidgetMedia.playing ? "Playing" : "Paused") : "Offline"
+                    font.family: Theme.font; font.pixelSize: 11; font.weight: Font.Bold
+                    topPadding: 10; height: 24
+                    color: musicCard.accent
+                }
+                C.Label { text: "•"; font.pixelSize: 11; leftPadding: 6; rightPadding: 6; topPadding: 10; height: 24; color: musicCard.secondaryText }
+                C.Label { text: "Spotify"; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.Bold; topPadding: 10; rightPadding: 4; height: 24; color: musicCard.secondaryText }
             }
             C.Label {
                 objectName: "desktopSpotifyTitle"
-                y: root.compact ? 19 : 23; width: parent.width
-                text: S.WidgetMedia.available ? S.WidgetMedia.title : "A little music?"
+                y: 32; width: parent.width; height: 26
+                topPadding: 5; rightPadding: 16
+                text: S.WidgetMedia.available ? S.WidgetMedia.title : "Nothing playing"
                 color: musicCard.mainText
-                font.pixelSize: root.compact ? 17 : 21
-                font.weight: Font.DemiBold
-                wrapMode: Text.Wrap
-                maximumLineCount: 2
-                height: root.compact ? 40 : 50
+                font.family: Theme.font
+                font.pixelSize: 16
+                font.weight: Font.ExtraBold
+                horizontalAlignment: Text.AlignHCenter
+                elide: Text.ElideRight
             }
             C.Label {
                 objectName: "desktopSpotifyArtist"
-                y: root.compact ? 62 : 77; width: parent.width
-                text: S.WidgetMedia.available ? S.WidgetMedia.artist : "Open Spotify to begin"
-                font.pixelSize: root.compact ? 12 : 13
+                y: 58; width: parent.width; height: 22
+                topPadding: 5; rightPadding: 4
+                text: S.WidgetMedia.available ? S.WidgetMedia.artist : "Spotify"
+                font.family: Theme.font
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                horizontalAlignment: Text.AlignHCenter
                 color: musicCard.secondaryText
             }
             Row {
-                y: root.compact ? 83 : 103
-                spacing: 14
+                x: 23; y: 90
+                spacing: 0
                 C.ActionButton {
+                    id: previousButton
                     objectName: "desktopSpotifyPrevious"
-                    text: "‹"; font.pixelSize: 30; quiet: true
-                    width: 36; height: root.compact ? 40 : 46; padding: 0
+                    iconName: "backward"; iconSize: 16; quiet: true
+                    width: 62; height: 46
+                    leftPadding: 5; rightPadding: 15; topPadding: 4; bottomPadding: 0
                     textColor: musicCard.mainText
+                    background: Item {
+                        Rectangle { x: 5; y: 4; width: 42; height: 42; radius: 10.5; color: previousButton.hovered ? Theme.bgPlaying : "transparent"; border.width: previousButton.visualFocus ? 1 : 0; border.color: musicCard.accent }
+                    }
                     tooltip: "Previous Spotify track"
                     enabled: !!S.WidgetMedia.player && S.WidgetMedia.player.canGoPrevious
                     onClicked: S.WidgetMedia.previous()
@@ -245,42 +293,43 @@ PanelWindow {
                 C.ActionButton {
                     id: playButton
                     objectName: "desktopSpotifyPlay"
-                    iconName: S.WidgetMedia.playing ? "pause" : "play"; iconSize: 20
-                    width: root.compact ? 40 : 46; height: width; padding: 0
+                    iconName: S.WidgetMedia.playing ? "pause-fill" : "play-fill"; iconSize: 18; quiet: true
+                    width: 62; height: 46
+                    leftPadding: 5; rightPadding: 15; topPadding: 4; bottomPadding: 0
                     textColor: musicCard.mainText
-                    background: C.Surface {
-                        radius: height / 2
-                        color: Theme.glassFill
-                        border.width: playButton.visualFocus ? 2 : 1
-                        border.color: playButton.visualFocus ? Theme.accentBlue : Theme.glassRim
-                        opacity: playButton.down ? 0.75 : 1
+                    background: Item {
+                        Rectangle { x: 5; y: 4; width: 42; height: 42; radius: 10.5; color: playButton.hovered ? Theme.bgPlaying : "transparent"; border.width: playButton.visualFocus ? 1 : 0; border.color: musicCard.accent }
                     }
                     tooltip: S.WidgetMedia.available ? (S.WidgetMedia.playing ? "Pause Spotify" : "Play Spotify") : "Open Spotify"
                     enabled: !S.WidgetMedia.available || (!!S.WidgetMedia.player && S.WidgetMedia.player.canTogglePlaying)
                     onClicked: { if (S.WidgetMedia.available) S.WidgetMedia.toggle(); else S.WidgetMedia.openSpotify(); }
                 }
                 C.ActionButton {
+                    id: nextButton
                     objectName: "desktopSpotifyNext"
-                    text: "›"; font.pixelSize: 30; quiet: true
-                    width: 36; height: root.compact ? 40 : 46; padding: 0
+                    iconName: "forward"; iconSize: 16; quiet: true
+                    width: 62; height: 46
+                    leftPadding: 5; rightPadding: 15; topPadding: 4; bottomPadding: 0
                     textColor: musicCard.mainText
+                    background: Item {
+                        Rectangle { x: 5; y: 4; width: 42; height: 42; radius: 10.5; color: nextButton.hovered ? Theme.bgPlaying : "transparent"; border.width: nextButton.visualFocus ? 1 : 0; border.color: musicCard.accent }
+                    }
                     tooltip: "Next Spotify track"
                     enabled: !!S.WidgetMedia.player && S.WidgetMedia.player.canGoNext
                     onClicked: S.WidgetMedia.next()
                 }
             }
-        }
-        Rectangle {
-            objectName: "desktopSpotifyProgress"
-            x: 18; y: parent.height - 27
-            width: parent.width - 36; height: 3; radius: 1.5
-            color: Theme.glassInset
-            visible: S.WidgetMedia.available && S.WidgetMedia.length > 0
             Rectangle {
-                objectName: "desktopSpotifyProgressFill"
-                height: parent.height; radius: 1.5
-                width: parent.width * Math.max(0, Math.min(1, S.WidgetMedia.position / Math.max(1, S.WidgetMedia.length)))
-                color: Theme.accentCyan
+                objectName: "desktopSpotifyProgress"
+                x: 12; y: 154; width: 200; height: 10; radius: 10
+                color: Qt.rgba(musicCard.panelColor.r, musicCard.panelColor.g, musicCard.panelColor.b, 0.66)
+                border.width: 1.5; border.color: musicCard.outline
+                Rectangle {
+                    objectName: "desktopSpotifyProgressFill"
+                    height: parent.height - 3; y: 1.5; x: 1.5; radius: 10
+                    width: (parent.width - 3) * Math.max(0, Math.min(1, S.WidgetMedia.position / Math.max(1, S.WidgetMedia.length)))
+                    color: musicCard.accent
+                }
             }
         }
     }
@@ -292,8 +341,8 @@ PanelWindow {
         width: root.geometry.priorities.width; height: root.geometry.priorities.height
         uiScale: root.widgetScale
         visible: WidgetLayout.enabled(root.flags, "priorities")
-        Behavior on x { enabled: root.initialized && !root.settling; NumberAnimation { id: prioritiesX; duration: root.moveDuration; easing.type: Easing.OutQuint } }
-        Behavior on y { enabled: root.initialized && !root.settling; NumberAnimation { id: prioritiesY; duration: root.moveDuration; easing.type: Easing.OutQuint } }
+        Behavior on x { enabled: root.initialized && !root.settling; NumberAnimation { id: prioritiesX; duration: root.moveDuration; easing.type: Easing.BezierSpline; easing.bezierCurve: Motion.bounceCurve } }
+        Behavior on y { enabled: root.initialized && !root.settling; NumberAnimation { id: prioritiesY; duration: root.moveDuration; easing.type: Easing.BezierSpline; easing.bezierCurve: Motion.bounceCurve } }
 
         C.Label { x: 18; y: 17; text: "Make room for"; font.pixelSize: 12; font.letterSpacing: 0; color: prioritiesCard.secondaryText; font.weight: Font.DemiBold }
         C.ActionButton {
@@ -350,8 +399,8 @@ PanelWindow {
         visible: WidgetLayout.enabled(root.flags, "deadline")
         readonly property var deadline: S.Widgets.document.deadline || ({})
         readonly property bool overdue: typeof deadline.at === "number" && deadline.at < S.Clock.date.getTime()
-        Behavior on x { enabled: root.initialized && !root.settling; NumberAnimation { id: deadlineX; duration: root.moveDuration; easing.type: Easing.OutQuint } }
-        Behavior on y { enabled: root.initialized && !root.settling; NumberAnimation { id: deadlineY; duration: root.moveDuration; easing.type: Easing.OutQuint } }
+        Behavior on x { enabled: root.initialized && !root.settling; NumberAnimation { id: deadlineX; duration: root.moveDuration; easing.type: Easing.BezierSpline; easing.bezierCurve: Motion.bounceCurve } }
+        Behavior on y { enabled: root.initialized && !root.settling; NumberAnimation { id: deadlineY; duration: root.moveDuration; easing.type: Easing.BezierSpline; easing.bezierCurve: Motion.bounceCurve } }
 
         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.edit() }
         C.Label {
@@ -370,7 +419,7 @@ PanelWindow {
         C.Label {
             x: 18; y: 76; width: parent.width - 36
             text: deadlineCard.deadline.at ? Qt.formatDateTime(new Date(deadlineCard.deadline.at), "ddd, d MMM · h:mm AP") : "A date to look forward to · click to set"
-            font.pixelSize: 9; color: deadlineCard.secondaryText
+            font.pixelSize: 11; color: deadlineCard.secondaryText
         }
         Accessible.role: Accessible.Button
         Accessible.name: (deadlineCard.deadline.title || "Personal deadline") + ", " + S.Widgets.deadlineText + ". Edit deadline"

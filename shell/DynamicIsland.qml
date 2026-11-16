@@ -17,8 +17,13 @@ PanelWindow {
     screen: modelData
     anchors { top: true }
     margins.top: notch ? 0 : 4
-    implicitWidth: Math.min(704, Math.max(1, modelData ? modelData.width - 8 : 704))
-    implicitHeight: Math.min(660, Math.max(1, modelData ? modelData.height - 48 : 660))
+    // Content is bounded by the frame; the transparent margin around it holds
+    // the cast shadow and the contour's spring overshoot. Input stays masked.
+    readonly property int depthRoom: 40
+    readonly property real frameWidth: Math.min(704, Math.max(1, modelData ? modelData.width - 8 : 704))
+    readonly property real frameHeight: Math.min(660, Math.max(1, modelData ? modelData.height - 48 : 660))
+    implicitWidth: Math.min(frameWidth + depthRoom * 2, Math.max(1, modelData ? modelData.width : 704))
+    implicitHeight: frameHeight + depthRoom
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "sumi-island"
@@ -26,7 +31,7 @@ PanelWindow {
     WlrLayershell.keyboardFocus: pinned ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
     readonly property bool notch: Settings.islandNotch
-    readonly property real expandedWidth: Math.min(pinned && !previewPinned ? content.preferredWidth : notificationHere ? content.notificationPreferredWidth : assistantOutputHere ? 520 : 420, Math.max(1, width - 24))
+    readonly property real expandedWidth: Math.min(pinned && !previewPinned ? content.preferredWidth : notificationHere ? content.notificationPreferredWidth : assistantOutputHere ? 520 : 420, Math.max(1, frameWidth - 24))
     readonly property int clockPixelSize: 26
     readonly property int periodPixelSize: 10
     property var monitor: Hyprland.monitors.values.find(candidate => candidate && modelData && candidate.name === modelData.name) || null
@@ -49,7 +54,7 @@ PanelWindow {
     property bool suppressed: false
     property bool previewSuppressed: false
     property bool initialized: false
-    property bool settling: false
+    property bool pressed: false
     property string lastApplication: Hyprland.activeToplevel ? Hyprland.activeToplevel.address : ""
     property string returnApplication: ""
     property int returnWorkspace: 0
@@ -73,23 +78,32 @@ PanelWindow {
     readonly property real compactWidth: Math.min(expandedWidth, Math.max(minimumClockWidth, Math.min(centerRoom, activity === "idle" ? 176 : activity === "media" ? 220 : 320)))
     property real openingWidth: 176
     property real openingHeight: 36
-    property real bodyWidth: pinned && !previewPinned && !content.dashboardReady ? openingWidth : expanded ? expandedWidth : compactWidth
-    property real bodyHeight: pinned && !previewPinned && !content.dashboardReady ? openingHeight : pinned && !previewPinned ? Math.min(height, content.preferredHeight) : automaticPreview ? Math.min(height, notificationHere ? content.notificationPreferredHeight : 174) : assistantOutputHere ? Math.min(height, assistant && assistant.latestAnswer ? 236 : 208) : (peek || previewPinned) ? Math.min(height, activity === "media" ? (notch ? 206 : 202) : (notch ? 222 : 216)) : activity === "media" ? 50 : notch ? 46 : 42
+    // A resting island swells slightly under the pointer before it peeks.
+    readonly property bool swelling: hovered && !suppressed && !expanded && !pinned && availableForInteraction && !selectingCapture
+    readonly property real targetWidth: pinned && !previewPinned && !content.dashboardReady ? openingWidth : expanded ? expandedWidth : swelling ? Math.max(compactWidth, Math.min(centerRoom, compactWidth + 8)) : compactWidth
+    readonly property real targetHeight: pinned && !previewPinned && !content.dashboardReady ? openingHeight : pinned && !previewPinned ? Math.min(frameHeight, content.preferredHeight) : automaticPreview ? Math.min(frameHeight, notificationHere ? content.notificationPreferredHeight : 174) : assistantOutputHere ? Math.min(frameHeight, assistant && assistant.latestAnswer ? 236 : 208) : (peek || previewPinned) ? Math.min(frameHeight, activity === "media" ? (notch ? 206 : 202) : (notch ? 222 : 216)) : (activity === "media" ? 50 : notch ? 46 : 42) + (swelling ? 2 : 0)
+    // Springs own the live contour. Music peeks respond a little quicker.
+    readonly property real morphResponse: Motion.springResponse * (activity === "media" && (!pinned || previewPinned) ? 0.85 : 1)
+    C.Spring { id: widthSpring; to: root.targetWidth; animated: !Motion.reduced; precision: 0.1; response: root.morphResponse; damping: Motion.springDamping; settleResponse: Motion.settleResponse; settleDamping: Motion.settleDamping }
+    C.Spring { id: heightSpring; to: root.targetHeight; animated: !Motion.reduced; precision: 0.1; response: root.morphResponse; damping: Motion.springDamping; settleResponse: Motion.settleResponse; settleDamping: Motion.settleDamping }
+    // Pressing the island gives a small squish that rebounds on release.
+    C.Spring { id: pressSpring; to: root.pressed ? Math.max(0.96, 1 - 7 / Math.max(1, root.bodyWidth)) : 1; animated: !Motion.reduced; precision: 0.0004; response: 0.3; damping: 0.5; settleResponse: 0.2; settleDamping: 0.86 }
+    // On outputs too narrow for overshoot room the spring yields at the window edge.
+    readonly property real bodyWidth: Math.min(widthSpring.value, width)
+    readonly property real bodyHeight: Math.min(heightSpring.value, height)
     readonly property bool effectsActive: availableForInteraction
     readonly property bool spectrumDemand: effectsActive && S.IslandMedia.playing && ((activity === "media" && (!pinned || previewPinned) && content.hasVisibleMediaWave) || (pinned && !previewPinned && content.dashboardReady && (section === "media" || section === "controls" || section === "home" || content.headerWidth >= 420)))
     readonly property bool progressDemand: effectsActive && ((pinned && (previewPinned || section === "media")) || (peek && !automaticPreview)) && !!S.IslandMedia.player && S.IslandMedia.player.positionSupported && S.IslandMedia.playing
-    readonly property bool morphing: widthMorph.running || heightMorph.running
+    readonly property bool morphing: widthSpring.running || heightSpring.running
     readonly property real inputX: (width - bodyWidth) / 2
     readonly property real inputWidth: availableForInteraction ? bodyWidth : 0
     readonly property real inputHeight: availableForInteraction ? bodyHeight : 0
     readonly property alias visual: content
     visible: eligible && (!app.nativeDialogOpen || selectingCapture || pinned) && app.panel === ""
 
-    TextMetrics { id: clockMetric; font.family: Theme.fontMono; font.pixelSize: root.clockPixelSize; font.weight: Font.DemiBold; text: S.Clock.time }
+    TextMetrics { id: clockMetric; font.family: IslandStyle.font; font.pixelSize: root.clockPixelSize; font.weight: Font.DemiBold; font.features: IslandStyle.figures; font.variableAxes: IslandStyle.displayAxes; text: S.Clock.time }
     TextMetrics { id: periodMetric; font.family: Theme.font; font.pixelSize: root.periodPixelSize; font.weight: Font.Bold; text: S.Clock.period }
     IdleMonitor { id: idleMonitor; objectName: "islandIdle"; enabled: root.eligible; timeout: 60; respectInhibitors: false }
-    Behavior on bodyWidth { enabled: !root.settling; NumberAnimation { id: widthMorph; duration: root.activity === "media" && (!root.pinned || root.previewPinned) ? IslandStyle.musicTransition : IslandStyle.geometryTransition; easing.type: Easing.OutCubic } }
-    Behavior on bodyHeight { enabled: !root.settling; NumberAnimation { id: heightMorph; duration: root.activity === "media" && (!root.pinned || root.previewPinned) ? IslandStyle.musicTransition : IslandStyle.geometryTransition; easing.type: Easing.OutCubic } }
 
     // Only the black shape takes pointer input. The rest of this bounded native
     // window is transparent and passes through to applications below it.
@@ -154,14 +168,10 @@ PanelWindow {
         returnApplication = "";
         hoverDelay.stop(); leaveDelay.stop();
         focusGrab.active = false;
-        pinned = false; previewPinned = false; peek = false;
+        pinned = false; previewPinned = false; peek = false; pressed = false;
         suppressed = hovered;
-        if (!eligible || idle || app.nativeDialogOpen) {
-            settling = true;
-            bodyWidth = Qt.binding(() => root.pinned && !root.previewPinned && !content.dashboardReady ? root.openingWidth : root.expanded ? root.expandedWidth : root.compactWidth);
-            bodyHeight = Qt.binding(() => root.pinned && !root.previewPinned && !content.dashboardReady ? root.openingHeight : root.pinned && !root.previewPinned ? Math.min(root.height, content.preferredHeight) : root.automaticPreview ? Math.min(root.height, root.notificationHere ? content.notificationPreferredHeight : 174) : root.assistantOutputHere ? Math.min(root.height, root.assistant && root.assistant.latestAnswer ? 236 : 208) : (root.peek || root.previewPinned) ? Math.min(root.height, root.activity === "media" ? (root.notch ? 206 : 202) : (root.notch ? 222 : 216)) : root.activity === "media" ? 50 : root.notch ? 46 : 42);
-            settling = false;
-        }
+        // An island that cannot be seen settles immediately instead of animating.
+        if (!eligible || idle || app.nativeDialogOpen) { widthSpring.snap(); heightSpring.snap(); }
         if (address && sameWorkspace && Hyprland.toplevels.values.some(window => window && window.address === address))
             Qt.callLater(() => S.HyprlandActions.focusWindow(address));
     }
@@ -239,6 +249,7 @@ PanelWindow {
         id: content
         anchors.fill: parent
         opacity: root.app.nativeDialogOpen ? 0 : 1
+        transform: Scale { origin.x: content.width / 2; origin.y: 0; xScale: pressSpring.value; yScale: pressSpring.value }
         app: root.app
         screenInfo: root.modelData
         notch: root.notch
@@ -247,10 +258,11 @@ PanelWindow {
         previewPinned: root.previewPinned
         interactive: root.availableForInteraction
         effectsActive: root.effectsActive
-        maximumWidth: Math.max(1, root.width - 24)
-        maximumHeight: root.height
+        maximumWidth: Math.max(1, root.frameWidth - 24)
+        maximumHeight: root.frameHeight
         bodyWidth: root.bodyWidth
         bodyHeight: root.bodyHeight
+        morphResponse: root.morphResponse
         headerRoom: Math.max(root.minimumClockWidth, Math.min(root.centerRoom, 420))
         clockPixelSize: root.clockPixelSize
         periodPixelSize: root.periodPixelSize
@@ -282,6 +294,7 @@ PanelWindow {
         onEventDismissRequested: S.IslandEvents.dismissCurrent()
         onThursdayFullChatRequested: root.selectSection("thursday")
         onHeaderClicked: root.togglePin()
+        onHeaderHeld: down => root.pressed = down && root.availableForInteraction
         onDismissRequested: root.dismiss(true)
         onHoverChanged: hovered => { if (hovered) root.enterHover(); else root.leaveHover(); }
         onCalendarRequested: root.selectSection("calendar")

@@ -23,8 +23,28 @@ C.Surface {
     readonly property color accentForeground: embedded ? IslandStyle.accentText : Theme.desktopBackground
     readonly property color separator: embedded ? IslandStyle.line : Theme.borderSoft
     // Six visible matches are enough for discovery; no matches shrink to a hint.
+    readonly property real rowHeight: embedded ? 54 : 60
     readonly property real contentHeight: Math.max(0, content.implicitHeight - results.implicitHeight)
-        + Math.max(66, Math.min(6, entries.length) * 65 - 5) + (embedded ? 0 : 40)
+        + Math.max(118, Math.min(6, entries.length) * (rowHeight + results.spacing) - results.spacing) + (embedded ? 0 : 40)
+    readonly property string query: search.text.trim()
+    readonly property var tabIcons: ({Apps: "grid", Files: "folder", Windows: "window", Actions: "sparkles", Clipboard: "clipboard"})
+    readonly property var actionIcons: ({"action:appearance": "palette", "action:widgets": "layout-grid", "action:settings": "settings",
+        "action:notifications": "bell", "action:calendar": "calendar", "action:island": "sparkles", "action:media": "music",
+        "action:pomodoro": "timer", "action:capture-region": "camera", "action:capture-annotate": "camera", "action:lock": "lock",
+        "action:help": "keyboard", "action:power": "power"})
+    readonly property string verb: tab === "Windows" ? "Switch" : tab === "Clipboard" ? "Copy" : tab === "Actions" ? "Run" : "Open"
+    function iconFor(entry) {
+        if (tab === "Files") return entry.directory ? "folder" : "file";
+        if (tab === "Actions") return actionIcons[entry.historyId] || "sparkles";
+        return tabIcons[tab] || "search";
+    }
+    function escaped(value) { return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+    // Embolden the matched letters so the reason for each result is visible.
+    function emphasized(value) {
+        const text = String(value || ""), at = query ? text.toLowerCase().indexOf(query.toLowerCase()) : -1;
+        if (at < 0) return escaped(text);
+        return escaped(text.slice(0, at)) + "<b>" + escaped(text.slice(at, at + query.length)) + "</b>" + escaped(text.slice(at + query.length));
+    }
     readonly property bool shortLayout: !embedded && height < 400
     property bool pageActive: visible
     inset: embedded
@@ -74,7 +94,9 @@ C.Surface {
         const names = Object.create(null);
         applications.forEach(entry => names[entry.name] = (names[entry.name] || 0) + 1);
         return applications.map(function(e) {
-            const item = {historyId: "app:" + e.id.replace(/\.desktop$/, ""), name:e.name, detail:e.genericName || e.comment || e.id, entry:e, icon:e.icon};
+            // Raw desktop-entry ids are not descriptions; name what the entry is instead.
+            const webApp = /^(brave|chrome|chromium|msedge)-/.test(e.id);
+            const item = {historyId: "app:" + e.id.replace(/\.desktop$/, ""), name:e.name, detail:e.genericName || e.comment || (webApp ? "Web app" : "Application"), entry:e, icon:e.icon};
             item.coldPriority = root.appPriority(item);
             if (names[e.name] > 1) item.detail = e.id.startsWith("brave-") ? "Brave web app" : e.id.startsWith("FFPWA-") ? "Firefox web app" : item.detail + " · " + e.id;
             item.searchName = Ranking.normalize(item.name);
@@ -280,46 +302,133 @@ C.Surface {
         }
     }
     Timer { id: debounce; interval: 180; onTriggered: root.refresh() }
+    // Keycaps read as keys, not prose, so the shortcuts scan at a glance.
+    component Keycap: Rectangle {
+        id: keycap
+        property string label: ""
+        property color textColor: IslandStyle.secondary
+        implicitWidth: Math.max(20, keyText.implicitWidth + 10); implicitHeight: 20
+        radius: 5
+        color: Qt.rgba(1, 1, 1, 0.07)
+        border.width: 1; border.color: Qt.rgba(1, 1, 1, 0.12)
+        C.Label { id: keyText; anchors.centerIn: parent; text: keycap.label; color: keycap.textColor; font.pixelSize: 11; font.weight: Font.Medium }
+    }
     ColumnLayout {
         id: content
         anchors.fill: parent
         anchors.margins: root.embedded ? 0 : root.shortLayout ? 16 : 20
-        spacing: root.shortLayout ? 6 : 12
+        spacing: root.shortLayout ? 6 : 10
         RowLayout {
             Layout.fillWidth: true
-            C.Label { text: "󰀻"; color: root.accent; font.pixelSize: 22 }
-            TextField {
-                id: search
-                objectName: "launcherSearch"
+            spacing: Metrics.space2
+            Item {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
-                implicitHeight: root.shortLayout ? 40 : 46
-                placeholderText: root.tab === "Files" ? "Find a file by name…" : root.tab === "Apps" ? "Search applications…" : "Search " + root.tab.toLowerCase() + "…"
-                color: root.foreground
-                placeholderTextColor: root.secondary
-                font.family: Theme.font
-                font.pixelSize: root.embedded ? 16 : 20
-                selectByMouse: true
-                leftPadding: 14
-                rightPadding: 14
-                background: C.Surface { island: root.embedded; inset: true; radius: IslandStyle.controlRadius; border.width: search.activeFocus ? 1 : 0; border.color: Theme.borderStrong }
-                onTextChanged: { root.rankingTime = Date.now() / 1000; root.resetConfirm = false; results.currentIndex = 0; if (root.tab === "Files") debounce.restart(); }
-                Keys.onDownPressed: root.moveSelection(1)
-                Keys.onUpPressed: root.moveSelection(-1)
-                Keys.onReturnPressed: root.activate(root.entries[results.currentIndex])
-                Keys.onEnterPressed: root.activate(root.entries[results.currentIndex])
-                Keys.onEscapePressed: event => { if (root.embedded) event.accepted = false; else root.app.close(); }
+                implicitHeight: root.embedded ? 50 : root.shortLayout ? 40 : 46
+                TextField {
+                    id: search
+                    objectName: "launcherSearch"
+                    anchors.fill: parent
+                    placeholderText: root.tab === "Files" ? "Find a file by name" : root.tab === "Apps" ? "Search apps, files and actions" : "Search " + root.tab.toLowerCase()
+                    color: root.foreground
+                    placeholderTextColor: root.secondary
+                    selectionColor: Qt.rgba(1, 1, 1, 0.22)
+                    selectedTextColor: root.foreground
+                    font.family: Theme.font
+                    font.pixelSize: root.embedded ? 18 : 20
+                    selectByMouse: true
+                    verticalAlignment: TextInput.AlignVCenter
+                    leftPadding: 46
+                    rightPadding: clear.visible ? 46 : 16
+                    background: Rectangle {
+                        radius: root.embedded ? 16 : IslandStyle.controlRadius
+                        color: root.embedded ? (search.activeFocus ? "#222226" : IslandStyle.raised) : Theme.glassInset
+                        border.width: 1
+                        border.color: Qt.rgba(1, 1, 1, search.activeFocus ? 0.16 : 0.06)
+                        Behavior on color { ColorAnimation { duration: Motion.control } }
+                        Behavior on border.color { ColorAnimation { duration: Motion.control } }
+                        C.Icon { anchors.left: parent.left; anchors.leftMargin: 16; anchors.verticalCenter: parent.verticalCenter; name: "search"; size: 18; color: search.activeFocus ? root.foreground : root.secondary }
+                    }
+                    onTextChanged: { root.rankingTime = Date.now() / 1000; root.resetConfirm = false; results.currentIndex = 0; if (root.tab === "Files") debounce.restart(); }
+                    Keys.onDownPressed: root.moveSelection(1)
+                    Keys.onUpPressed: root.moveSelection(-1)
+                    Keys.onReturnPressed: root.activate(root.entries[results.currentIndex])
+                    Keys.onEnterPressed: root.activate(root.entries[results.currentIndex])
+                    Keys.onEscapePressed: event => { if (root.embedded) event.accepted = false; else root.app.close(); }
+                }
+                C.ActionButton {
+                    id: clear
+                    objectName: "launcherClear"
+                    island: root.embedded
+                    anchors.right: parent.right; anchors.rightMargin: 8; anchors.verticalCenter: parent.verticalCenter
+                    visible: search.text.length > 0
+                    width: 32; height: 32; padding: 0; quiet: true
+                    text: "×"; font.pixelSize: 18; textColor: root.secondary
+                    focusPolicy: Qt.NoFocus
+                    tooltip: "Clear search"
+                    onClicked: { search.text = ""; root.focusDefault(); }
+                }
             }
             C.ActionButton { island: root.embedded; visible: !root.embedded; text: "Esc"; quiet: true; onClicked: root.app.close() }
         }
-        Flow {
+        // One sliding selection makes the categories read as a single control.
+        Item {
+            id: scopes
+            objectName: "launcherScopes"
             Layout.fillWidth: true
-            spacing: Metrics.space2
-            Repeater { model: root.tabs; C.ActionButton { island: root.embedded; required property string modelData; text: modelData; selected: root.tab === modelData; quiet: true; onClicked: root.selectTab(modelData) } }
+            implicitHeight: 34
+            readonly property real segment: width / root.tabs.length
+            readonly property int selectedIndex: Math.max(0, root.tabs.indexOf(root.tab))
+            Rectangle { anchors.fill: parent; radius: height / 2; color: Qt.rgba(1, 1, 1, root.embedded ? 0.04 : 0.06) }
+            C.Spring { id: scopeSpring; to: 3 + scopes.selectedIndex * scopes.segment; animated: !Motion.reduced && scopes.width > 0; response: Motion.springResponse * 0.75; damping: Motion.springDamping; settleResponse: Motion.springResponse * 0.75; settleDamping: Motion.springDamping }
+            Rectangle {
+                x: scopeSpring.value; y: 3
+                width: Math.max(0, scopes.segment - 6); height: parent.height - 6
+                radius: height / 2
+                color: root.embedded ? "#2e2e33" : Theme.bgPlaying
+                border.width: 1; border.color: Qt.rgba(1, 1, 1, 0.07)
+            }
+            Row {
+                anchors.fill: parent
+                Repeater {
+                    model: root.tabs
+                    Button {
+                        id: scope
+                        required property string modelData
+                        required property int index
+                        objectName: "launcherScope-" + modelData
+                        readonly property bool current: root.tab === modelData
+                        width: scopes.segment; height: scopes.height
+                        hoverEnabled: true
+                        focusPolicy: Qt.TabFocus
+                        Accessible.name: modelData + ", Alt+" + (index + 1)
+                        onClicked: root.selectTab(modelData)
+                        background: Rectangle {
+                            radius: height / 2
+                            color: !scope.current && scope.hovered ? Qt.rgba(1, 1, 1, 0.04) : "transparent"
+                            border.width: scope.visualFocus ? 2 : 0; border.color: root.foreground
+                        }
+                        contentItem: Item {
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 6
+                                C.Icon { anchors.verticalCenter: parent.verticalCenter; name: root.tabIcons[scope.modelData]; size: 14; color: scope.current ? root.foreground : root.secondary; visible: scopes.segment >= 84 }
+                                C.Label { anchors.verticalCenter: parent.verticalCenter; text: scope.modelData; color: scope.current ? root.foreground : root.secondary; font.pixelSize: 12; font.weight: scope.current ? Font.DemiBold : Font.Medium }
+                            }
+                        }
+                    }
+                }
+            }
         }
-        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.separator }
         C.Label { visible: root.notice.length > 0 || root.error.length > 0 || (root.tab === "Clipboard" && !root.clipboardHealthy); text: root.error || root.notice || "Clipboard capture is unavailable. Resume to restart both watchers."; color: root.notice.length && !root.error.length ? root.foreground : Theme.accentPink; Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 12 }
         C.Label { visible: (root.tab === "Apps" || root.tab === "Actions") && S.LauncherHistory.error.length > 0; text: S.LauncherHistory.error; color: Theme.accentWarn; Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 12 }
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: 2
+            visible: root.entries.length > 0
+            C.Label { text: root.query.length ? "Top results" : root.tab === "Apps" ? "Suggested" : root.tab === "Actions" ? "Quick actions" : root.tab; color: root.secondary; font.pixelSize: 11; font.weight: Font.DemiBold; font.letterSpacing: 0.4; Layout.fillWidth: true }
+            C.Label { text: root.entries.length + (root.entries.length === 1 ? " result" : " results"); color: root.secondary; font.pixelSize: 11 }
+        }
         ListView {
             id: results
             implicitHeight: 380
@@ -327,62 +436,107 @@ C.Surface {
             Layout.fillWidth: true
             Layout.minimumHeight: 66
             clip: true
-            spacing: 5
+            spacing: 2
             model: root.entries
             currentIndex: 0
             reuseItems: true
             boundsBehavior: Flickable.StopAtBounds
             keyNavigationEnabled: false
             ScrollBar.vertical: ScrollBar {}
-            delegate: Rectangle {
+            // The selection glides between rows instead of blinking from one to the next.
+            highlightFollowsCurrentItem: true
+            highlightMoveDuration: Motion.reduced ? 0 : 150
+            highlightMoveVelocity: -1
+            highlightResizeDuration: 0
+            highlight: Rectangle {
+                radius: 14
+                color: root.embedded ? "#26262b" : Theme.bgPlaying
+                border.width: 1; border.color: Qt.rgba(1, 1, 1, root.embedded ? 0.06 : 0.1)
+            }
+            delegate: Item {
                 id: row
                 required property var modelData
                 required property int index
+                readonly property bool current: results.currentIndex === index
                 width: results.width
-                height: 60
-                radius: IslandStyle.controlRadius
-                color: root.embedded ? (results.currentIndex === index ? IslandStyle.hover : hover.containsMouse ? IslandStyle.raised : "transparent") : results.currentIndex === index ? Theme.bgPlaying : hover.containsMouse ? Theme.bgPanel : "transparent"
-                border.width: !root.embedded && results.currentIndex === index ? 1 : 0
-                border.color: root.separator
-                Rectangle { visible: !root.embedded && results.currentIndex === row.index; width: 3; height: 24; radius: 2; color: root.accent; anchors.left: parent.left; anchors.leftMargin: 1; anchors.verticalCenter: parent.verticalCenter }
+                height: root.rowHeight
+                Rectangle { anchors.fill: parent; radius: 14; color: Qt.rgba(1, 1, 1, 0.03); visible: hover.containsMouse && !row.current }
                 RowLayout {
                     z: 1
                     anchors.fill: parent
-                    anchors.margins: Metrics.space3
-                    spacing: 14
+                    anchors.leftMargin: Metrics.space3; anchors.rightMargin: Metrics.space3
+                    spacing: 12
                     Item {
-                        Layout.preferredWidth: 36
-                        Layout.preferredHeight: 36
+                        Layout.preferredWidth: 34
+                        Layout.preferredHeight: 34
                         Image {
                             id: appIcon
                             anchors.fill: parent
                             source: root.tab === "Apps" && row.modelData.icon ? Quickshell.iconPath(row.modelData.icon, true) : ""
-                            sourceSize: Qt.size(40, 40)
+                            sourceSize: Qt.size(68, 68)
                             fillMode: Image.PreserveAspectFit
+                            asynchronous: true
                             visible: status === Image.Ready
                         }
-                        C.Label {
-                            anchors.centerIn: parent
+                        Rectangle {
+                            anchors.fill: parent
                             visible: !appIcon.visible
-                            text: root.tab === "Files" ? (row.modelData.directory ? "󰉋" : "󰈙") : root.tab === "Clipboard" ? "󰅍" : root.tab === "Actions" ? (row.modelData.icon || "󰀻") : "󰀻"
-                            color: root.accent
-                            font.pixelSize: 22
+                            radius: 10
+                            color: root.embedded ? "#2a2a2f" : Qt.rgba(1, 1, 1, 0.08)
+                            C.Icon { anchors.centerIn: parent; name: root.iconFor(row.modelData); size: 18; color: root.foreground }
                         }
                     }
-                    ColumnLayout { Layout.fillWidth: true; spacing: 3; C.Label { color: root.foreground; text: row.modelData.name || ""; Layout.fillWidth: true; font.pixelSize: 15; font.weight: Font.Medium } C.Label { text: row.modelData.detail || ""; Layout.fillWidth: true; font.pixelSize: 12; color: root.secondary } }
-                    C.ActionButton { island: root.embedded; visible: root.tab === "Clipboard"; text: "Delete"; quiet: true; implicitHeight: 30; onClicked: root.deleteClipboard(row.modelData.id) }
-                    C.Label { visible: results.currentIndex === row.index; text: "↵"; color: root.accent }
+                    ColumnLayout {
+                        Layout.fillWidth: true; Layout.minimumWidth: 0; spacing: 2
+                        C.Label { color: root.foreground; text: root.emphasized(row.modelData.name); textFormat: Text.StyledText; Layout.fillWidth: true; font.pixelSize: 14 }
+                        C.Label { visible: text.length > 0; text: row.modelData.detail || ""; Layout.fillWidth: true; font.pixelSize: 12; color: root.secondary }
+                    }
+                    C.ActionButton { island: root.embedded; visible: root.tab === "Clipboard" && (row.current || hover.containsMouse); text: "Delete"; quiet: true; implicitHeight: 30; font.pixelSize: 12; onClicked: root.deleteClipboard(row.modelData.id) }
+                    Row {
+                        visible: row.current
+                        spacing: 8
+                        C.Label { anchors.verticalCenter: parent.verticalCenter; text: root.verb; color: root.secondary; font.pixelSize: 12 }
+                        Keycap { anchors.verticalCenter: parent.verticalCenter; label: "↵"; textColor: root.secondary }
+                    }
                 }
                 MouseArea { id: hover; anchors.fill: parent; hoverEnabled: true; onPositionChanged: results.currentIndex = row.index; onClicked: root.activate(row.modelData) }
             }
-            C.Label { anchors.centerIn: parent; visible: root.entries.length === 0; text: root.error || (((root.tab === "Files" || root.tab === "Clipboard") && (root.activeRequestKey === root.currentRequestKey() && fetcher.running || root.fetchPending || (root.tab === "Files" && debounce.running))) ? "Searching…" : root.tab === "Files" && search.text.length < 2 ? "Type at least two letters to find files" : "Nothing here yet"); color: root.secondary }
+            Column {
+                anchors.centerIn: parent
+                width: parent.width - 32
+                spacing: 8
+                visible: root.entries.length === 0
+                readonly property bool searching: root.error.length === 0 && (root.tab === "Files" || root.tab === "Clipboard") && (root.activeRequestKey === root.currentRequestKey() && fetcher.running || root.fetchPending || (root.tab === "Files" && debounce.running))
+                C.Icon { anchors.horizontalCenter: parent.horizontalCenter; name: root.error.length ? "circle-help" : root.tabIcons[root.tab]; size: 26; color: root.secondary; opacity: 0.8 }
+                C.Label {
+                    width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap
+                    text: root.error || (parent.searching ? "Searching…" : root.tab === "Files" && search.text.length < 2 ? "Type at least two letters to find files" : root.query.length ? "No results for “" + root.query + "”" : "Nothing here yet")
+                    color: root.foreground; font.pixelSize: 14; font.weight: Font.Medium
+                }
+                C.Label {
+                    width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap
+                    visible: !root.error.length && !parent.searching && root.query.length > 0
+                    text: "Try another category with Alt+1–5"
+                    color: root.secondary; font.pixelSize: 12
+                }
+            }
         }
         RowLayout {
             Layout.fillWidth: true
-            C.Label { visible: root.width >= 500; text: root.embedded ? "↑ ↓ select    ↵ open    Alt 1–5 category" : "↑ ↓ select    ↵ open    Ctrl Tab switch    Esc close"; color: root.secondary; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: 0 }
-            C.ActionButton { island: root.embedded; objectName: "launcherResetLearning"; visible: (root.tab === "Apps" || root.tab === "Actions") && !root.resetConfirm; enabled: !root.activationBusy && !S.LauncherHistory.busy; text: "Reset learning"; font.pixelSize: 11; quiet: true; tooltip: "Clear the local app and action choices used to rank results"; onClicked: root.resetConfirm = true }
-            C.ActionButton { island: root.embedded; visible: root.tab === "Clipboard"; enabled: !root.clipboardBusy; text: root.clipboardBusy ? "Updating…" : root.clipboardPaused ? "Resume" : "Pause"; quiet: true; tooltip: root.clipboardPaused ? "Resume saving clipboard history" : "Pause saving clipboard history"; onClicked: root.toggleClipboard() }
-            C.ActionButton { island: root.embedded; visible: root.tab === "Clipboard"; enabled: !root.clipboardBusy; text: "Clear history"; quiet: true; onClicked: root.clearClipboard() }
+            spacing: 6
+            Row {
+                visible: root.width >= 460
+                spacing: 6
+                Keycap { label: "↑↓"; textColor: root.secondary } C.Label { anchors.verticalCenter: parent.verticalCenter; text: "Navigate"; color: root.secondary; font.pixelSize: 11 }
+                Item { width: 6; height: 1 }
+                Keycap { label: "↵"; textColor: root.secondary } C.Label { anchors.verticalCenter: parent.verticalCenter; text: root.verb; color: root.secondary; font.pixelSize: 11 }
+                Item { width: 6; height: 1 }
+                Keycap { label: root.embedded ? "Alt 1–5" : "Ctrl Tab"; textColor: root.secondary } C.Label { anchors.verticalCenter: parent.verticalCenter; text: "Category"; color: root.secondary; font.pixelSize: 11 }
+            }
+            Item { Layout.fillWidth: true; Layout.minimumWidth: 0 }
+            C.ActionButton { island: root.embedded; objectName: "launcherResetLearning"; visible: (root.tab === "Apps" || root.tab === "Actions") && !root.resetConfirm; enabled: !root.activationBusy && !S.LauncherHistory.busy; text: "Reset learning"; font.pixelSize: 11; quiet: true; textColor: root.secondary; tooltip: "Clear the local app and action choices used to rank results"; onClicked: root.resetConfirm = true }
+            C.ActionButton { island: root.embedded; visible: root.tab === "Clipboard"; enabled: !root.clipboardBusy; text: root.clipboardBusy ? "Updating…" : root.clipboardPaused ? "Resume" : "Pause"; font.pixelSize: 12; quiet: true; tooltip: root.clipboardPaused ? "Resume saving clipboard history" : "Pause saving clipboard history"; onClicked: root.toggleClipboard() }
+            C.ActionButton { island: root.embedded; visible: root.tab === "Clipboard"; enabled: !root.clipboardBusy; text: "Clear history"; font.pixelSize: 12; quiet: true; onClicked: root.clearClipboard() }
         }
         RowLayout {
             visible: root.resetConfirm && (root.tab === "Apps" || root.tab === "Actions")

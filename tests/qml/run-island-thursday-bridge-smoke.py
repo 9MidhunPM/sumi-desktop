@@ -141,6 +141,7 @@ def main():
         source = source.replace("import QtQuick\n", "import QtQuick\nimport QtTest\n", 1)
         source = re.sub(r'^import "(?:ThursdayNative|CodexStatusModule)"[^\n]*\n', "", source, flags=re.M)
         source = re.sub(r"^    // Native assistant integration begins\..*?^    // Native assistant integration ends\.\n", FIXTURES, source, flags=re.M | re.S)
+        source = re.sub(r"^    Variants \{\n        model: Quickshell\.screens\n        WorkspaceOverview \{.*?^    \}\n", "", source, flags=re.M | re.S)
         source = re.sub(r"^    Variants \{.*\n", "", source, flags=re.M)
         source = re.sub(r"^    DesktopWidgets \{.*\n", "", source, flags=re.M)
         source = source[:source.rfind("}")] + TEST + "}\n"

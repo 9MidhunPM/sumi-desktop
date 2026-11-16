@@ -327,7 +327,7 @@ FocusScope {
                         text: "‹ Home"; tooltip: "Back to Home"; quiet: true
                         onClicked: root.sectionRequested("home")
                     }
-                    Label { text: "Calendar"; color: "#ffffff"; font.pixelSize: 15; font.weight: Font.DemiBold; Layout.fillWidth: true }
+                    Label { text: "Calendar"; color: "#ffffff"; font.pixelSize: 16; font.weight: Font.DemiBold; Layout.fillWidth: true }
                 }
                 IslandCalendar {
                     objectName: "islandMonthView"

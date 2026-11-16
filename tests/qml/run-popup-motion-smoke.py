@@ -57,10 +57,10 @@ ShellRoot {
             const loader = panel.parent;
             let entering = false;
             let previous = 0;
-            for (let elapsed = 0; elapsed < Theme.motionEnter + 48; elapsed += 16) {
+            for (let elapsed = 0; elapsed < Theme.motionBounce + 48; elapsed += 16) {
                 wait(16);
                 const progress = loader.motionProgress;
-                check(progress >= previous - 0.001 && progress <= 1, name + " enters without a jump or overshoot");
+                check(Math.abs(progress - previous) < 0.35 && progress <= 1.09, name + " enters smoothly within the shared bounce envelope");
                 previous = progress;
                 if (progress > 0.01 && progress < 0.98) {
                     entering = true;
@@ -111,7 +111,7 @@ ShellRoot {
             const closing = loader.motionProgress;
             fakeApp.open("launcher", screenInfo); wait(16);
             check(loader.motionProgress >= closing && loader.motionProgress < 1, "Reopening reverses the exit without snapping");
-            wait(Theme.motionEnter + 32);
+            wait(Theme.motionBounce + 32);
             Settings.reducedMotion = true;
             fakeApp.close(); wait(1);
             check(loader.motionProgress === 0 && !overlay.visible && overlay.smokeInputWidth === 0, "Reduced motion closes immediately");
@@ -125,7 +125,7 @@ ShellRoot {
             S.Notifications.history = [first];
             ready(() => toasts.smokeList.itemAtIndex(0) !== null, "First toast instantiates");
             let toastEntry = false;
-            for (let elapsed = 0; elapsed < Theme.motionEnter + 48; elapsed += 16) {
+            for (let elapsed = 0; elapsed < Theme.motionBounce + 48; elapsed += 16) {
                 wait(16);
                 if (toasts.reveal > 0.01 && toasts.reveal < 0.98) {
                     toastEntry = true;
@@ -137,7 +137,7 @@ ShellRoot {
             S.Notifications.history = [first, second];
             ready(() => toasts.smokeList.itemAtIndex(1) !== null, "Second toast instantiates");
             let inserted = false;
-            for (let elapsed = 0; elapsed < Theme.motionEnter + 48; elapsed += 16) {
+            for (let elapsed = 0; elapsed < Theme.motionBounce + 48; elapsed += 16) {
                 wait(16);
                 const item = toasts.smokeList.itemAtIndex(1);
                 if (item.opacity > 0.01 && item.opacity < 0.98) {
@@ -150,7 +150,7 @@ ShellRoot {
             const removed = toasts.smokeList.itemAtIndex(0);
             S.Notifications.history = [second];
             let removal = false;
-            for (let elapsed = 0; elapsed < Theme.motionExit + Theme.motionEnter + 48; elapsed += 16) {
+            for (let elapsed = 0; elapsed < Theme.motionExit + Theme.motionBounce + 48; elapsed += 16) {
                 wait(16);
                 if (removed && removed.opacity > 0.01 && removed.opacity < 0.98) { removal = true; check(removed.transform[0].x > 0 && removed.scale < 1 && !removed.enabled, "Removed toast slides out without accepting another action"); }
             }

@@ -30,7 +30,8 @@ ShellRoot {
             if (Quickshell.env("SUMI_TEST_FIXTURE") === "1") {
                 checks.push(C.Theme.name === "Fixture Theme");
                 checks.push(C.Theme.font === "Test Sans");
-                checks.push(C.Theme.fontMono === "Test Mono");
+                // One typeface everywhere: the monospace role follows the interface font.
+                checks.push(C.Theme.fontMono === "Test Sans");
                 checks.push(C.Theme.fontSize === 16);
                 checks.push(C.Theme.windowRounding === 11);
                 checks.push(C.Theme.borderWidth === 3);

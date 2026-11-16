@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Quickshell.Widgets
 import "../config"
 import "../services" as S
+import "MediaTime.js" as MediaTime
 
 ColumnLayout {
     id: root
@@ -17,11 +18,7 @@ ColumnLayout {
     readonly property var sources: S.Media.players.filter(player => S.IslandMedia.meaningful(player))
     signal detailsRequested()
     spacing: 0
-    function time(seconds) {
-        if (!isFinite(seconds) || seconds < 0) return "--:--";
-        const value = Math.floor(seconds);
-        return Math.floor(value/60) + ":" + String(value%60).padStart(2,"0");
-    }
+    function time(seconds) { return MediaTime.format(seconds); }
     Rectangle {
         Layout.fillWidth: true
         Layout.minimumWidth: 0
@@ -29,6 +26,7 @@ ColumnLayout {
         Layout.minimumHeight: implicitHeight
         radius: 28
         color: "transparent"
+        ArtworkAccent { id: accent; source: art.status === Image.Ready ? art.source : "" }
         ColumnLayout {
             id: content
             anchors { left: parent.left; right: parent.right; top: parent.top; margins: root.showExtras ? 16 : 0 }
@@ -48,7 +46,7 @@ ColumnLayout {
                     Label { objectName: "islandDashboardTrackTitle"; Layout.fillWidth: true; Layout.minimumWidth: 0; text: S.IslandMedia.available ? S.IslandMedia.title : "Nothing playing"; font.pixelSize: 16; font.weight: Font.DemiBold; color: IslandStyle.text; wrapMode: Text.Wrap; maximumLineCount: 2; elide: Text.ElideRight }
                     Label { Layout.fillWidth: true; Layout.minimumWidth: 0; text: S.IslandMedia.artist || (S.IslandMedia.available ? S.IslandMedia.player.identity || "Media player" : "Your next soundtrack starts here"); font.pixelSize: 12; color: IslandStyle.secondary; maximumLineCount: 1; elide: Text.ElideRight }
                 }
-                IslandWaveform { objectName: "islandMediaWaveform"; Layout.preferredWidth: 46; Layout.preferredHeight: 24; barCount: 10; samples: root.samples; active: root.active && S.IslandMedia.playing; visible: S.IslandMedia.available }
+                IslandWaveform { objectName: "islandMediaWaveform"; Layout.preferredWidth: 46; Layout.preferredHeight: 24; barCount: 10; samples: root.samples; active: root.active && S.IslandMedia.playing; visible: S.IslandMedia.available; tint: accent.accent }
             }
             ColumnLayout {
                 Layout.fillWidth: true; Layout.minimumWidth: 0
@@ -73,9 +71,9 @@ ColumnLayout {
                     Layout.fillWidth: true; Layout.minimumWidth: 0
                     Layout.minimumHeight: 14
                     Layout.preferredHeight: 14
-                    Label { objectName: "islandNowPlayingPosition"; text: S.IslandMedia.available ? root.time(root.mediaPosition) : "--:--"; font.pixelSize: 10; color: IslandStyle.secondary }
+                    Label { objectName: "islandNowPlayingPosition"; text: S.IslandMedia.available ? root.time(root.mediaPosition) : "--:--"; font.pixelSize: IslandStyle.captionText; font.features: IslandStyle.figures; color: IslandStyle.secondary }
                     Item { Layout.fillWidth: true; Layout.minimumWidth: 0 }
-                    Label { objectName: "islandNowPlayingDuration"; text: root.trackLength > 0 ? root.time(root.trackLength) : "--:--"; font.pixelSize: 10; color: IslandStyle.secondary }
+                    Label { objectName: "islandNowPlayingDuration"; text: root.trackLength > 0 ? root.time(root.trackLength) : "--:--"; font.pixelSize: IslandStyle.captionText; font.features: IslandStyle.figures; color: IslandStyle.secondary }
                 }
             }
             RowLayout {
@@ -83,9 +81,9 @@ ColumnLayout {
                 visible: S.IslandMedia.available
                 spacing: 18
                 Item { Layout.fillWidth: true; Layout.minimumWidth: 0 }
-                IslandPreviewButton { iconName: "chevron-down"; rotation: 90; iconSize: 27; tooltip: "Previous track"; quiet: true; implicitWidth: 40; implicitHeight: 40; enabled: !!S.IslandMedia.player && S.IslandMedia.player.canGoPrevious; onClicked: S.IslandMedia.previous() }
-                IslandPreviewButton { id: transportPlay; objectName: "islandDashboardPlay"; iconName: S.IslandMedia.playing ? "pause" : "play"; iconSize: 27; tooltip: S.IslandMedia.playing ? "Pause" : "Play"; quiet: true; implicitWidth: 44; implicitHeight: 40; enabled: !!S.IslandMedia.player && S.IslandMedia.player.canTogglePlaying; onClicked: S.IslandMedia.toggle() }
-                IslandPreviewButton { iconName: "chevron-down"; rotation: -90; iconSize: 27; tooltip: "Next track"; quiet: true; implicitWidth: 40; implicitHeight: 40; enabled: !!S.IslandMedia.player && S.IslandMedia.player.canGoNext; onClicked: S.IslandMedia.next() }
+                IslandPreviewButton { iconName: "backward"; iconSize: 24; tooltip: "Previous track"; quiet: true; implicitWidth: 44; implicitHeight: 44; enabled: !!S.IslandMedia.player && S.IslandMedia.player.canGoPrevious; onClicked: S.IslandMedia.previous() }
+                IslandPreviewButton { id: transportPlay; objectName: "islandDashboardPlay"; iconName: S.IslandMedia.playing ? "pause-fill" : "play-fill"; iconSize: 28; tooltip: S.IslandMedia.playing ? "Pause" : "Play"; quiet: true; implicitWidth: 48; implicitHeight: 44; enabled: !!S.IslandMedia.player && S.IslandMedia.player.canTogglePlaying; onClicked: S.IslandMedia.toggle() }
+                IslandPreviewButton { iconName: "forward"; iconSize: 24; tooltip: "Next track"; quiet: true; implicitWidth: 44; implicitHeight: 44; enabled: !!S.IslandMedia.player && S.IslandMedia.player.canGoNext; onClicked: S.IslandMedia.next() }
                 Item { Layout.fillWidth: true; Layout.minimumWidth: 0 }
             }
             RowLayout {

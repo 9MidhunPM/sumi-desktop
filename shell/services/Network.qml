@@ -11,6 +11,11 @@ Singleton {
     readonly property bool wifiAvailable: wifiDevice !== null && Net.Networking.wifiHardwareEnabled
     readonly property bool wifiEnabled: Net.Networking.wifiEnabled
     readonly property var networks: wifiDevice ? wifiDevice.networks.values : []
+    // Connected first, then strongest; the order people scan a network list in.
+    readonly property var sortedNetworks: networks.slice().sort((a, b) => (b.connected === true) - (a.connected === true) || (b.signalStrength || 0) - (a.signalStrength || 0))
+    readonly property bool scanning: discoveryRequested && wifiEnabled
+    // Open and OWE networks need no password; everything up to LEAP is secured.
+    function secured(network: var): bool { return !!network && typeof network.security === "number" && network.security <= 8; }
     readonly property bool connected: devices.some(device => device.connected)
     readonly property string name: {
         const connectedWifi = networks.find(network => network.connected);

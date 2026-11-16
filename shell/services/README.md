@@ -1,6 +1,6 @@
 # Sumi QML services
 
-Import `services` as `S`, and `config` as `C`. These singleton adapters use Quickshell 0.3.2's native event-driven services. They do not poll shell commands. All system-changing methods are inert with `SUMI_PREVIEW=1`; preview mode also avoids constructing the notification server.
+Import `services` as `S`, and `config` as `C`. These singleton adapters use Quickshell 0.3.2's native event-driven services. Brightness uses one blocking sysfs observer; recording status reconciles every five seconds only while recording. All system-changing methods are inert with `SUMI_PREVIEW=1`; preview mode also avoids constructing the notification server.
 
 | Singleton | Readable state | Methods |
 | --- | --- | --- |
@@ -11,7 +11,11 @@ Import `services` as `S`, and `config` as `C`. These singleton adapters use Quic
 | `S.Media` | `available`, `players`, `player`, `playing`, `title`, `artist`, `artUrl` | `select(player)`, `toggle()`, `next()`, `previous()`, `raise()`, `seek(seconds)` |
 | `S.Network` | `devices`, `wifiDevice`, `wifiAvailable`, `wifiEnabled`, `networks`, `connected`, `name`, `captivePortal` | `toggleWifi()`, `setScanning(bool)`, `connect(network, psk)`, `disconnect(network)`, `forget(network)` |
 | `S.Bluetooth` | `adapter`, `devices`, `available`, `enabled`, `scanning`, `connectedCount` | `toggle()`, `setScanning(bool)`, `connectDevice(device)`, `disconnectDevice(device)`, `pairDevice(device)`, `openManager()` |
-| `S.Notifications` | `enabled`, `history`, `active`, `count`, `unread`, `dnd` | `dismiss(id)`, `clear()`, `invoke(id, actionIndex)`, `markRead()`, `toggleDnd()`; `received(entry)` signal |
+| `S.Notifications` | `enabled`, `history`, `active`, `count`, `unread`, `dnd` | `dismissPopup(id)` (retain history), `markEntriesRead(ids)`, `dismiss(id)` (remove), `clear()`, `invoke(id, actionIndex)`, `markRead()`, `toggleDnd()`; `received(entry)` signal |
+| `S.Brightness` | `percent`, `ready`, `available`, `loading`, `busy`, `error` | `refresh()`, `setPercent(1..100)`; `changed(percent)` reports observed changes after a silent baseline. |
+| `S.Recording` | `ready`, `recording`, `busy`, `file`, `error` | `refresh()`, `start(callback?)`, `stop()`; release all selectors and focus grabs before start. |
+| `S.NightLight` | `available`, `active`, `busy`, `error` | `refresh()`, `toggle()`; state comes from confirmed controller results. |
+| `S.IslandEvents` | `eventKind`, `eventLabel`, `eventValue`, `eventScreenName`, `eventPriority`, `eventCritical`, `eventSection`, `notification`, `pendingCount`, `criticalAttention` | `show(kind,label,value,durationMs,screenName?,options?)`, `dismissCurrent()`, `publishFocusComplete()`; notification previews never own native notification lifetime. |
 | `S.Clock` | `date`, `time`, `dateLabel`, `monthLabel` | Native clock updates once per minute. |
 | `S.Desktop` | `preview`, `controller`, `lastAction` | `action(command, args)`, `theme(id)`, `profile(id)` |
 
@@ -24,12 +28,3 @@ Bluetooth discovery and existing-device connections are native. Pairing launches
 The controller path is `SUMI_DESKTOPCTL` or `bin/desktopctl` beside the shell directory. Actions always use an argv array. The installer must create the state directory (`$XDG_STATE_HOME/sumi` by default) before settings are written.
 
 Run `python3 tests/qml/run-services-smoke.py` for offscreen checks. This tests defaults, loading/watching themes, invalid-theme recovery, settings persistence, notification sanitization/history/actions, and preview isolation. Sandbox tests cannot establish live DBus or PipeWire functionality; validate those in the host graphical session. Qt 6 lint is `/usr/lib/qt6/bin/qmllint`; upstream qmltypes currently emit warnings about opaque native models and singleton aliases, so the offscreen runtime test is also required.
-
-
-The island uses shared `Brightness`, `NightLight`, and `Recording` services so
-Quick Settings and compact controls observe the same state. `IslandEvents`
-prioritizes transient presentation without taking ownership of notification
-history or actions. `IslandMedia` selects meaningful playback while leaving
-paused native players resumable. `SystemStats` uses one controller observer only
-while a Home or Controls page requests it, and clears unavailable or stale data.
-The optional Thursday adapter is documented separately in `integrations/README.md`.

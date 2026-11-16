@@ -264,6 +264,9 @@ def main() -> None:
         (config / "Overlay.qml").write_text(source)
         launcher = config / "Launcher.qml"
         launcher.write_text(launcher.read_text().replace("    property string initialTab:", "    property alias smokeSearch: search.text\n    readonly property var smokeSearchItem: search\n    property string initialTab:", 1))
+        # Keep the fixture independent of whatever the host session is playing.
+        media = config / "services/Media.qml"
+        media.write_text(media.read_text().replace("readonly property var players: Mp.Mpris.players.values", "property var players: []", 1))
         # Deterministic read-only device fixture; no system scanner or network writes.
         (config / "services/Network.qml").write_text('''pragma Singleton
 import QtQuick

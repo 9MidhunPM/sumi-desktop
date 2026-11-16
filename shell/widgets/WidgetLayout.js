@@ -37,48 +37,62 @@ function layout(scene, width, height, override, flags) {
     const keys = ["clock", "spotify", "priorities", "deadline"];
     const active = keys.filter(key => enabled(flags, key));
     const compact = !!design.compact || width < 1100 || height < 720;
-    const sizes = compact
-        ? {clock: [450, 168], spotify: [440, 176], priorities: [300, 154], deadline: [300, 104]}
-        : {clock: [630, 225], spotify: [520, 216], priorities: [320, 168], deadline: [320, 104]};
+    // Every wallpaper uses the same full-size Eww composition. Shrink only
+    // when the enabled widgets cannot physically fit the available viewport.
+    const sizes = {clock: [520, 222], spotify: [420, 183], priorities: [320, 168], deadline: [320, 104]};
     const margin = Math.min(width * 0.04, width < 900 ? 24 : 48);
     const top = Math.min(80, Math.max(52, height * 0.09));
     const bottom = Math.min(32, Math.max(16, height * 0.03));
-    const gap = compact ? 14 : 20;
+    const gap = compact ? 16 : 20;
     const areaWidth = Math.max(1, width - margin * 2);
     const areaHeight = Math.max(1, height - top - bottom);
     const mode = ["left", "right", "split"].indexOf(override) >= 0 ? override
         : ["left", "right", "split"].indexOf(design.mode) >= 0 ? design.mode : "split";
     const explicit = ["left", "right", "split"].indexOf(override) >= 0;
-    const widest = Math.max.apply(null, active.map(key => sizes[key][0]).concat([1]));
-    const singleHeight = active.reduce((sum, key) => sum + sizes[key][1], 0) + Math.max(0, active.length - 1) * gap;
-    const leftKeys = active.filter(key => key === "clock" || key === "spotify");
-    const rightKeys = active.filter(key => key === "priorities" || key === "deadline");
-    const columnWidth = entries => Math.max.apply(null, entries.map(key => sizes[key][0]).concat([0]));
+    const paired = active.indexOf("clock") >= 0 && active.indexOf("spotify") >= 0;
+    // Place the Eww clock/player stack atomically. Collision fitting must never
+    // send the player to another side of the artwork or separate the two.
+    const unitKeys = paired ? ["pair"].concat(active.filter(key => key !== "clock" && key !== "spotify")) : active;
+    const unitSizes = Object.assign({}, sizes);
+    unitSizes.pair = [Math.max(sizes.clock[0], sizes.spotify[0]), sizes.clock[1] + sizes.spotify[1]];
+    const leftKeys = unitKeys.filter(key => key === "pair" || key === "clock" || key === "spotify");
+    const rightKeys = unitKeys.filter(key => key === "priorities" || key === "deadline");
+    const columnWidth = entries => Math.max.apply(null, entries.map(key => unitSizes[key][0]).concat([0]));
+    const columnHeight = entries => entries.reduce((sum, key) => sum + unitSizes[key][1], 0) + Math.max(0, entries.length - 1) * gap;
     const twoColumns = mode === "split" && leftKeys.length > 0 && rightKeys.length > 0
         && areaWidth >= columnWidth(leftKeys) + columnWidth(rightKeys) + gap;
-    const pairHeight = Math.max(
-        active.filter(key => key === "clock" || key === "spotify").reduce((sum, key) => sum + sizes[key][1] + gap, 0) - gap,
-        active.filter(key => key === "priorities" || key === "deadline").reduce((sum, key) => sum + sizes[key][1] + gap, 0) - gap,
-        1);
-    const scale = Math.min(1, areaWidth / widest, areaHeight / Math.max(1, twoColumns ? pairHeight : singleHeight));
+    const requiredHeight = twoColumns ? Math.max(columnHeight(leftKeys), columnHeight(rightKeys)) : columnHeight(unitKeys);
+    const scale = Math.min(1, areaWidth / Math.max(1, columnWidth(unitKeys)), areaHeight / Math.max(1, requiredHeight));
     const pad = gap * scale;
     const result = {compact: compact, scale: scale, mode: mode, fallback: false};
+    const units = {};
     keys.forEach(key => { result[key] = {x: margin, y: top, width: sizes[key][0] * scale, height: sizes[key][1] * scale}; });
+    unitKeys.forEach(key => { units[key] = {x: margin, y: top, width: unitSizes[key][0] * scale, height: unitSizes[key][1] * scale}; });
 
     function bound(rect) {
         rect.x = clamp(rect.x, margin, width - margin - rect.width);
         rect.y = clamp(rect.y, top, height - bottom - rect.height);
         return rect;
     }
-
+    function publish() {
+        unitKeys.forEach(key => {
+            if (key !== "pair") { result[key] = units[key]; return; }
+            const pair = units.pair;
+            result.clock.x = pair.x + (pair.width - result.clock.width) / 2;
+            result.clock.y = pair.y;
+            result.spotify.x = pair.x + (pair.width - result.spotify.width) / 2;
+            result.spotify.y = pair.y + result.clock.height;
+        });
+        return result;
+    }
     function pack() {
-        const left = active.filter(key => !twoColumns || key === "clock" || key === "spotify");
-        const right = twoColumns ? active.filter(key => key === "priorities" || key === "deadline") : [];
+        const left = twoColumns ? leftKeys : unitKeys;
+        const right = twoColumns ? rightKeys : [];
         function column(items, alignRight) {
-            const total = items.reduce((sum, key) => sum + result[key].height, 0) + Math.max(0, items.length - 1) * pad;
+            const total = items.reduce((sum, key) => sum + units[key].height, 0) + Math.max(0, items.length - 1) * pad;
             let y = top + Math.max(0, (areaHeight - total) * 0.32);
             items.forEach(key => {
-                const rect = result[key];
+                const rect = units[key];
                 rect.x = alignRight ? width - margin - rect.width : margin;
                 rect.y = y;
                 y += rect.height + pad;
@@ -87,14 +101,12 @@ function layout(scene, width, height, override, flags) {
         column(left, mode === "right");
         column(right, true);
     }
-
     pack();
-    if (explicit || !design.anchors || active.length === 0) return result;
+    if (explicit || !design.anchors || active.length === 0) return publish();
     const placed = [];
-    for (let index = 0; index < active.length; index++) {
-        const key = active[index];
-        const rect = result[key];
-        const point = sourcePoint(design.anchors[key], scene.sourceSize, width, height);
+    for (const key of unitKeys) {
+        const rect = units[key];
+        const point = sourcePoint(design.anchors[key === "pair" ? "clock" : key], scene.sourceSize, width, height);
         const desired = bound({x: point.x, y: point.y, width: rect.width, height: rect.height});
         const candidates = [desired];
         const xs = [desired.x, margin, width - margin - rect.width];
@@ -109,10 +121,10 @@ function layout(scene, width, height, override, flags) {
         if (!fitting.length) {
             result.fallback = true;
             pack();
-            return result;
+            return publish();
         }
-        result[key] = fitting[0];
-        placed.push(result[key]);
+        units[key] = fitting[0];
+        placed.push(units[key]);
     }
-    return result;
+    return publish();
 }

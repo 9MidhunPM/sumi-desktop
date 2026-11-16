@@ -123,8 +123,8 @@ C.Surface {
             Layout.fillWidth: true
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 4
-                C.Label { color: root.foreground; text: "Your desktop"; font.pixelSize: 25; font.weight: Font.DemiBold; Layout.fillWidth: true }
+                spacing: Metrics.space1
+                C.Label { color: root.foreground; text: "Your desktop"; font.pixelSize: 22; font.weight: Font.DemiBold; Layout.fillWidth: true }
                 C.Label { text: "A few things worth keeping in sight."; color: root.secondary; Layout.fillWidth: true; wrapMode: Text.Wrap }
             }
             C.ActionButton { island: root.embedded; text: "×"; tooltip: "Close widgets"; objectName: "widgetsClose"; quiet: true; font.pixelSize: 20; onClicked: root.app.close() }
@@ -150,7 +150,7 @@ C.Surface {
                         required property int index
                         readonly property var field: priorityInput
                         Layout.fillWidth: true
-                        spacing: 10
+                        spacing: Metrics.space3
                         CheckBox {
                             id: done
                             objectName: "widgetsDone" + priorityRow.index
@@ -204,7 +204,16 @@ C.Surface {
                 }
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 10
+                    spacing: Metrics.space3
+                    C.ActionButton {
+                        objectName: "widgetsDeadlinePick"
+                        island: root.embedded
+                        iconName: "calendar"; iconSize: 17
+                        implicitWidth: 42; implicitHeight: 42
+                        selected: deadlinePicker.visible
+                        tooltip: deadlinePicker.visible ? "Hide calendar" : "Choose a date"
+                        onClicked: deadlinePicker.visible = !deadlinePicker.visible
+                    }
                     TextField {
                         id: deadlineDate
                         onTextChanged: root.persistSessionDraft()
@@ -213,7 +222,7 @@ C.Surface {
                         implicitHeight: 42
                         maximumLength: 10
                         placeholderText: "YYYY-MM-DD"
-                        color: root.foreground; placeholderTextColor: root.secondary; font.family: Theme.fontMono; padding: 10
+                        color: root.foreground; placeholderTextColor: root.secondary; font.family: Theme.font; font.features: IslandStyle.figures; padding: 10
                         Accessible.name: "Deadline date, year month day"
                         onTextEdited: root.dirty = true
                         onActiveFocusChanged: if (activeFocus) root.reveal(deadlineDate)
@@ -233,6 +242,15 @@ C.Surface {
                         onActiveFocusChanged: if (activeFocus) root.reveal(deadlineTime)
                         background: C.Surface { island: root.embedded; inset: true; radius: IslandStyle.controlRadius; border.width: deadlineTime.activeFocus ? 2 : 1; border.color: deadlineTime.activeFocus ? root.accent : root.separator }
                     }
+                }
+                C.IslandCalendar {
+                    id: deadlinePicker
+                    objectName: "widgetsDeadlineCalendar"
+                    visible: false
+                    Layout.fillWidth: true
+                    selectable: true
+                    selectedDate: { const parts = deadlineDate.text.split("-"); return parts.length === 3 ? new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])) : new Date(NaN); }
+                    onPicked: day => { deadlineDate.text = Qt.formatDateTime(day, "yyyy-MM-dd"); root.dirty = true; visible = false; }
                 }
                 C.ActionButton { island: root.embedded; text: "Clear deadline"; quiet: true; onActiveFocusChanged: if (activeFocus) root.reveal(this); onClicked: { deadlineTitle.clear(); deadlineDate.clear(); root.dirty = true; } }
                 C.Label { color: root.foreground; text: "Visible widgets"; font.pixelSize: 16; font.weight: Font.DemiBold; Layout.topMargin: 8 }

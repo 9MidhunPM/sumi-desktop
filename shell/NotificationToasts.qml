@@ -32,13 +32,13 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     Behavior on reveal {
         id: stackMotion
-        NumberAnimation { duration: stackMotion.targetValue > 0 ? Theme.motionEnter : Theme.motionExit; easing.type: stackMotion.targetValue > 0 ? Easing.OutQuint : Easing.InCubic }
+        NumberAnimation { duration: stackMotion.targetValue > 0 ? Theme.motionBounce : Theme.motionExit; easing.type: Easing.BezierSpline; easing.bezierCurve: stackMotion.targetValue > 0 ? Motion.bounceCurve : Motion.exitCurve }
     }
     Behavior on stackHeight {
         id: heightMotion
         // New cards need a full viewport before their own slide starts.
         enabled: root.shown && heightMotion.targetValue > 0 && heightMotion.targetValue < root.stackHeight
-        NumberAnimation { duration: Theme.motionEnter; easing.type: Easing.OutQuint }
+        NumberAnimation { duration: Theme.motionEnter; easing.type: Easing.BezierSpline; easing.bezierCurve: Motion.standardCurve }
     }
 
     function updateStackHeight() {
@@ -79,7 +79,7 @@ PanelWindow {
         model: toastModel
         boundsBehavior: Flickable.StopAtBounds
         onContentHeightChanged: root.updateStackHeight()
-        displaced: Transition { NumberAnimation { properties: "x,y"; duration: Theme.motionEnter; easing.type: Easing.OutQuint } }
+        displaced: Transition { NumberAnimation { properties: "x,y"; duration: Theme.motionBounce; easing.type: Easing.BezierSpline; easing.bezierCurve: Motion.bounceCurve } }
         delegate: C.Surface {
             id: toast
             required property var entry
@@ -95,13 +95,13 @@ PanelWindow {
             transform: Translate { x: Theme.effectiveReducedMotion ? 0 : (1 - toast.entrance) * (Theme.batteryMotion ? 18 : 32) }
             Behavior on entrance {
                 enabled: !removal.running
-                NumberAnimation { duration: Theme.motionEnter; easing.type: Easing.OutQuint }
+                NumberAnimation { duration: Theme.motionBounce; easing.type: Easing.BezierSpline; easing.bezierCurve: Motion.bounceCurve }
             }
             SequentialAnimation {
                 id: removal
                 // Keep both the card and its layout space until its exit ends.
                 PropertyAction { target: toast; property: "ListView.delayRemove"; value: true }
-                NumberAnimation { target: toast; property: "entrance"; to: 0; duration: Theme.motionExit; easing.type: Easing.InCubic }
+                NumberAnimation { target: toast; property: "entrance"; to: 0; duration: Theme.motionExit; easing.type: Easing.BezierSpline; easing.bezierCurve: Motion.exitCurve }
                 PropertyAction { target: toast; property: "ListView.delayRemove"; value: false }
             }
             width: toastList.width

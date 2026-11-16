@@ -164,10 +164,13 @@ FocusScope {
     Keys.onEscapePressed: event => { if (!root.back()) root.dismissRequested(); event.accepted = true; }
 
     component Detail: TextEdit {
+        // Thursday answers in Markdown; render it rather than showing raw asterisks.
+        property bool markdown: false
         color: IslandStyle.text
         font.family: Theme.font
         font.pixelSize: 14
-        textFormat: TextEdit.PlainText
+        textFormat: markdown ? TextEdit.MarkdownText : TextEdit.PlainText
+        onLinkActivated: link => Qt.openUrlExternally(link)
         readOnly: true
         selectByMouse: true
         wrapMode: TextEdit.Wrap
@@ -410,7 +413,7 @@ FocusScope {
                                 Layout.fillWidth: true
                                 text: String(modelData.tool || "") + " · " + String(modelData.status || "")
                                     + (typeof modelData.duration_ms === "number" ? " · " + (modelData.duration_ms / 1000).toFixed(1) + "s" : "")
-                                font.pixelSize: 10
+                                font.pixelSize: 11
                                 wrapMode: Text.Wrap
                             }
                             Caption {
@@ -468,7 +471,7 @@ FocusScope {
                         Layout.fillWidth: true
                         spacing: 5
                         Caption { text: parent.speaker === "user" ? "You" : "Thursday"; font.weight: Font.DemiBold }
-                        Detail { Layout.fillWidth: true; text: parent.body; Accessible.name: parent.speaker === "user" ? "Your message" : "Thursday response" }
+                        Detail { Layout.fillWidth: true; text: parent.body; markdown: parent.speaker !== "user"; Accessible.name: parent.speaker === "user" ? "Your message" : "Thursday response" }
                         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: IslandStyle.line; Layout.topMargin: 8; Layout.bottomMargin: 6 }
                     }
                 }
@@ -509,7 +512,7 @@ FocusScope {
                     Layout.fillWidth: true
                     spacing: 4
                     Caption { text: "Thursday"; font.weight: Font.DemiBold }
-                    Detail { objectName: "islandThursdayAnswer"; Layout.fillWidth: true; text: root.answer; Accessible.name: "Thursday's response" }
+                    Detail { objectName: "islandThursdayAnswer"; Layout.fillWidth: true; text: root.answer; markdown: true; Accessible.name: "Thursday's response" }
                 }
                 Caption {
                     visible: root.ready && !root.prompt.length && !root.answer.length && !root.transcript.length && !root.approval && !root.errors.length
@@ -586,7 +589,7 @@ FocusScope {
                 tooltip: root.recording ? "Finish this voice recording" : "Start a voice recording"
                 onClicked: root.toggleMicrophone()
             }
-            Caption { visible: root.width > 440; text: "Shift + Enter for a new line"; Layout.fillWidth: true; font.pixelSize: 10 }
+            Caption { visible: root.width > 440; text: "Shift + Enter for a new line"; Layout.fillWidth: true; font.pixelSize: 11 }
             Item { visible: root.width <= 440; Layout.fillWidth: true }
             IslandPreviewButton { objectName: "islandThursdaySend"; text: root.backend && root.backend.sendPending ? "Sending…" : "Send"; selected: true; enabled: root.canSend; onClicked: root.submitPrompt() }
         }

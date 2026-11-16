@@ -11,6 +11,8 @@ AbstractButton {
     readonly property color accent: island ? IslandStyle.accent : Theme.accentBlue
     readonly property color accentForeground: island ? IslandStyle.accentText : Theme.desktopBackground
     property string glyph: ""
+    // Island icon name; preferred over the legacy icon-font glyph.
+    property string iconName: ""
     property bool selected: false
     property bool quiet: false
     property bool compact: false
@@ -28,6 +30,9 @@ AbstractButton {
     opacity: enabled ? 1 : 0.4
     Keys.onReturnPressed: clicked()
     Keys.onEnterPressed: clicked()
+    // Shared press response: in quickly, back with the common bounce.
+    scale: Theme.effectiveReducedMotion ? 1 : control.down ? 0.96 : 1
+    Behavior on scale { NumberAnimation { duration: control.down ? Theme.motionControl : Theme.motionBounce * 0.8; easing.type: Easing.BezierSpline; easing.bezierCurve: control.down ? Motion.standardCurve : Motion.bounceCurve } }
     background: Rectangle {
         radius: control.compact ? IslandStyle.smallRadius : IslandStyle.controlRadius
         color: control.selected ? control.accent
@@ -42,7 +47,8 @@ AbstractButton {
     contentItem: RowLayout {
         id: contentRow
         spacing: Metrics.space2
-        Label { visible: control.glyph.length > 0; text: control.glyph; font.pixelSize: 17; color: control.selected ? control.accentForeground : control.foreground }
+        Icon { visible: control.iconName.length > 0; name: control.iconName; size: 17; color: control.selected ? control.accentForeground : control.foreground }
+        Label { visible: control.iconName.length === 0 && control.glyph.length > 0; text: control.glyph; font.pixelSize: 17; color: control.selected ? control.accentForeground : control.foreground }
         Label { visible: control.text.length > 0; text: control.text; Layout.fillWidth: true; Layout.minimumWidth: 0; font.pixelSize: control.compact ? 12 : 14; font.weight: Font.Medium; color: control.selected ? control.accentForeground : control.foreground }
     }
     ToolTip.visible: visualFocus && tooltip.length > 0

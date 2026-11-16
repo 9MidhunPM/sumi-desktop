@@ -14,6 +14,19 @@ Singleton {
         return rank(a) - rank(b) || String(a.name || a.address || "").localeCompare(String(b.name || b.address || ""));
     })
     readonly property bool available: !!adapter
+    // Devices that only advertise a hardware address are noise; keep them in "Other devices".
+    function hasName(device: var): bool {
+        const name = device ? String(device.name || device.deviceName || "") : "";
+        return name.length > 0 && !/^([0-9A-F]{2}[-:]){5}[0-9A-F]{2}$/i.test(name);
+    }
+    readonly property var namedDevices: sortedDevices.filter(device => hasName(device) || device.paired || device.connected)
+    readonly property var otherDevices: sortedDevices.filter(device => !(hasName(device) || device.paired || device.connected))
+    function deviceIcon(device: var): string {
+        const icon = device ? String(device.icon || "") : "";
+        return /head|audio|ear|speaker/.test(icon) ? "headphones" : /phone/.test(icon) ? "phone" : /computer|laptop/.test(icon) ? "laptop"
+            : /keyboard/.test(icon) ? "keyboard" : /mouse|pointing|tablet/.test(icon) ? "mouse" : "bluetooth";
+    }
+    function batteryLabel(device: var): string { return device && device.batteryAvailable ? Math.round(device.battery * 100) + "%" : ""; }
     readonly property bool enabled: !!adapter && adapter.enabled === true
     readonly property bool scanning: !!adapter && adapter.discovering === true
     readonly property int connectedCount: devices.filter(device => device && device.connected === true).length

@@ -11,6 +11,11 @@ import "integrations" as ThursdayIntegration
 Scope {
     id: desktopRoot
     property string panel: ""
+    property bool overviewOpen: false
+    property var overviewPending: null
+    property int overviewActionSerial: 0
+    property string overviewReturnApplication: ""
+    property int overviewReturnWorkspace: 0
     property string settingsSection: ""
     property bool nativeDialogOpen: false
     property bool captureSelecting: false
@@ -26,22 +31,31 @@ Scope {
     readonly property var thursdayBackend: thursdayLoader.item
     property bool thursdayExternal: false
     property string thursdayError: ""
+    readonly property bool thursdayPresentationAllowed: !!thursdayBackend && thursdayBackend.presentationEnabled !== false
+    onThursdayPresentationAllowedChanged: if (!thursdayPresentationAllowed) {
+        thursdayOutputUntil = 0;
+        thursdayOutputScreen = "";
+        thursdayReading.stop();
+    }
+    function thursdayCanPresent() {
+        return thursdayPresentationAllowed;
+    }
     function updateThursdayError() {
         const backend = thursdayBackend;
         const message = backend ? backend.errorText || backend.voiceError || backend.speechError || backend.outputNotice || "" : "";
         if (message === thursdayError) return;
         const previous = thursdayError;
         thursdayError = message;
-        if (message && !thursdayExternal) S.IslandEvents.show("thursday", message, 0, 8000, "", {priority: 80, section: "thursday"});
+        if (message && !thursdayExternal && thursdayCanPresent()) S.IslandEvents.show("thursday", message, 0, 8000, "", {priority: 80, section: "thursday"});
         else if (!message && S.IslandEvents.eventKind === "thursday" && S.IslandEvents.eventLabel === previous) S.IslandEvents.dismissCurrent();
     }
     property double thursdayOutputUntil: 0
     property string thursdayOutputScreen: ""
-    readonly property bool thursdayOutputActive: !!thursdayBackend && !thursdayExternal
+    readonly property bool thursdayOutputActive: thursdayCanPresent() && !thursdayExternal
         && (thursdayBackend.voiceActive || (thursdayBackend.voiceSession && (thursdayBackend.busy || thursdayBackend.taskActive || thursdayBackend.sendPending)) || (!!thursdayBackend.latestAnswer && (thursdayBackend.busy || thursdayBackend.speaking || thursdayBackend.playbackRunning || thursdayBackend.speechPreparing)) || thursdayOutputUntil > 0)
     function holdThursdayOutput() {
         const backend = thursdayBackend;
-        if (!backend || (!backend.latestAnswer && !backend.transcript)) return;
+        if (!thursdayCanPresent() || (!backend.latestAnswer && !backend.transcript)) return;
         if (!thursdayOutputScreen) {
             const screen = resolveScreen(backend.currentScreen);
             thursdayOutputScreen = screen ? screen.name : "";
@@ -75,7 +89,7 @@ Scope {
         function onHudDismissedChanged() { desktopRoot.suppressThursdayHud(); }
         function onConfirmationsChanged() {
             const backend = desktopRoot.thursdayBackend;
-            if (backend && backend.confirmations.length && !desktopRoot.thursdayExternal)
+            if (backend && backend.confirmations.length && !desktopRoot.thursdayExternal && desktopRoot.thursdayCanPresent())
                 S.IslandEvents.show("thursday", "Thursday needs your approval", 1, 8000, "", {priority: 80, section: "thursday"});
             else if (S.IslandEvents.eventKind === "thursday" && S.IslandEvents.eventLabel === "Thursday needs your approval")
                 S.IslandEvents.dismissCurrent();
@@ -118,6 +132,10 @@ Scope {
     }
     function openIsland(section, preferred, toggle, fresh = false) {
         if (nativeDialogOpen) return false;
+        overviewActionSerial++;
+        overviewPending = null;
+        specialOverviewCheck.running = false;
+        closeOverview(false);
         const screen = resolveScreen(preferred);
         const window = islandWindows.find(candidate => candidate && candidate.modelData === screen);
         if (!window) return false;
@@ -240,7 +258,10 @@ Scope {
     }
     property var activeScreen: Quickshell.screens.length ? Quickshell.screens[0] : null
     readonly property var widgetScreen: Quickshell.screens.find(s => s.name === Quickshell.env("SUMI_WIDGET_SCREEN"))
-        || Quickshell.screens[0] || null
+        || Quickshell.screens.find(s => s.name === "eDP-1")
+        || Quickshell.screens.find(s => s.name.startsWith("eDP-"))
+        || Quickshell.screens.find(s => s.name === "HDMI-A-1")
+        || Quickshell.screens.slice().sort((a, b) => a.name.localeCompare(b.name))[0] || null
     readonly property var notificationScreen: {
         const focused = Hyprland.focusedMonitor;
         return Quickshell.screens.find(s => focused && s.name === focused.name) || Quickshell.screens[0] || null;
@@ -252,6 +273,11 @@ Scope {
         target: Quickshell
         function onScreensChanged() {
             if (Quickshell.screens.indexOf(desktopRoot.activeScreen) < 0) {
+                desktopRoot.overviewActionSerial++;
+                desktopRoot.overviewPending = null;
+                desktopRoot.overviewOpen = false;
+                desktopRoot.overviewReturnApplication = "";
+                specialOverviewCheck.running = false;
                 desktopRoot.close();
                 desktopRoot.activeScreen = desktopRoot.notificationScreen;
                 desktopRoot.held = false;
@@ -330,7 +356,94 @@ Scope {
         return Quickshell.screens.find(s => focused && s.name === focused.name) || Quickshell.screens[0] || null;
     }
     function chooseScreen(preferred) { activeScreen = resolveScreen(preferred); }
+    function openOverview(screen) {
+        if (nativeDialogOpen) return false;
+        const target = resolveScreen(screen);
+        if (!target) return false;
+        overviewActionSerial++;
+        overviewPending = null;
+        specialOverviewCheck.running = false;
+        if (!overviewOpen) {
+            overviewReturnApplication = Hyprland.activeToplevel ? Hyprland.activeToplevel.address : "";
+            const monitor = Hyprland.focusedMonitor;
+            overviewReturnWorkspace = monitor && monitor.activeWorkspace ? monitor.activeWorkspace.id : 0;
+        }
+        dismissIslands(null, false);
+        activeScreen = target;
+        panel = "overview";
+        Hyprland.refreshToplevels();
+        overviewOpen = true;
+        return true;
+    }
+    function closeOverview(restore = true) {
+        if (!overviewOpen) return;
+        overviewPending = restore ? { restore: true, address: overviewReturnApplication, workspace: overviewReturnWorkspace } : null;
+        overviewOpen = false;
+        if (panel === "overview") panel = "";
+    }
+    function selectOverviewWorkspace(target) {
+        if (!overviewOpen) return;
+        overviewPending = { target: target, address: "" };
+        overviewOpen = false;
+        panel = "";
+    }
+    function selectOverviewWindow(target, address) {
+        if (!overviewOpen) return;
+        overviewPending = { target: target, address: address };
+        overviewOpen = false;
+        panel = "";
+    }
+    function overviewClosed() {
+        if (overviewOpen || !overviewPending) return;
+        const action = overviewPending;
+        overviewPending = null;
+        const serial = ++overviewActionSerial;
+        Qt.callLater(() => {
+            if (serial !== desktopRoot.overviewActionSerial || desktopRoot.overviewOpen || desktopRoot.nativeDialogOpen || desktopRoot.islandOpen) return;
+            if (action.restore) {
+                const monitor = Hyprland.focusedMonitor;
+                if (action.address && (!action.workspace || (monitor && monitor.activeWorkspace && monitor.activeWorkspace.id === action.workspace)))
+                    S.HyprlandActions.focusWindow(action.address);
+            } else {
+                if (String(action.target).startsWith("special:")) {
+                    specialOverviewCheck.action = action;
+                    specialOverviewCheck.serial = serial;
+                    specialOverviewCheck.running = true;
+                    return;
+                }
+                S.HyprlandActions.focusWorkspace(action.target);
+                if (action.address) Qt.callLater(() => {
+                    if (serial === desktopRoot.overviewActionSerial && !desktopRoot.overviewOpen && !desktopRoot.nativeDialogOpen && !desktopRoot.islandOpen)
+                        S.HyprlandActions.focusWindow(action.address);
+                });
+            }
+        });
+    }
+    // The monitor's cached IPC object is not refreshed for every special
+    // workspace event. Query the compositor immediately before a toggle.
+    Process {
+        id: specialOverviewCheck
+        property var action: null
+        property int serial: 0
+        command: ["hyprctl", "-j", "monitors"]
+        stdout: StdioCollector { id: specialOverviewOutput }
+        onExited: (code, status) => {
+            const selected = action;
+            if (code !== 0 || !selected || serial !== desktopRoot.overviewActionSerial || desktopRoot.overviewOpen || desktopRoot.nativeDialogOpen || desktopRoot.islandOpen) return;
+            try {
+                const monitors = JSON.parse(specialOverviewOutput.text);
+                const focused = monitors.find(m => m.focused);
+                if (!focused || !focused.specialWorkspace) return;
+                if (focused.specialWorkspace.name !== String(selected.target)) S.HyprlandActions.focusWorkspace(selected.target);
+                if (selected.address) Qt.callLater(() => {
+                    if (specialOverviewCheck.serial === desktopRoot.overviewActionSerial && !desktopRoot.overviewOpen)
+                        S.HyprlandActions.focusWindow(selected.address);
+                });
+            } catch (error) { console.warn("Sumi: could not inspect special workspace:", error); }
+        }
+    }
     function open(name, screen) {
+        if (name === "overview") return openOverview(screen);
         const aliases = {launcher:"launcher", files:"files", clipboard:"clipboard", appearance:"appearance", widgets:"widgets",
             settings:"controls", calendar:"calendar", media:"media", notifications:"inbox", pomodoro:"pomodoro", help:"help", power:"power", codex:"codex"};
         if (!Object.prototype.hasOwnProperty.call(aliases, name)) return false;
@@ -342,13 +455,14 @@ Scope {
         return openIsland(["wifi", "bluetooth", "audio", "capture"].indexOf(section) >= 0 ? section : "controls", screen, false);
     }
     function toggle(name, screen) {
+        if (name === "overview") { if (overviewOpen) closeOverview(); else openOverview(screen); return; }
         const aliases = {settings:"controls",notifications:"inbox"};
         const route = aliases[name] || name;
         const window = islandWindows.find(candidate => candidate && candidate.modelData === resolveScreen(screen));
         if (window && window.pinned && islandSession.route === route) { close(); return; }
         open(name, screen);
     }
-    function close() { if (nativeDialogOpen) return; dismissIslands(null, true); panel = ""; }
+    function close() { if (nativeDialogOpen) return; closeOverview(); dismissIslands(null, true); panel = ""; }
     function thursdayToggle() { openIsland("thursday", null, true); }
     function codexToggle(screen) { openIsland("codex", screen, true); }
     function launcherReady(): bool {
@@ -365,6 +479,7 @@ Scope {
             GlobalShortcut { appid: "sumi"; name: "appearance"; description: "Appearance"; onPressed: desktopRoot.toggle("appearance", null) }
             GlobalShortcut { appid: "sumi"; name: "clipboard"; description: "Clipboard history"; onPressed: desktopRoot.toggle("clipboard", null) }
             GlobalShortcut { appid: "sumi"; name: "help"; description: "Shortcut reference"; onPressed: desktopRoot.toggle("help", null) }
+            GlobalShortcut { appid: "sumi"; name: "overview"; description: "Workspace overview"; onPressed: desktopRoot.toggle("overview", null) }
         }
     }
     IpcHandler {
@@ -422,5 +537,16 @@ Scope {
     }
     // Native assistant integration ends.
     Variants { model: Quickshell.screens; Bar { app: desktopRoot } }
+    Variants {
+        model: Quickshell.screens
+        WorkspaceOverview {
+            app: desktopRoot
+            opened: desktopRoot.overviewOpen && desktopRoot.activeScreen === modelData
+            onDismissRequested: desktopRoot.closeOverview()
+            onWorkspaceRequested: target => desktopRoot.selectOverviewWorkspace(target)
+            onWindowRequested: (target, address) => desktopRoot.selectOverviewWindow(target, address)
+            onOverviewHidden: { if (desktopRoot.activeScreen === modelData) desktopRoot.overviewClosed(); }
+        }
+    }
     DesktopWidgets { id: widgetSurface; modelData: desktopRoot.widgetScreen; app: desktopRoot }
 }

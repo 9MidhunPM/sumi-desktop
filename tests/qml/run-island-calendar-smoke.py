@@ -85,7 +85,10 @@ def main():
         work = Path(temporary)
         for folder in ('components', 'config', 'assets'):
             shutil.copytree(repo / 'shell' / folder, work / folder)
-        shutil.copytree(repo / 'shell/integrations', work / 'integrations')
+        (work / 'integrations').mkdir()
+        # SpeechOrb imports its shared animation engine; copy the complete dependency pair.
+        for dependency in ('SpeechOrb.qml', 'OrbMath.js'):
+            shutil.copy2(repo / 'shell/integrations' / dependency, work / 'integrations' / dependency)
         services = work / 'services'
         services.mkdir()
         stubs = runpy.run_path(str(repo / 'tests/qml/run-island-dashboard-smoke.py'))['STUBS']

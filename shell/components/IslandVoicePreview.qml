@@ -52,7 +52,7 @@ Item {
         objectName: "islandVoiceFooter"
         anchors.left: parent.left; anchors.bottom: parent.bottom; anchors.right: button.left; height: 28
         text: root.finalTranscript ? "Final transcript" : root.phase === "listening" ? "Live transcript · may change" : root.phase === "transcribing" ? "Finishing transcription" : ""
-        color: IslandStyle.secondary; font.pixelSize: 10; elide: Text.ElideRight
+        color: IslandStyle.secondary; font.pixelSize: IslandStyle.captionText; elide: Text.ElideRight
     }
     ActionButton {
         id: button

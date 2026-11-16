@@ -88,7 +88,7 @@ Item {
     Component.onCompleted: { arrange(); initialized = true; }
     Behavior on offset {
         enabled: root.initialized && root.active && !Theme.effectiveReducedMotion
-        NumberAnimation { id: slide; duration: Theme.batteryMotion ? 120 : 180; easing.type: Easing.OutCubic }
+        NumberAnimation { id: slide; duration: Theme.batteryMotion ? 120 : 180; easing.type: Easing.BezierSpline; easing.bezierCurve: Motion.bounceCurve || [0.2, 0, 0, 1, 1, 1] }
     }
     Timer { id: quiet; interval: 180; onTriggered: root.resetGesture() }
     Item {

@@ -49,7 +49,7 @@ ShellRoot {
             const settings = findChild(bar.contentItem, "barSettings");
             const audio = findChild(bar.contentItem, "barAudio");
             const wifi = findChild(bar.contentItem, "barWifi");
-            assertTrue(findChild(bar.contentItem, "barCodex") === null, "Private Codex integration is absent from the public bar");
+            const codex = findChild(bar.contentItem, "barCodex");
             const originalWidth = bar.width;
             let stableWidth = 0;
             for (const value of [9, 99, 100]) {
@@ -60,7 +60,7 @@ ShellRoot {
                     if (!stableWidth) stableWidth = battery.width;
                     assertTrue(Math.abs(battery.width - stableWidth) < 0.5 && battery.width < 84, "Battery width stays stable through 100%");
                     assertTrue(battery.contentItem.width >= battery.contentItem.implicitWidth - 0.5, "Full battery percentage fits without elision");
-                    for (const control of [audio, wifi, settings]) {
+                    for (const control of [audio, wifi, codex, settings]) {
                         assertTrue(control && control.visible && control.text === "", "Minimal controls remain icon-only at " + width);
                         const point = control.mapToItem(bar.contentItem, 0, 0);
                         assertTrue(point.x >= bar.smokeRightEdge && point.x + control.width <= bar.width, "Right control fits its island at " + width);
@@ -81,6 +81,9 @@ ShellRoot {
                 assertTrue(fakeApp.panel === "settings" && fakeApp.settingsSection === pair[1], "Minimal icon opens its settings page");
                 fakeApp.panel = "";
             }
+            const codexBefore = fakeApp.codexClicks;
+            mouseClick(codex, codex.width / 2, codex.height / 2);
+            assertTrue(fakeApp.codexClicks === codexBefore + 1 && fakeApp.lastCodexScreen === bar.screen, "Codex icon opens status on its screen");
             mouseClick(battery, battery.width / 2, battery.height / 2);
             assertTrue(fakeApp.panel === "island" && fakeApp.settingsSection === "controls", "Battery still opens island Controls");
             fakeApp.panel = "";
@@ -251,6 +254,8 @@ def main() -> None:
         work = Path(temporary)
         config = work / "shell"
         shutil.copytree(repo / "shell", config)
+        media_fixture = config / "services/Media.qml"
+        media_fixture.write_text(media_fixture.read_text().replace("readonly property var players: Mp.Mpris.players.values", "property var players: []"))
         media = config / "services/Media.qml"
         media.write_text(media.read_text().replace("readonly property bool playing: player ? player.isPlaying : false", "property bool playing: false"))
         battery = config / "services/Battery.qml"

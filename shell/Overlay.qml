@@ -34,7 +34,7 @@ PanelWindow {
     mask: Region { width: overlay.popupShown && !overlay.app.nativeDialogOpen ? overlay.width : 0; height: overlay.popupShown && !overlay.app.nativeDialogOpen ? overlay.height : 0 }
     Behavior on reveal {
         id: scrimMotion
-        NumberAnimation { duration: scrimMotion.targetValue > 0 ? Theme.motionEnter : Theme.motionExit; easing.type: scrimMotion.targetValue > 0 ? Easing.OutQuint : Easing.InCubic }
+        NumberAnimation { duration: scrimMotion.targetValue > 0 ? Theme.motionEnter : Theme.motionExit; easing.type: Easing.BezierSpline; easing.bezierCurve: scrimMotion.targetValue > 0 ? Motion.standardCurve : Motion.exitCurve }
     }
     function rememberPanel() {
         if (popupShown && ["calendar", "media", "notifications", "pomodoro", "power", "help"].indexOf(app.panel) >= 0)
@@ -107,7 +107,7 @@ PanelWindow {
                 }
                 Behavior on motionProgress {
                     id: panelMotion
-                    NumberAnimation { duration: panelMotion.targetValue > 0 ? Theme.motionEnter : Theme.motionExit; easing.type: panelMotion.targetValue > 0 ? Easing.OutQuint : Easing.InCubic }
+                    NumberAnimation { duration: panelMotion.targetValue > 0 ? Theme.motionBounce : Theme.motionExit; easing.type: Easing.BezierSpline; easing.bezierCurve: panelMotion.targetValue > 0 ? Motion.bounceCurve : Motion.exitCurve }
                 }
                 sourceComponent: modelData === "launcher" ? launcherComponent : modelData === "appearance" ? appearanceComponent
                     : modelData === "widgets" ? widgetsComponent : modelData === "settings" ? settingsComponent : dashboardComponent

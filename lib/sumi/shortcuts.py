@@ -14,6 +14,7 @@ END = "-- <<< SUMI SHORTCUTS END"
 # chord, label, controller argv, recognised Classic command, category
 _ACTIONS = (
     ("SUPER + SPACE", "Open command hub", ("ipc", "sumi", "toggle", "launcher"), "theme.menu", "Shell"),
+    ("SUPER + TAB", "Workspace overview", ("ipc", "sumi", "toggle", "overview"), "ipc sumi toggle overview", "Workspaces"),
     ("SUPER + SHIFT + SPACE", "Find files", ("ipc", "sumi", "toggle", "files"), ".config/wofi/file-search.sh", "Shell"),
     ("SUPER + N", "Notification history", ("ipc", "sumi", "toggle", "notifications"), "swaync-client", "Shell"),
     ("SUPER + SHIFT + T", "Appearance", ("ipc", "sumi", "toggle", "appearance"), ".config/hypr/scripts/theme-switcher.sh", "Shell"),
@@ -29,7 +30,7 @@ _ACTIONS = (
 
 def registry() -> dict:
     items = [{"id": chord.lower().replace(" + ", "-"),
-              "keys": " + ".join({"SUPER": "Super", "CTRL": "Ctrl", "SHIFT": "Shift", "ALT": "Alt", "SPACE": "Space", "RETURN": "Enter", "SLASH": "/"}.get(part.strip(), part.strip()) for part in chord.split("+")),
+              "keys": " + ".join({"SUPER": "Super", "CTRL": "Ctrl", "SHIFT": "Shift", "ALT": "Alt", "SPACE": "Space", "TAB": "Tab", "RETURN": "Enter", "SLASH": "/"}.get(part.strip(), part.strip()) for part in chord.split("+")),
               "label": label, "category": category} for chord, label, argv, _, category in _ACTIONS]
     items.extend([
         {"id": "bar-peek", "keys": "Hold Right Shift", "label": "Peek at the bar in hidden mode", "category": "Shell"},
@@ -136,6 +137,8 @@ def render_bindings(original: str, executable: str, *, config_dir: Path | None =
         else:
             argv, legacy = managed[chord]
             recognised = re.sub(r"\s+", "", legacy) in compact or re.sub(r"\s+", "", " ".join(argv)) in compact
+            if argv[:3] == ("ipc", "sumi", "toggle"):
+                recognised = recognised or compact == f'hl.dsp.global("sumi:{argv[3]}")' or compact == f"hl.dsp.global('sumi:{argv[3]}')"
         if not recognised or (released and chord != "SHIFT_R"):
             raise ValueError("Sumi shortcut conflicts with a custom binding: " + chord)
         removals.append((begin, end))
@@ -148,8 +151,11 @@ def render_bindings(original: str, executable: str, *, config_dir: Path | None =
     include = f'{START}\ndofile({json.dumps(str(helper))})\n{END}\n'
     lines = ["-- Generated from desktopctl shortcuts. Edit the registry, not this file."]
     for chord, _, argv, _, _ in _ACTIONS:
-        command = shlex.join([executable, *argv])
-        lines.append(f"hl.bind({json.dumps(chord)}, hl.dsp.exec_cmd({json.dumps(command)}))")
+        if argv[:3] == ("ipc", "sumi", "toggle"):
+            lines.append(f"hl.bind({json.dumps(chord)}, hl.dsp.global({json.dumps('sumi:' + argv[3])}))")
+        else:
+            command = shlex.join([executable, *argv])
+            lines.append(f"hl.bind({json.dumps(chord)}, hl.dsp.exec_cmd({json.dumps(command)}))")
     bar = shlex.join([executable, "ipc", "bar"])
     lines += [f"local sumiBar = {json.dumps(bar)}",
               'hl.bind("SHIFT_R", hl.dsp.exec_cmd(sumiBar .. " peek"), { non_consuming = true })',

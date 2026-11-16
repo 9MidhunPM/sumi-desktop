@@ -227,7 +227,8 @@ ShellRoot {
             const middleArt = album.mapToItem(island.contentItem, 0, 0);
             const middleWave = wave.mapToItem(island.contentItem, 0, 0);
             check(island.spectrumDemand && middleArt.y > originArt.y && middleWave.y > originWave.y && album.width > 28 && album.width <= 140, "Artwork and waveform animate globally with continuous spectrum demand");
-            island.dismiss(); wait(70);
+            // Springs keep their velocity, so an interrupted peek coasts briefly before reversing.
+            island.dismiss(); wait(220);
             check(island.spectrumDemand && album.mapToItem(island.contentItem, 0, 0).y < middleArt.y, "Interrupted morph reverses without losing spectrum " + JSON.stringify({spectrum:island.spectrumDemand,y:album.mapToItem(island.contentItem, 0, 0).y,middle:middleArt.y,activity:island.activity,flanks:island.visual.hasFlanks}));
             wait(350);
             Settings.reducedMotion = true; island.pin("", true); wait(30);
@@ -345,7 +346,7 @@ ShellRoot {
             check(!child("islandThursdayCompactOrb").visible && child("islandVoiceOrb").visible, "Automatic speech shows only the large body orb");
             const voiceOrb = child("islandVoiceOrb");
             check(Math.abs(output.y + voiceOrb.y + voiceOrb.height / 2 - (island.bodyHeight / 2 - 12)) < .6, "Automatic orb is visually balanced above the island midpoint");
-            check(!child("islandWave19").visible && child("barClockTime").visible, "Thursday activity hides media bars while retaining the clock"); center();
+            check(!child("islandCompactWave").visible && child("barClockTime").visible, "Thursday activity hides media bars while retaining the clock"); center();
             check(!child("islandThursdayHeaderMeter").visible && output.level === .25, "Expanded response orb follows measured playback level");
             center();
             assistant.speaking = false; wait(20);

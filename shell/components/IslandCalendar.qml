@@ -8,6 +8,10 @@ Rectangle {
     id: root
     property date today: new Date()
     property int monthOffset: 0
+    // Picker mode: days become buttons and the chosen day stays highlighted.
+    property bool selectable: false
+    property date selectedDate: new Date(NaN)
+    signal picked(date day)
     readonly property date month: new Date(today.getFullYear(), today.getMonth() + monthOffset, 1)
     readonly property int firstWeekday: (month.getDay() + 6) % 7
     readonly property int daysInMonth: new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate()
@@ -60,7 +64,7 @@ Rectangle {
                     text: modelData
                     Layout.fillWidth: true; Layout.preferredWidth: 1
                     horizontalAlignment: Text.AlignHCenter
-                    color: IslandStyle.secondary; font.pixelSize: 10
+                    color: IslandStyle.secondary; font.pixelSize: 11
                 }
             }
             Repeater {
@@ -70,14 +74,19 @@ Rectangle {
                     required property int index
                     readonly property int day: index - root.firstWeekday + 1
                     readonly property bool inMonth: day > 0 && day <= root.daysInMonth
+                    readonly property bool isSelected: root.selectable && inMonth && !isNaN(root.selectedDate.getTime()) && day === root.selectedDate.getDate()
+                        && root.month.getMonth() === root.selectedDate.getMonth() && root.month.getFullYear() === root.selectedDate.getFullYear()
                     readonly property bool isToday: inMonth && day === root.today.getDate()
                         && root.month.getMonth() === root.today.getMonth() && root.month.getFullYear() === root.today.getFullYear()
                     objectName: "islandCalendarDay" + index
                     Layout.fillWidth: true; Layout.preferredWidth: 1
                     implicitHeight: 36
                     radius: 11
-                    color: isToday ? IslandStyle.accent : "transparent"
-                    Accessible.role: Accessible.StaticText
+                    color: isToday ? IslandStyle.accent : isSelected ? IslandStyle.hover : dayTap.pressed ? IslandStyle.raised : "transparent"
+                    border.width: isSelected ? 2 : 0; border.color: IslandStyle.accent
+                    TapHandler { id: dayTap; enabled: root.selectable && dayCell.inMonth; onTapped: root.picked(new Date(root.month.getFullYear(), root.month.getMonth(), dayCell.day)) }
+                    HoverHandler { enabled: root.selectable && dayCell.inMonth; cursorShape: Qt.PointingHandCursor }
+                    Accessible.role: root.selectable ? Accessible.Button : Accessible.StaticText
                     Accessible.name: inMonth ? Qt.formatDateTime(new Date(root.month.getFullYear(), root.month.getMonth(), day), "dddd, d MMMM yyyy") + (isToday ? ", today" : "") : ""
                     Label {
                         anchors.centerIn: parent

@@ -32,8 +32,9 @@ Button {
     hoverEnabled: true
     activeFocusOnTab: true
     opacity: enabled ? 1 : 0.4
-    scale: Theme.effectiveReducedMotion ? 1 : down ? 0.97 : 1
-    Behavior on scale { NumberAnimation { duration: root.down ? 0 : Theme.motionControl; easing.type: Easing.OutCubic } }
+    // Every button presses in quickly and springs back with the shared bounce.
+    scale: Theme.effectiveReducedMotion ? 1 : down ? 0.96 : 1
+    Behavior on scale { NumberAnimation { duration: root.down ? Theme.motionControl : Theme.motionBounce * 0.8; easing.type: Easing.BezierSpline; easing.bezierCurve: root.down ? Motion.standardCurve : Motion.bounceCurve } }
     background: Rectangle {
         radius: IslandStyle.controlRadius
         color: root.selected ? root.accent

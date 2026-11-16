@@ -13,19 +13,36 @@ QtObject {
     readonly property color muted: "#909098"
     readonly property color accent: "#ededf0"
     readonly property color accentText: "#17171a"
+    // Music tint when artwork offers no usable colour.
+    readonly property color musicTint: "#e7a88f"
+    // The continuous rim brightens toward the lower lip and recedes at the bezel.
+    readonly property color rimTop: Qt.rgba(1, 1, 1, 0.08)
+    readonly property color rimBottom: Qt.rgba(1, 1, 1, 0.26)
+    readonly property color rimFocusTop: Qt.rgba(1, 1, 1, 0.16)
+    readonly property color rimFocusBottom: Qt.rgba(1, 1, 1, 0.42)
+    readonly property color shadow: Qt.rgba(0, 0, 0, 0.5)
     readonly property int radius: Metrics.space4
     readonly property int moduleRadius: Metrics.moduleRadius
     readonly property int controlRadius: Metrics.controlRadius
     readonly property int smallRadius: Metrics.compactRadius
     readonly property int outerRadius: Metrics.outerRadius
+    readonly property int shoulderRadius: 12
+    // Continuous-corner smoothing, comparable to Apple's squircle corners.
+    readonly property real cornerSmoothing: 0.6
     readonly property int inset: Metrics.space5
     readonly property int smallGap: Metrics.space2
     readonly property int gap: Metrics.space3
     readonly property int sectionGap: Metrics.space4
     readonly property int target: Metrics.target
+    readonly property int captionText: 11
     readonly property int smallText: 12
     readonly property int bodyText: 14
     readonly property int headingText: 16
+    // The island clock uses Adwaita Sans at its display optical size with
+    // tabular figures, so digits keep their positions as the time changes.
+    readonly property string font: Theme.font || "Adwaita Sans"
+    readonly property var figures: ({ "tnum": 1 })
+    readonly property var displayAxes: ({ "opsz": 28 })
     readonly property int transition: Motion.content
     readonly property int musicTransition: Motion.music
     readonly property int geometryTransition: Motion.geometry

@@ -6,9 +6,9 @@ Item {
     id: root
     property real uiScale: 1
     property bool surface: true
-    readonly property color panelColor: Theme.glassFill
-    readonly property color mainText: Theme.textMain
-    readonly property color secondaryText: Theme.textSoft
+    property color panelColor: Theme.glassFill
+    property color mainText: Theme.textMain
+    property color secondaryText: Theme.textSoft
     readonly property color warningText: Theme.accentWarn
     default property alias content: contentItem.data
     readonly property real contentWidth: width / Math.max(0.01, uiScale)

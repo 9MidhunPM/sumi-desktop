@@ -26,6 +26,6 @@ Button {
     contentItem: Item {
         Icon { x: 0; y: 1; name: control.iconName; size: 20; color: control.glyphColor }
         Label { objectName: "tileTitle"; anchors { left: parent.left; right: parent.right } y: 25; height: Math.max(0, parent.height - y - status.implicitHeight - 4); text: control.title; font.pixelSize: 11; font.weight: Font.DemiBold; color: IslandStyle.text; wrapMode: Text.Wrap; maximumLineCount: 2; elide: Text.ElideRight }
-        Label { id: status; objectName: "tileStatus"; anchors { left: parent.left; right: parent.right; bottom: parent.bottom } visible: text.length > 0; text: control.subtitle; font.pixelSize: 10; color: IslandStyle.secondary }
+        Label { id: status; objectName: "tileStatus"; anchors { left: parent.left; right: parent.right; bottom: parent.bottom } visible: text.length > 0; text: control.subtitle; font.pixelSize: 11; color: IslandStyle.secondary }
     }
 }

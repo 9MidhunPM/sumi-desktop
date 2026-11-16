@@ -19,7 +19,9 @@ Item {
             "leaf", "bolt", "battery", "battery-charging", "settings", "chevron-down", "chevron-up",
             "sun", "moon", "microphone", "microphone-off", "camera", "record", "stop", "timer",
             "play", "pause", "music", "calendar", "arrow-right", "more-horizontal", "circle-help",
-            "search", "clipboard", "palette", "layout-grid", "cpu", "folder", "power", "chevron-right"];
+            "search", "clipboard", "palette", "layout-grid", "cpu", "folder", "power", "chevron-right",
+            "play-fill", "pause-fill", "backward", "forward", "file", "window", "lock", "keyboard", "chevron-left",
+            "headphones", "phone", "laptop", "mouse", "display", "check", "close", "logout", "restart"];
         return names.indexOf(candidate) >= 0 ? candidate : "circle-help";
     }
     property url source: name.length ? Qt.resolvedUrl("../assets/icons/" + resolvedName + ".svg") : ""

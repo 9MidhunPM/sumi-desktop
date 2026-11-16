@@ -67,6 +67,7 @@ C.Surface {
     }
     property string controlError: ""
     property var selectedNetwork: null
+    property bool showOtherDevices: false
     readonly property string pageTitle: ({wifi: "Wi-Fi", bluetooth: "Bluetooth", audio: "Sound devices", capture: "Capture & record"})[section] || "Control center"
     width: Math.min(440, Math.max(1, app.activeScreen ? app.activeScreen.width - 48 : 440))
     // Small subpages fit their contents; only long device lists scroll.
@@ -159,14 +160,14 @@ C.Surface {
             visible: !root.embedded
             Layout.fillWidth: true
             spacing: 10
-            C.QuickButton { island: root.embedded; id: backButton; objectName: "settingsBack"; visible: root.section.length > 0; glyph: "󰁍"; quiet: true; compact: true; tooltip: "Back to controls"; onClicked: root.section = "" }
+            C.QuickButton { island: root.embedded; id: backButton; objectName: "settingsBack"; visible: root.section.length > 0; iconName: "chevron-left"; quiet: true; compact: true; tooltip: "Back to controls"; onClicked: root.section = "" }
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 4
                 C.Label { color: root.foreground; text: root.pageTitle; font.pixelSize: 22; font.weight: Font.DemiBold; Layout.fillWidth: true }
                 C.Label { text: root.section.length > 0 ? "Your devices, in one place" : Qt.formatDateTime(S.Clock.date, "dddd, d MMMM"); color: root.secondary; font.pixelSize: 12; Layout.fillWidth: true }
             }
-            C.QuickButton { island: root.embedded; objectName: "settingsClose"; glyph: "󰅖"; quiet: true; compact: true; tooltip: "Close controls · Esc"; onClicked: root.app.close() }
+            C.QuickButton { island: root.embedded; objectName: "settingsClose"; iconName: "close"; quiet: true; compact: true; tooltip: "Close controls · Esc"; onClicked: root.app.close() }
         }
 
         C.PanelScrollView {
@@ -197,7 +198,7 @@ C.Surface {
                             objectName: "settingsWifi"
                             Layout.fillWidth: true
                             text: "Wi-Fi"
-                            glyph: S.Network.wifiEnabled ? "󰤨" : "󰤭"
+                            iconName: S.Network.wifiEnabled ? "wifi" : "wifi-off"
                             subtitle: !S.Network.wifiAvailable ? "Unavailable" : S.Network.connected ? S.Network.name : S.Network.wifiEnabled ? "Not connected" : "Off"
                             selected: S.Network.wifiEnabled
                             disclosure: true
@@ -211,7 +212,7 @@ C.Surface {
                             objectName: "settingsBluetooth"
                             Layout.fillWidth: true
                             text: "Bluetooth"
-                            glyph: S.Bluetooth.enabled ? "󰂯" : "󰂲"
+                            iconName: S.Bluetooth.enabled ? "bluetooth" : "bluetooth-off"
                             subtitle: !S.Bluetooth.available ? "Unavailable" : !S.Bluetooth.enabled ? "Off" : S.Bluetooth.connectedCount > 0 ? S.Bluetooth.connectedCount + " connected" : "Ready to connect"
                             selected: S.Bluetooth.enabled
                             disclosure: true
@@ -225,7 +226,7 @@ C.Surface {
                         C.QuickTile { island: root.embedded;
                             Layout.fillWidth: true
                             text: "Do not disturb"
-                            glyph: Settings.dnd ? "󰂛" : "󰂚"
+                            iconName: Settings.dnd ? "bell-off" : "bell"
                             subtitle: Settings.dnd ? "Notifications silenced" : "Notifications allowed"
                             selected: Settings.dnd
                             onClicked: S.Notifications.toggleDnd()
@@ -234,7 +235,7 @@ C.Surface {
                             objectName: "settingsNightLight"
                             Layout.fillWidth: true
                             text: "Night light"
-                            glyph: "󰖔"
+                            iconName: "moon"
                             subtitle: root.nightLightBusy ? "Applying…" : !root.nightLightAvailable ? "Unavailable" : root.nightLight ? "Warm display" : "Natural display"
                             selected: root.nightLight
                             enabled: root.nightLightAvailable && !root.nightLightBusy
@@ -249,16 +250,16 @@ C.Surface {
                         TapHandler { acceptedButtons: Qt.RightButton; onTapped: root.openAudioManager() }
                         RowLayout {
                             Layout.fillWidth: true
-                            C.QuickButton { island: root.embedded; objectName: "settingsMute"; glyph: S.Audio.muted ? "󰖁" : "󰕾"; enabled: S.Audio.hasOutput; compact: true; quiet: true; tooltip: S.Audio.muted ? "Unmute sound" : "Mute sound"; onClicked: S.Audio.toggleMute() }
+                            C.QuickButton { island: root.embedded; objectName: "settingsMute"; iconName: S.Audio.muted ? "volume-x" : "volume"; enabled: S.Audio.hasOutput; compact: true; quiet: true; tooltip: S.Audio.muted ? "Unmute sound" : "Mute sound"; onClicked: S.Audio.toggleMute() }
                             C.Label { color: root.foreground; text: S.Audio.muted ? "Sound muted" : "Volume"; font.weight: Font.Medium; Layout.fillWidth: true }
                             C.Label { text: Math.round(S.Audio.volume * 100) + "%"; color: root.secondary; font.pixelSize: 12 }
-                            C.QuickButton { island: root.embedded; glyph: "󰁔"; compact: true; quiet: true; tooltip: "Choose sound devices"; onClicked: root.section = "audio" }
+                            C.QuickButton { island: root.embedded; iconName: "chevron-right"; compact: true; quiet: true; tooltip: "Choose sound devices"; onClicked: root.section = "audio" }
                         }
                         C.Label { objectName: "settingsOutputName"; text: S.Audio.outputName; color: root.secondary; font.pixelSize: 12; Layout.fillWidth: true; elide: Text.ElideRight }
                         C.QuickSlider { island: root.embedded; objectName: "settingsOutputVolume"; label: "Output volume"; Layout.fillWidth: true; enabled: S.Audio.hasOutput; value: S.Audio.volume; onMoved: S.Audio.setVolume(value) }
                         RowLayout {
                             Layout.fillWidth: true
-                            C.QuickButton { island: root.embedded; text: S.Audio.hasInput ? S.Audio.sourceMuted ? "Microphone muted" : "Microphone on" : "No microphone"; glyph: S.Audio.sourceMuted ? "󰍭" : "󰍬"; enabled: S.Audio.hasInput; compact: true; quiet: true; selected: S.Audio.sourceMuted; onClicked: S.Audio.toggleSourceMute() }
+                            C.QuickButton { island: root.embedded; text: S.Audio.hasInput ? S.Audio.sourceMuted ? "Microphone muted" : "Microphone on" : "No microphone"; iconName: S.Audio.sourceMuted ? "microphone-off" : "microphone"; enabled: S.Audio.hasInput; compact: true; quiet: true; selected: S.Audio.sourceMuted; onClicked: S.Audio.toggleSourceMute() }
                             Item { Layout.fillWidth: true }
                         }
                     }
@@ -268,7 +269,7 @@ C.Surface {
                         spacing: 5
                         RowLayout {
                             Layout.fillWidth: true
-                            C.Label { color: root.foreground; text: "󰃠"; font.pixelSize: 20; Layout.preferredWidth: 40; horizontalAlignment: Text.AlignHCenter }
+                            C.Icon { name: "sun"; size: 20; color: root.foreground; Layout.preferredWidth: 40 }
                             C.Label { color: root.foreground; text: "Brightness"; font.weight: Font.Medium; Layout.fillWidth: true }
                             C.Label { text: root.brightnessReady ? Math.round(root.brightness) + "%" : root.brightnessLoading ? "Loading…" : "Unavailable"; color: root.secondary; font.pixelSize: 12 }
                         }
@@ -280,7 +281,7 @@ C.Surface {
                         spacing: 10
                         RowLayout {
                             Layout.fillWidth: true
-                            C.Label { color: root.foreground; text: S.Battery.charging ? "󰂄" : "󰁹"; font.pixelSize: 20 }
+                            C.Icon { name: S.Battery.charging ? "battery-charging" : "battery"; size: 20; color: root.foreground }
                             C.Label { color: root.foreground; text: S.Battery.available ? Math.round(S.Battery.percent) + "%" : "Power"; font.weight: Font.Medium }
                             C.Label { text: S.Battery.timeLabel; font.pixelSize: 11; color: root.secondary; Layout.fillWidth: true; horizontalAlignment: Text.AlignRight }
                         }
@@ -290,11 +291,11 @@ C.Surface {
                             columnSpacing: 5
                             rowSpacing: 5
                             Repeater {
-                                model: [{id: "power-saver", label: "Saver", glyph: "󰌪"}, {id: "balanced", label: "Balanced", glyph: "󰾅"}, {id: "performance", label: "Performance", glyph: "󰓅"}]
+                                model: [{id: "power-saver", label: "Saver", iconName: "leaf"}, {id: "balanced", label: "Balanced", iconName: "battery"}, {id: "performance", label: "Performance", iconName: "bolt"}]
                                 C.QuickButton { island: root.embedded;
                                     required property var modelData
                                     text: modelData.label
-                                    glyph: modelData.glyph
+                                    iconName: modelData.iconName
                                     compact: true
                                     Layout.fillWidth: true
                                     enabled: modelData.id !== "performance" || S.Battery.performanceAvailable
@@ -315,7 +316,7 @@ C.Surface {
                             radius: Metrics.controlRadius
                             color: Theme.bgPlaying
                             clip: true
-                            C.Label { anchors.centerIn: parent; text: "󰎆"; color: root.accent; font.pixelSize: 23 }
+                            C.Icon { anchors.centerIn: parent; name: "music"; size: 23; color: root.accent }
                             Image { anchors.fill: parent; visible: status === Image.Ready; source: S.Media.artUrl; fillMode: Image.PreserveAspectCrop; sourceSize: Qt.size(92, 92); asynchronous: true }
                         }
                         ColumnLayout {
@@ -324,7 +325,7 @@ C.Surface {
                             C.Label { color: root.foreground; text: S.Media.title; font.weight: Font.Medium; Layout.fillWidth: true; elide: Text.ElideRight }
                             C.Label { text: S.Media.artist; color: root.secondary; font.pixelSize: 12; Layout.fillWidth: true; elide: Text.ElideRight }
                         }
-                        C.QuickButton { island: root.embedded; glyph: S.Media.playing ? "󰏤" : "󰐊"; quiet: true; tooltip: S.Media.playing ? "Pause playback" : "Play"; onClicked: S.Media.toggle() }
+                        C.QuickButton { island: root.embedded; iconName: S.Media.playing ? "pause-fill" : "play-fill"; quiet: true; tooltip: S.Media.playing ? "Pause playback" : "Play"; onClicked: S.Media.toggle() }
                     }
                 }
 
@@ -335,19 +336,22 @@ C.Surface {
                     RowLayout {
                         Layout.fillWidth: true
                         C.Label { color: root.foreground; text: S.Network.wifiEnabled ? "Available networks" : "Wi-Fi is off"; font.weight: Font.Medium; Layout.fillWidth: true }
+                        C.Label { visible: S.Network.scanning === true; text: "Searching…"; color: root.secondary; font.pixelSize: 12 }
                         C.QuickButton { island: root.embedded; id: wifiToggle; objectName: "settingsWifiPageToggle"; text: S.Network.wifiEnabled ? "Turn off" : "Turn on"; selected: S.Network.wifiEnabled; compact: true; enabled: S.Network.wifiAvailable; onClicked: S.Network.toggleWifi() }
                     }
                     C.Label { visible: !S.Network.wifiAvailable || (S.Network.wifiEnabled && S.Network.networks.length === 0); text: !S.Network.wifiAvailable ? "No wireless adapter is available." : "Looking for nearby networks…"; color: root.secondary; Layout.fillWidth: true; wrapMode: Text.Wrap }
                     C.Label { visible: S.Network.captivePortal; text: "This network needs a browser sign-in."; color: Theme.accentWarn; Layout.fillWidth: true; wrapMode: Text.Wrap }
                     C.Label { visible: S.Network.connecting || S.Network.connectionError.length > 0; text: S.Network.connecting ? "Connecting to " + (S.Network.pendingNetwork ? S.Network.pendingNetwork.name : "network") + "…" : S.Network.connectionError; color: S.Network.connectionError ? Theme.accentPink : root.secondary; Layout.fillWidth: true; wrapMode: Text.Wrap }
                     Repeater {
-                        model: S.Network.wifiEnabled ? S.Network.networks : []
+                        model: S.Network.wifiEnabled ? (S.Network.sortedNetworks || S.Network.networks) : []
                         C.QuickDeviceRow { island: root.embedded;
                             required property var modelData
                             Layout.fillWidth: true
                             text: modelData.name
-                            glyph: "󰤨"
-                            subtitle: modelData.connected ? "Connected · select to disconnect" : "Select to connect"
+                            iconName: "wifi"
+                            signal: typeof modelData.signalStrength === "number" ? modelData.signalStrength : -1
+                            secure: typeof S.Network.secured === "function" && S.Network.secured(modelData)
+                            subtitle: modelData.connected ? "Connected" : modelData.known ? "Saved network" : typeof S.Network.secured === "function" && S.Network.secured(modelData) ? "Secured" : "Open network"
                             selected: modelData.connected
                             onClicked: {
                                 if (modelData.connected) S.Network.disconnect(modelData);
@@ -396,16 +400,31 @@ C.Surface {
                     }
                     C.Label { visible: !S.Bluetooth.available || (S.Bluetooth.enabled && S.Bluetooth.devices.length === 0); text: !S.Bluetooth.available ? "No Bluetooth adapter is available." : "Looking for nearby devices…"; color: root.secondary; Layout.fillWidth: true; wrapMode: Text.Wrap }
                     Repeater {
-                        model: S.Bluetooth.enabled ? S.Bluetooth.sortedDevices : []
+                        model: S.Bluetooth.enabled ? (S.Bluetooth.namedDevices || S.Bluetooth.sortedDevices) : []
                         C.QuickDeviceRow { island: root.embedded;
                             required property var modelData
                             Layout.fillWidth: true
                             text: modelData.name || modelData.address
-                            glyph: "󰂯"
-                            subtitle: modelData.connected ? "Connected · select to disconnect" : modelData.paired ? "Paired · select to connect" : "Select to pair"
+                            iconName: typeof S.Bluetooth.deviceIcon === "function" ? S.Bluetooth.deviceIcon(modelData) : "bluetooth"
+                            detail: typeof S.Bluetooth.batteryLabel === "function" ? S.Bluetooth.batteryLabel(modelData) : ""
+                            subtitle: modelData.connected ? "Connected" : modelData.paired ? "Paired" : "Select to pair"
                             selected: modelData.connected
                             onClicked: { if (modelData.connected) S.Bluetooth.disconnectDevice(modelData); else if (modelData.paired) S.Bluetooth.connectDevice(modelData); else S.Bluetooth.pairDevice(modelData); }
                         }
+                    }
+                    C.QuickButton {
+                        island: root.embedded
+                        objectName: "settingsBluetoothOther"
+                        visible: S.Bluetooth.enabled && (S.Bluetooth.otherDevices || []).length > 0
+                        text: (root.showOtherDevices ? "Hide" : "Show") + " other devices (" + (S.Bluetooth.otherDevices || []).length + ")"
+                        iconName: root.showOtherDevices ? "chevron-up" : "chevron-down"
+                        quiet: true; compact: true
+                        onClicked: root.showOtherDevices = !root.showOtherDevices
+                    }
+                    Repeater {
+                        model: S.Bluetooth.enabled && root.showOtherDevices ? (S.Bluetooth.otherDevices || []) : []
+                        C.QuickDeviceRow { island: root.embedded; required property var modelData; Layout.fillWidth: true; text: "Unnamed device"; subtitle: String(modelData.address || ""); iconName: "bluetooth"
+                            onClicked: S.Bluetooth.pairDevice(modelData) }
                     }
                     ColumnLayout {
                         visible: S.Bluetooth.pairing || S.Bluetooth.pairingError.length > 0
@@ -420,7 +439,7 @@ C.Surface {
                         }
                         C.Label { Layout.fillWidth: true; wrapMode: Text.Wrap; visible: S.Bluetooth.pairingError.length > 0; text: S.Bluetooth.pairingError; color: Theme.accentWarn }
                     }
-                    C.QuickButton { island: root.embedded; id: pairButton; visible: !root.embedded; objectName: "settingsBluetoothManager"; text: "Open Bluetooth manager"; tooltip: "Pair devices and manage Bluetooth"; glyph: "󰂯"; Layout.fillWidth: true; onClicked: root.openBluetoothManager() }
+                    C.QuickButton { island: root.embedded; id: pairButton; visible: !root.embedded; objectName: "settingsBluetoothManager"; text: "Open Bluetooth manager"; tooltip: "Pair devices and manage Bluetooth"; iconName: "bluetooth"; Layout.fillWidth: true; onClicked: root.openBluetoothManager() }
                 }
 
                 ColumnLayout {
@@ -428,24 +447,29 @@ C.Surface {
                     Layout.fillWidth: true
                     spacing: Metrics.space2
                     TapHandler { acceptedButtons: Qt.RightButton; onTapped: root.openAudioManager() }
-                    C.QuickButton { island: root.embedded; id: audioManagerButton; visible: !root.embedded; objectName: "settingsAudioManager"; text: "Open sound mixer"; glyph: "󰕾"; Layout.fillWidth: true; onClicked: root.openAudioManager() }
+                    C.QuickButton { island: root.embedded; id: audioManagerButton; visible: !root.embedded; objectName: "settingsAudioManager"; text: "Open sound mixer"; iconName: "volume"; Layout.fillWidth: true; onClicked: root.openAudioManager() }
                     C.Label { color: root.foreground; id: audioHeading; text: "Output"; font.weight: Font.DemiBold; Layout.fillWidth: true }
                     C.Label { text: S.Audio.outputName; color: root.secondary; font.pixelSize: 11; Layout.fillWidth: true }
-                    C.QuickSlider { island: root.embedded; label: "Output volume"; Layout.fillWidth: true; enabled: S.Audio.hasOutput; value: S.Audio.volume; onMoved: S.Audio.setVolume(value) }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Metrics.space3
+                        C.QuickSlider { island: root.embedded; label: "Output volume"; Layout.fillWidth: true; enabled: S.Audio.hasOutput; value: S.Audio.volume; onMoved: S.Audio.setVolume(value) }
+                        C.Label { text: Math.round(S.Audio.volume * 100) + "%"; color: root.secondary; font.pixelSize: 12; font.features: IslandStyle.figures; Layout.preferredWidth: 36; horizontalAlignment: Text.AlignRight }
+                    }
                     C.Label { visible: S.Audio.sinks.length === 0; text: "No output devices are available."; color: root.secondary; Layout.fillWidth: true; wrapMode: Text.Wrap }
-                    Repeater { id: outputDevices; model: S.Audio.sinks; C.QuickDeviceRow { island: root.embedded; required property var modelData; text: modelData.description || modelData.name; glyph: "󰓃"; Layout.fillWidth: true; selected: modelData === S.Audio.sink; onClicked: S.Audio.selectSink(modelData) } }
+                    Repeater { id: outputDevices; model: S.Audio.visibleSinks || S.Audio.sinks; C.QuickDeviceRow { island: root.embedded; required property var modelData; text: typeof S.Audio.label === "function" ? S.Audio.label(modelData) : modelData.description || modelData.name; iconName: typeof S.Audio.deviceIcon === "function" ? S.Audio.deviceIcon(modelData) : "volume"; Layout.fillWidth: true; selected: modelData === S.Audio.sink; onClicked: S.Audio.selectSink(modelData) } }
                     Item { Layout.preferredHeight: 8 }
                     C.Label { color: root.foreground; text: "Input"; font.weight: Font.DemiBold; Layout.fillWidth: true }
                     RowLayout {
                         Layout.fillWidth: true
-                        C.QuickButton { island: root.embedded; text: S.Audio.sourceMuted ? "Unmute microphone" : "Mute microphone"; glyph: S.Audio.sourceMuted ? "󰍭" : "󰍬"; enabled: S.Audio.hasInput; compact: true; quiet: true; selected: S.Audio.sourceMuted; onClicked: S.Audio.toggleSourceMute() }
+                        C.QuickButton { island: root.embedded; text: S.Audio.sourceMuted ? "Unmute microphone" : "Mute microphone"; iconName: S.Audio.sourceMuted ? "microphone-off" : "microphone"; enabled: S.Audio.hasInput; compact: true; quiet: true; selected: S.Audio.sourceMuted; onClicked: S.Audio.toggleSourceMute() }
                         Item { Layout.fillWidth: true }
                         C.Label { text: Math.round(S.Audio.sourceVolume * 100) + "%"; color: root.secondary; font.pixelSize: 12 }
                     }
                     C.Label { objectName: "settingsInputName"; text: S.Audio.inputName; color: root.secondary; font.pixelSize: 11; Layout.fillWidth: true }
                     C.QuickSlider { island: root.embedded; objectName: "settingsInputVolume"; label: "Microphone level"; Layout.fillWidth: true; enabled: S.Audio.hasInput; value: S.Audio.sourceVolume; onMoved: S.Audio.setSourceVolume(value) }
                     C.Label { visible: S.Audio.sources.length === 0; text: "No input devices are available."; color: root.secondary; Layout.fillWidth: true; wrapMode: Text.Wrap }
-                    Repeater { id: inputDevices; model: S.Audio.sources; C.QuickDeviceRow { island: root.embedded; required property var modelData; text: modelData.description || modelData.name; glyph: "󰍬"; Layout.fillWidth: true; selected: modelData === S.Audio.source; onClicked: S.Audio.selectSource(modelData) } }
+                    Repeater { id: inputDevices; model: S.Audio.sources; C.QuickDeviceRow { island: root.embedded; required property var modelData; text: typeof S.Audio.label === "function" ? S.Audio.label(modelData) : modelData.description || modelData.name; iconName: "microphone"; Layout.fillWidth: true; selected: modelData === S.Audio.source; onClicked: S.Audio.selectSource(modelData) } }
                 }
 
                 ColumnLayout {
@@ -453,8 +477,8 @@ C.Surface {
                     Layout.fillWidth: true
                     spacing: Metrics.space2
                     C.Label { color: root.foreground; text: "Screenshots"; font.weight: Font.DemiBold; Layout.fillWidth: true }
-                    C.QuickDeviceRow { island: root.embedded; id: captureRegion; text: "Capture a region"; subtitle: "Select an area of your screen"; glyph: "󰄀"; Layout.fillWidth: true; onClicked: { if (typeof root.app.selectCapture === "function") root.app.selectCapture(false, false); else { root.app.close(); S.Desktop.action("capture", ["region"]); } } }
-                    C.QuickDeviceRow { island: root.embedded; text: "Capture & annotate"; subtitle: "Draw, highlight and crop in Satty"; glyph: "󰏫"; Layout.fillWidth: true; onClicked: { if (typeof root.app.selectCapture === "function") root.app.selectCapture(true, false); else { root.app.close(); S.Desktop.action("capture", ["region", "annotate"]); } } }
+                    C.QuickDeviceRow { island: root.embedded; id: captureRegion; text: "Capture a region"; subtitle: "Select an area of your screen"; iconName: "camera"; Layout.fillWidth: true; onClicked: { if (typeof root.app.selectCapture === "function") root.app.selectCapture(false, false); else { root.app.close(); S.Desktop.action("capture", ["region"]); } } }
+                    C.QuickDeviceRow { island: root.embedded; text: "Capture & annotate"; subtitle: "Draw, highlight and crop in Satty"; iconName: "palette"; Layout.fillWidth: true; onClicked: { if (typeof root.app.selectCapture === "function") root.app.selectCapture(true, false); else { root.app.close(); S.Desktop.action("capture", ["region", "annotate"]); } } }
                     Item { Layout.preferredHeight: 4 }
                     RowLayout {
                         Layout.fillWidth: true
@@ -462,8 +486,8 @@ C.Surface {
                         C.QuickButton { island: root.embedded; text: "Refresh"; compact: true; quiet: true; enabled: !root.recordingBusy; onClicked: root.refreshRecording() }
                     }
                     C.Label { text: root.recordingBusy ? "Checking recording…" : !root.recordingReady ? "Recording status unavailable" : root.recording ? "Recording in progress" : "Ready to record"; color: root.recording ? Theme.accentWarn : root.secondary; Layout.fillWidth: true }
-                    C.QuickDeviceRow { island: root.embedded; objectName: "settingsRecordStart"; visible: !root.recording; enabled: root.recordingReady && !root.recordingBusy; text: "Record a region"; subtitle: "Select an area to start recording"; glyph: "󰑋"; Layout.fillWidth: true; onClicked: { if (typeof root.app.selectCapture === "function") root.app.selectCapture(false, true); else { root.app.close(); Qt.callLater(() => S.Recording.start()); } } }
-                    C.QuickDeviceRow { island: root.embedded; objectName: "settingsRecordStop"; visible: root.recording; enabled: root.recordingReady && !root.recordingBusy; text: "Stop recording"; subtitle: "Save the current recording"; glyph: "󰓛"; Layout.fillWidth: true; onClicked: root.stopRecording() }
+                    C.QuickDeviceRow { island: root.embedded; objectName: "settingsRecordStart"; visible: !root.recording; enabled: root.recordingReady && !root.recordingBusy; text: "Record a region"; subtitle: "Select an area to start recording"; iconName: "record"; Layout.fillWidth: true; onClicked: { if (typeof root.app.selectCapture === "function") root.app.selectCapture(false, true); else { root.app.close(); Qt.callLater(() => S.Recording.start()); } } }
+                    C.QuickDeviceRow { island: root.embedded; objectName: "settingsRecordStop"; visible: root.recording; enabled: root.recordingReady && !root.recordingBusy; text: "Stop recording"; subtitle: "Save the current recording"; iconName: "stop"; Layout.fillWidth: true; onClicked: root.stopRecording() }
                 }
             }
         }
@@ -477,11 +501,11 @@ C.Surface {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 5
-                C.QuickButton { island: root.embedded; text: "Appearance"; glyph: "󰏘"; quiet: true; compact: true; onClicked: root.app.open("appearance", null) }
-                C.QuickButton { island: root.embedded; glyph: "󰄀"; quiet: true; compact: true; tooltip: "Capture & record"; onClicked: root.section = root.section === "capture" ? "" : "capture" }
+                C.QuickButton { island: root.embedded; text: "Appearance"; iconName: "palette"; quiet: true; compact: true; onClicked: root.app.open("appearance", null) }
+                C.QuickButton { island: root.embedded; iconName: "camera"; quiet: true; compact: true; tooltip: "Capture & record"; onClicked: root.section = root.section === "capture" ? "" : "capture" }
                 Item { Layout.fillWidth: true }
-                C.QuickButton { island: root.embedded; glyph: "󰌾"; quiet: true; compact: true; tooltip: "Lock session"; onClicked: { root.app.close(); S.Desktop.action("lock", []); } }
-                C.QuickButton { island: root.embedded; glyph: "󰐥"; quiet: true; compact: true; tooltip: "Session & power"; onClicked: root.app.open("power", null) }
+                C.QuickButton { island: root.embedded; iconName: "lock"; quiet: true; compact: true; tooltip: "Lock session"; onClicked: { root.app.close(); S.Desktop.action("lock", []); } }
+                C.QuickButton { island: root.embedded; iconName: "power"; quiet: true; compact: true; tooltip: "Session & power"; onClicked: root.app.open("power", null) }
             }
         }
     }

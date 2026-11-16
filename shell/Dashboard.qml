@@ -47,6 +47,16 @@ C.Surface {
     }
     readonly property string heading: ({calendar:"Today",media:"Now playing",notifications:"Notifications",pomodoro:"A focused moment",power:"Session",help:"Keyboard shortcuts"})[kind] || "Sumi"
     property var shortcuts: []
+    readonly property var shortcutGroups: {
+        const groups = [];
+        for (const entry of shortcuts) {
+            const name = String(entry.category || "General");
+            let group = groups.find(item => item.name === name);
+            if (!group) { group = {name: name, items: []}; groups.push(group); }
+            group.items.push(entry);
+        }
+        return groups;
+    }
     property string shortcutsError: ""
     width: Math.min(kind === "help" ? 640 : 480, Math.max(1, app.activeScreen ? app.activeScreen.width - 48 : 640))
     height: Math.min(header.implicitHeight + bodyContent.implicitHeight + 56, kind === "help" ? 650 : 610,
@@ -116,25 +126,25 @@ C.Surface {
                             }
                         }
                     }
-                    C.ActionButton { island: root.embedded; id: focusSessionButton; objectName: "calendarFocusSession"; text: "󰔟  Start a focus session"; Layout.fillWidth: true; onClicked: root.app.open("pomodoro",null) }
+                    C.ActionButton { island: root.embedded; id: focusSessionButton; objectName: "calendarFocusSession"; iconName: "timer"; text: "Start a focus session"; Layout.fillWidth: true; onClicked: root.app.open("pomodoro",null) }
                 }
                 ColumnLayout {
                     visible: root.kind === "media"
                     Layout.fillWidth: true
-                    spacing: 18
+                    spacing: Metrics.space4
                     C.ArtworkImage { visible: status === Image.Ready; active: root.visible && root.kind === "media"; Layout.alignment: Qt.AlignHCenter; Layout.preferredWidth: 160; Layout.preferredHeight: 160; artworkUrl: S.Media.artUrl; fillMode: Image.PreserveAspectCrop; sourceSize: Qt.size(360,360) }
                     C.Label { color: root.foreground; text: S.Media.title || "Nothing playing"; Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter; font.pixelSize: 20 }
                     C.Label { visible: text.length > 0; text: S.Media.artist; Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter; color: root.secondary }
-                    RowLayout { Layout.alignment: Qt.AlignHCenter; spacing: 18
-                        C.ActionButton { island: root.embedded; text: "󰒮"; font.pixelSize: 20; tooltip: "Previous track"; enabled: S.Media.available; onClicked: S.Media.previous() }
+                    RowLayout { Layout.alignment: Qt.AlignHCenter; spacing: Metrics.space4
+                        C.ActionButton { island: root.embedded; iconName: "backward"; tooltip: "Previous track"; enabled: S.Media.available; onClicked: S.Media.previous() }
                         C.ActionButton { island: root.embedded; id: playButton; objectName: "mediaPlay"; tooltip: S.Media.playing ? "Pause playback" : "Play"; enabled: S.Media.available; iconName: S.Media.playing ? "pause" : "play"; selected: true; onClicked: S.Media.toggle() }
-                        C.ActionButton { island: root.embedded; text: "󰒭"; font.pixelSize: 20; tooltip: "Next track"; enabled: S.Media.available; onClicked: S.Media.next() }
+                        C.ActionButton { island: root.embedded; iconName: "forward"; tooltip: "Next track"; enabled: S.Media.available; onClicked: S.Media.next() }
                     }
                 }
                 ColumnLayout {
                     visible: root.kind === "pomodoro"
                     Layout.fillWidth: true
-                    spacing: 18
+                    spacing: Metrics.space4
                     C.Label { text: "One thing at a time."; color: root.secondary; Layout.alignment: Qt.AlignHCenter }
                     C.Label { color: root.foreground;
                         readonly property int remaining: root.app.focusRunning ? Math.max(0,Math.ceil((root.app.focusDeadline-root.now)/1000)) : Math.ceil(root.app.focusRemaining/1000)
@@ -157,10 +167,16 @@ C.Surface {
                     spacing: Metrics.space3
                     Repeater {
                         id: powerActions
-                        model: [{id:"suspend",name:"󰤄  Suspend"},{id:"logout",name:"󰍃  Log out"},{id:"reboot",name:"󰜉  Restart"},{id:"shutdown",name:"󰐥  Shut down"}]
-                        C.ActionButton { island: root.embedded; required property var modelData; text: modelData.name; Layout.fillWidth: true; selected: root.pendingPower === modelData.id; onClicked: root.pendingPower = modelData.id }
+                        model: [{id:"suspend",name:"Suspend",icon:"moon"},{id:"logout",name:"Log out",icon:"logout"},{id:"reboot",name:"Restart",icon:"restart"},{id:"shutdown",name:"Shut down",icon:"power"}]
+                        C.ActionButton { island: root.embedded; required property var modelData; text: modelData.name; iconName: modelData.icon; iconSize: 16; Layout.fillWidth: true; selected: root.pendingPower === modelData.id; onClicked: root.pendingPower = modelData.id }
                     }
-                    C.ActionButton { island: root.embedded; visible: root.pendingPower.length > 0; text: "Confirm " + root.pendingPower; Layout.fillWidth: true; onClicked: { const action = root.pendingPower; root.pendingPower = ""; root.powerError = ""; S.Desktop.action("power", [action], function(ok, value, error) { if (ok) root.app.close(); else root.powerError = error || "The session action could not be completed."; }); } }
+                    RowLayout {
+                        visible: root.pendingPower.length > 0
+                        Layout.fillWidth: true
+                        spacing: Metrics.space2
+                        C.ActionButton { island: root.embedded; text: "Cancel"; quiet: true; Layout.fillWidth: true; onClicked: root.pendingPower = "" }
+                        C.ActionButton { island: root.embedded; objectName: "dashboardPowerConfirm"; text: ({suspend: "Suspend now", logout: "Log out now", reboot: "Restart now", shutdown: "Shut down now"})[root.pendingPower] || "Confirm"; textColor: root.pendingPower === "suspend" ? root.foreground : "#ff6961"; Layout.fillWidth: true; onClicked: { const action = root.pendingPower; root.pendingPower = ""; root.powerError = ""; S.Desktop.action("power", [action], function(ok, value, error) { if (ok) root.app.close(); else root.powerError = error || "The session action could not be completed."; }); } }
+                    }
                     C.Label { visible: root.powerError.length > 0; text: root.powerError; color: Theme.accentWarn; wrapMode: Text.Wrap; Layout.fillWidth: true }
                     C.Label { text: "Applications close gracefully before logout, restart or shutdown."; color: root.secondary; font.pixelSize: 12; wrapMode: Text.Wrap; Layout.fillWidth: true }
                 }
@@ -169,14 +185,37 @@ C.Surface {
                     Layout.fillWidth: true
                     spacing: Metrics.space3
                     C.Label { visible: root.shortcutsError.length > 0; text: root.shortcutsError; color: Theme.accentWarn; Layout.fillWidth: true; wrapMode: Text.Wrap }
+                    // Grouped by category, with each shortcut drawn as keycaps.
                     Repeater {
-                        model: root.shortcuts
+                        model: root.shortcutGroups
                         ColumnLayout {
+                            id: shortcutGroup
                             required property var modelData
                             Layout.fillWidth: true
-                            spacing: 3
-                            C.Label { text: Array.isArray(parent.modelData.keys) ? parent.modelData.keys.join(" / ") : parent.modelData.keys; font.family: Theme.fontMono; font.pixelSize: 12; color: root.accent; Layout.fillWidth: true; wrapMode: Text.Wrap }
-                            C.Label { color: root.foreground; text: parent.modelData.label; Layout.fillWidth: true; font.pixelSize: 13; wrapMode: Text.Wrap }
+                            spacing: Metrics.space1
+                            C.Label { text: shortcutGroup.modelData.name; color: root.secondary; font.pixelSize: 12; font.weight: Font.DemiBold; Layout.fillWidth: true; Layout.topMargin: Metrics.space2 }
+                            Repeater {
+                                model: shortcutGroup.modelData.items
+                                RowLayout {
+                                    id: shortcutRow
+                                    required property var modelData
+                                    Layout.fillWidth: true
+                                    Layout.minimumHeight: 30
+                                    spacing: Metrics.space1
+                                    C.Label { color: root.foreground; text: shortcutRow.modelData.label; Layout.fillWidth: true; font.pixelSize: 13; wrapMode: Text.Wrap }
+                                    Repeater {
+                                        model: String(Array.isArray(shortcutRow.modelData.keys) ? shortcutRow.modelData.keys[0] : shortcutRow.modelData.keys).split(" + ")
+                                        Rectangle {
+                                            id: keycap
+                                            required property string modelData
+                                            implicitWidth: Math.max(24, keyText.implicitWidth + 12); implicitHeight: 22; radius: 6
+                                            color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.07)
+                                            border.width: 1; border.color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.12)
+                                            C.Label { id: keyText; anchors.centerIn: parent; text: keycap.modelData; color: root.foreground; font.pixelSize: 11; font.weight: Font.Medium }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     C.Label { text: "Esc · Close the current panel"; color: root.secondary; Layout.fillWidth: true }
@@ -216,7 +255,7 @@ C.Surface {
                                 }
                                 C.Label { color: root.foreground; text: note.modelData.summary; font.weight: Font.DemiBold; wrapMode: Text.Wrap; Layout.fillWidth: true }
                                 C.Label { text: note.modelData.body; color: root.secondary; wrapMode: Text.Wrap; maximumLineCount: 5; Layout.fillWidth: true; font.pixelSize: 13 }
-                                Flow { Layout.fillWidth: true; spacing: 5; Repeater { model: note.modelData.actions; C.ActionButton { island: root.embedded; required property string modelData; required property int index; text: modelData; onClicked: S.Notifications.invoke(note.modelData.id,index) } } }
+                                Flow { Layout.fillWidth: true; spacing: Metrics.space1; Repeater { model: note.modelData.actions; C.ActionButton { island: root.embedded; required property string modelData; required property int index; text: modelData; onClicked: S.Notifications.invoke(note.modelData.id,index) } } }
                             }
                         }
                         C.Label { visible: S.Notifications.count === 0; anchors.centerIn: parent; text: "All caught up"; color: root.secondary }

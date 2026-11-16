@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Quickshell
 import "../config"
 import "../services" as S
 
@@ -103,7 +104,7 @@ FocusScope {
                 Rule {}
                 RowLayout {
                     Layout.fillWidth: true
-                    Heading { text: "Priorities"; font.pixelSize: 15; Layout.fillWidth: true }
+                    Heading { text: "Priorities"; font.pixelSize: 16; Layout.fillWidth: true }
                     IslandPreviewButton { text: "Edit"; quiet: true; onClicked: root.routeRequested("widgets") }
                 }
                 Caption { Layout.fillWidth: true; visible: !root.priorities.length; text: "Make room for what matters. Add up to three priorities." }
@@ -129,7 +130,7 @@ FocusScope {
                 Rule {}
                 RowLayout {
                     Layout.fillWidth: true
-                    Heading { text: "Recent notifications"; font.pixelSize: 15; Layout.fillWidth: true }
+                    Heading { text: "Recent notifications"; font.pixelSize: 16; Layout.fillWidth: true }
                     IslandPreviewButton { text: "Inbox ›"; quiet: true; onClicked: root.routeRequested("inbox") }
                 }
                 Caption { visible: !S.Notifications.count; text: "You’re all caught up."; Layout.fillWidth: true }
@@ -182,23 +183,46 @@ FocusScope {
                     id: entryRow
                     required property var modelData
                     readonly property var entry: modelData
+                    readonly property string iconSource: {
+                        const name = entry ? String(entry.appIcon || "") : "";
+                        if (!name) return "";
+                        return /^(file:|image:|\/)/.test(name) ? name : Quickshell.iconPath(name, true) || "";
+                    }
+                    readonly property string timeText: entry && entry.time && !isNaN(new Date(entry.time).getTime()) ? Qt.formatDateTime(new Date(entry.time), "h:mm") : ""
                     width: inbox.width
-                    height: Math.max(76, rowContent.implicitHeight + 24)
+                    height: Math.max(64, rowContent.implicitHeight + 20)
+                    Rectangle { anchors.fill: parent; radius: 14; color: rowHover.hovered ? Qt.rgba(1, 1, 1, 0.04) : "transparent"; Behavior on color { ColorAnimation { duration: Motion.control } } }
+                    HoverHandler { id: rowHover }
                     RowLayout {
                         id: rowContent
-                        anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; margins: 8 }
+                        anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; leftMargin: 10; rightMargin: 4 }
                         spacing: Metrics.space3
-                        Rectangle { width: 5; height: 5; radius: 3; color: entryRow.entry.unread ? IslandStyle.text : "transparent" }
+                        Item {
+                            Layout.preferredWidth: 34; Layout.preferredHeight: 34
+                            Layout.alignment: Qt.AlignTop
+                            Rectangle {
+                                anchors.fill: parent; radius: 10; color: "#2a2a2f"
+                                visible: entryIcon.status !== Image.Ready
+                                Icon { anchors.centerIn: parent; name: "bell"; size: 16; color: IslandStyle.text }
+                            }
+                            Image { id: entryIcon; anchors.fill: parent; source: entryRow.iconSource; sourceSize: Qt.size(68, 68); fillMode: Image.PreserveAspectFit; asynchronous: true; visible: status === Image.Ready }
+                            // Unread entries carry a small dot on their icon, like a badge.
+                            Rectangle { x: parent.width - 7; y: -3; width: 10; height: 10; radius: 5; color: "#0a84ff"; border.width: 2; border.color: IslandStyle.surface; visible: entryRow.entry.unread }
+                        }
                         ColumnLayout {
                             Layout.fillWidth: true; Layout.minimumWidth: 0
-                            spacing: 4
-                            Caption { text: entryRow.entry.appName; font.pixelSize: 11; Layout.fillWidth: true }
+                            spacing: 2
+                            RowLayout {
+                                Layout.fillWidth: true; spacing: 6
+                                Caption { text: entryRow.entry.appName; font.pixelSize: 11; font.weight: Font.Medium; wrapMode: Text.NoWrap; Layout.fillWidth: true; Layout.minimumWidth: 0; elide: Text.ElideRight }
+                                Caption { text: entryRow.timeText; font.pixelSize: 11; font.features: IslandStyle.figures; wrapMode: Text.NoWrap; visible: text.length > 0 }
+                            }
                             Label { text: entryRow.entry.summary; textFormat: Text.PlainText; color: IslandStyle.text; font.pixelSize: 13; font.weight: Font.DemiBold; wrapMode: Text.Wrap; maximumLineCount: 2; elide: Text.ElideRight; Layout.fillWidth: true }
+                            Label { text: entryRow.entry.body || ""; visible: text.length > 0; textFormat: Text.PlainText; color: IslandStyle.secondary; font.pixelSize: 12; maximumLineCount: 1; elide: Text.ElideRight; Layout.fillWidth: true }
                         }
-                        IslandPreviewButton { text: "›"; tooltip: "Read notification"; implicitWidth: 40; implicitHeight: 40; quiet: true; onClicked: root.openNotification(entryRow.entry) }
-                        IslandPreviewButton { text: "×"; tooltip: "Dismiss notification"; implicitWidth: 40; implicitHeight: 40; quiet: true; onClicked: S.Notifications.dismiss(entryRow.entry.id) }
+                        IslandPreviewButton { text: "›"; tooltip: "Read notification"; implicitWidth: 34; implicitHeight: 34; quiet: true; textColor: IslandStyle.secondary; onClicked: root.openNotification(entryRow.entry) }
+                        IslandPreviewButton { text: "×"; tooltip: "Dismiss notification"; implicitWidth: 34; implicitHeight: 34; quiet: true; textColor: IslandStyle.secondary; onClicked: S.Notifications.dismiss(entryRow.entry.id) }
                     }
-                    Rectangle { anchors { left: parent.left; right: parent.right; bottom: parent.bottom } height: 1; color: IslandStyle.line }
                 }
             }
         }

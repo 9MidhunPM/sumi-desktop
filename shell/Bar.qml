@@ -60,8 +60,9 @@ PanelWindow {
     }
     Behavior on reveal {
         NumberAnimation {
-            duration: bar.app.barVisible ? Theme.motionEnter : Theme.motionExit
-            easing.type: bar.app.barVisible ? Easing.OutCubic : Easing.InCubic
+            duration: bar.app.barVisible ? Theme.motionBounce : Theme.motionExit
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: bar.app.barVisible ? Motion.bounceCurve : Motion.exitCurve
         }
     }
     onVisibleChanged: if (!visible) workspaceMenu.close()
@@ -142,6 +143,13 @@ PanelWindow {
                     quiet: true; padding: 6; implicitWidth: 28; implicitHeight: 28
                     tooltip: S.Network.name || "Wi-Fi"
                     onClicked: app.openSettings("wifi", bar.screen)
+                }
+                C.ActionButton {
+                    objectName: "barCodex"
+                    iconName: "codex"; iconSize: 16
+                    quiet: true; padding: 6; implicitWidth: 28; implicitHeight: 28
+                    tooltip: "Codex status"
+                    onClicked: app.codexToggle(bar.screen)
                 }
                 C.ActionButton {
                     id: batteryButton

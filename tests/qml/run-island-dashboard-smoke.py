@@ -353,7 +353,10 @@ def main():
         shutil.copytree(repo / 'shell/components', work / 'components')
         shutil.copytree(repo / 'shell/config', work / 'config')
         shutil.copytree(repo / 'shell/assets', work / 'assets')
-        shutil.copytree(repo / 'shell/integrations', work / 'integrations')
+        (work / 'integrations').mkdir()
+        # SpeechOrb imports its shared animation engine; copy the complete dependency pair.
+        for dependency in ('SpeechOrb.qml', 'OrbMath.js'):
+            shutil.copy2(repo / 'shell/integrations' / dependency, work / 'integrations' / dependency)
         services = work / 'services'
         services.mkdir()
         (services / 'qmldir').write_text(''.join(f'singleton {name} {name}.qml\n' for name in STUBS))
