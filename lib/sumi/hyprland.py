@@ -68,38 +68,44 @@ def motion_lua(mode: str) -> str:
     enabled = "false" if mode == "reduced" else "true"
     lines = [f"-- Sumi motion: {mode}. Values are durations in deciseconds.",
              f"hl.config({{ animations = {{ enabled = {enabled} }} }})"]
-    # Match the original desktop curves without changing user-owned curve names.
+    # macOS Tahoe-like curves without changing user-owned curve names: a soft
+    # settling spring for arrivals, a plain deceleration for glides and fades,
+    # and a brisk exit. The original Sumi curves remain defined for user rules.
     for name, points in (("sumiEaseOutQuint", "{ 0.23, 1 }, { 0.32, 1 }"),
                          ("sumiEaseInOutCubic", "{ 0.65, 0.05 }, { 0.36, 1 }"),
                          ("sumiLinear", "{ 0, 0 }, { 1, 1 }"),
                          ("sumiAlmostLinear", "{ 0.5, 0.5 }, { 0.75, 1 }"),
-                         ("sumiQuick", "{ 0.15, 0 }, { 0.1, 1 }")):
+                         ("sumiQuick", "{ 0.15, 0 }, { 0.1, 1 }"),
+                         ("sumiTahoe", "{ 0.32, 1.24 }, { 0.58, 1 }"),
+                         ("sumiTahoeSmooth", "{ 0.2, 0 }, { 0, 1 }"),
+                         ("sumiTahoeExit", "{ 0.3, 0 }, { 0.6, 1 }")):
         lines.append(f'hl.curve("{name}", {{ type = "bezier", points = {{ {points} }} }})')
-    # Normal preserves the original expressive animation tree. Battery keeps
-    # spatial slides and smaller pop-ins, finishing sooner with shorter fades.
+    # Windows open with a small spring from 90%, close briskly, and Spaces glide
+    # without bounce. Battery keeps the same tree, shorter and without overshoot.
     animations = (
-        ("global", 10, 6, "default", None, None),
-        ("border", 5.39, 2.2, "sumiEaseOutQuint", None, None),
-        ("windows", 4.79, 2.6, "sumiEaseOutQuint", None, None),
-        ("windowsIn", 4.1, 2.2, "sumiEaseOutQuint", "popin 87%", "popin 94%"),
-        ("windowsOut", 1.49, 1.0, "sumiLinear", "popin 87%", "popin 96%"),
-        ("fadeIn", 1.73, 1.1, "sumiAlmostLinear", None, None),
-        ("fadeOut", 1.46, 0.9, "sumiAlmostLinear", None, None),
-        ("fade", 3.03, 1.7, "sumiQuick", None, None),
-        ("layers", 3.81, 2.1, "sumiEaseOutQuint", None, None),
-        ("layersIn", 4, 2.2, "sumiEaseOutQuint", "fade", "fade"),
-        ("layersOut", 1.5, 1.0, "sumiLinear", "fade", "fade"),
-        ("fadeLayersIn", 1.79, 1.0, "sumiAlmostLinear", None, None),
-        ("fadeLayersOut", 1.39, 0.9, "sumiAlmostLinear", None, None),
-        ("workspaces", 5, 2.8, "sumiEaseOutQuint", "slide", "slide"),
-        ("workspacesIn", 5, 2.8, "sumiEaseOutQuint", "slide", "slide"),
-        ("workspacesOut", 5, 2.8, "sumiEaseOutQuint", "slide", "slide"),
-        ("specialWorkspace", 5, 2.8, "sumiEaseOutQuint", "slidevert bottom", "slidevert bottom"),
-        ("zoomFactor", 7, 3.5, "sumiQuick", None, None),
+        ("global", 8, 5, "default", None, None),
+        ("border", 3, 2, "sumiTahoeSmooth", None, None),
+        ("windows", 4.2, 2.6, "sumiTahoe", None, None),
+        ("windowsIn", 3.8, 2.2, "sumiTahoe", "popin 90%", "popin 94%"),
+        ("windowsOut", 1.8, 1.1, "sumiTahoeExit", "popin 92%", "popin 96%"),
+        ("fadeIn", 2, 1.2, "sumiTahoeSmooth", None, None),
+        ("fadeOut", 1.6, 1, "sumiTahoeExit", None, None),
+        ("fade", 2.4, 1.5, "sumiTahoeSmooth", None, None),
+        ("layers", 3.2, 2, "sumiTahoe", None, None),
+        ("layersIn", 3.2, 2, "sumiTahoe", "fade", "fade"),
+        ("layersOut", 1.5, 1, "sumiTahoeExit", "fade", "fade"),
+        ("fadeLayersIn", 1.8, 1, "sumiTahoeSmooth", None, None),
+        ("fadeLayersOut", 1.4, 0.9, "sumiTahoeExit", None, None),
+        ("workspaces", 4.6, 2.8, "sumiTahoeSmooth", "slide", "slide"),
+        ("workspacesIn", 4.6, 2.8, "sumiTahoeSmooth", "slide", "slide"),
+        ("workspacesOut", 4.6, 2.8, "sumiTahoeSmooth", "slide", "slide"),
+        ("specialWorkspace", 4.2, 2.6, "sumiTahoe", "slidevert bottom", "slidevert bottom"),
+        ("zoomFactor", 5, 3, "sumiTahoeSmooth", None, None),
     )
     for leaf, normal_duration, battery_duration, curve, normal_style, battery_style in animations:
         duration = normal_duration if mode == "normal" else battery_duration
         style = normal_style if mode == "normal" else battery_style
+        if mode != "normal" and curve == "sumiTahoe": curve = "sumiTahoeSmooth"
         suffix = ", style = " + json.dumps(style) if style else ""
         lines.append(f'hl.animation({{ leaf = "{leaf}", enabled = {enabled}, speed = {duration}, bezier = "{curve}"{suffix} }})')
     # These layer surfaces animate content themselves. Avoid compositor scaling

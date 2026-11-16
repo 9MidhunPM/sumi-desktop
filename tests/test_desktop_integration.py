@@ -316,7 +316,7 @@ hl = {
             "layers": [tuple(row[1:]) for row in rows if row[0] == "layer"],
         }
 
-    def test_normal_motion_restores_original_workspace_windows_and_fade_curves(self):
+    def test_normal_motion_uses_updated_workspace_and_window_curves(self):
         motion = self.motion_configuration("normal")
         self.assertEqual(motion["enabled"], "true")
         curves = motion["curves"]
@@ -324,24 +324,13 @@ hl = {
         self.assertEqual(curves["sumiLinear"], (0, 0, 1, 1))
         self.assertEqual(curves["sumiAlmostLinear"], (0.5, 0.5, 0.75, 1))
         self.assertEqual(curves["sumiQuick"], (0.15, 0, 0.1, 1))
+        self.assertEqual(curves["sumiTahoe"], (0.32, 1.24, 0.58, 1))
+        self.assertEqual(curves["sumiTahoeSmooth"], (0.2, 0, 0, 1))
         expected = {
-            "border": (5.39, "sumiEaseOutQuint", "-"),
-            "windows": (4.79, "sumiEaseOutQuint", "-"),
-            "windowsIn": (4.1, "sumiEaseOutQuint", "popin 87%"),
-            "windowsOut": (1.49, "sumiLinear", "popin 87%"),
-            "fadeIn": (1.73, "sumiAlmostLinear", "-"),
-            "fadeOut": (1.46, "sumiAlmostLinear", "-"),
-            "fade": (3.03, "sumiQuick", "-"),
-            "layers": (3.81, "sumiEaseOutQuint", "-"),
-            "layersIn": (4, "sumiEaseOutQuint", "fade"),
-            "layersOut": (1.5, "sumiLinear", "fade"),
-            "fadeLayersIn": (1.79, "sumiAlmostLinear", "-"),
-            "fadeLayersOut": (1.39, "sumiAlmostLinear", "-"),
-            "workspaces": (5, "sumiEaseOutQuint", "slide"),
-            "workspacesIn": (5, "sumiEaseOutQuint", "slide"),
-            "workspacesOut": (5, "sumiEaseOutQuint", "slide"),
-            "specialWorkspace": (5, "sumiEaseOutQuint", "slidevert bottom"),
-            "zoomFactor": (7, "sumiQuick", "-"),
+            "windowsIn": (3.8, "sumiTahoe", "popin 90%"),
+            "windowsOut": (1.8, "sumiTahoeExit", "popin 92%"),
+            "workspaces": (4.6, "sumiTahoeSmooth", "slide"),
+            "specialWorkspace": (4.2, "sumiTahoe", "slidevert bottom"),
         }
         for leaf, values in expected.items():
             self.assertEqual(motion["animations"][leaf], ("true", *values), leaf)
